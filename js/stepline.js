@@ -43,6 +43,7 @@
    * @param {object} helpers  { tramaOf(scene), tramaById(id), charactersByTrama() }
    */
   function render(p, scenes, helpers) {
+    const visible = s => !(helpers.isHidden && helpers.isHidden(s));
     const credits = p.credits || {};
     const headerLines = [];
     const creditBits = [];
@@ -107,7 +108,7 @@
       const x = X(t.start);
       out.push(`<line x1="${x}" x2="${x}" y1="${plotTop}" y2="${plotBottom}" stroke="#c9d3e3" stroke-width="0.7"/>`);
       const s = t.s;
-      const label = s.keyEvent && s.eventLabel ? s.eventLabel : '';
+      const label = s.keyEvent && s.eventLabel && visible(s) ? s.eventLabel : '';
       const cx = X((t.start + t.end) / 2);
       if (label) {
         out.push(`<text transform="translate(${cx + 4} ${plotBottom - 8}) rotate(-90)" font-size="11" fill="#2a4f8f" font-weight="600">${esc(label.toUpperCase().slice(0, 40))}</text>`);
@@ -146,7 +147,7 @@
     });
 
     // Curva
-    const pts = timeline.map(t => ({ x: X((t.start + t.end) / 2), y: Y(t.s.intensity), s: t.s }));
+    const pts = timeline.filter(t => visible(t.s)).map(t => ({ x: X((t.start + t.end) / 2), y: Y(t.s.intensity), s: t.s }));
     out.push(`<path d="${smoothPath(pts)}" fill="none" stroke="#d62828" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`);
 
     // Globos: puntos de giro / eventos clave (color de la trama)
@@ -161,12 +162,16 @@
       const lines = wrap(label, 16).slice(0, 3);
       const bw = Math.max(...lines.map(l => l.length)) * 7.2 + 18;
       const bh = lines.length * 14 + 10;
-      globeLevel = pt.x - lastGlobeX < bw + 6 ? (globeLevel + 1) % 3 : 0;
+      globeLevel = pt.x - lastGlobeX < bw + 6 ? (globeLevel + 1) % 4 : 0;
       lastGlobeX = pt.x;
       const by = Math.max(plotTop + 4, pt.y - 34 - bh - globeLevel * (bh + 6));
-      out.push(`<line x1="${pt.x}" x2="${pt.x}" y1="${by + bh}" y2="${pt.y}" stroke="${color}" stroke-width="2"/>`);
-      out.push(`<rect x="${pt.x - bw / 2}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${color}" stroke="rgba(0,0,0,.25)"/>`);
-      lines.forEach((l, i) => out.push(`<text x="${pt.x}" y="${by + 17 + i * 14}" text-anchor="middle" font-size="11" font-weight="700" fill="#222">${esc(l)}</text>`));
+      const dx = Number(s.globeDx) || 0, dy = Number(s.globeDy) || 0;
+      // el palito une el punto de la curva con el globo (se actualiza al arrastrar)
+      out.push(`<line class="stem" data-id="${s.id}" data-bx="${pt.x}" data-by="${by + bh / 2}" x1="${pt.x}" y1="${pt.y}" x2="${pt.x + dx}" y2="${by + bh / 2 + dy}" stroke="${color}" stroke-width="2"/>`);
+      out.push(`<g class="globe" data-id="${s.id}" transform="translate(${dx} ${dy})"><title>Arrastra para mover la etiqueta</title>`);
+      out.push(`<rect x="${pt.x - bw / 2}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${color}" stroke="rgba(0,0,0,.35)"/>`);
+      lines.forEach((l, i) => out.push(`<text x="${pt.x}" y="${by + 17 + i * 14}" text-anchor="middle" font-size="11" font-weight="700" fill="#222" pointer-events="none">${esc(l)}</text>`));
+      out.push(`</g>`);
     });
 
     // Puntos editables
@@ -185,12 +190,15 @@
     let col = 0, rowY = ly, rowMaxH = 0;
     tramas.forEach(t => {
       const x = plotLeft + col * colW;
+      const off = helpers.isTramaHidden && helpers.isTramaHidden(t.id);
+      if (off) out.push(`<g opacity="0.3">`);
       const chars = (byTrama[t.id] || []).join(', ');
       const charLines = wrap(chars || '—', Math.floor(colW / 7.2) - 4).slice(0, 3);
       out.push(`<rect x="${x}" y="${rowY + 6}" width="26" height="18" rx="3" fill="${t.color}" stroke="rgba(0,0,0,.2)"/>`);
       out.push(`<text x="${x + 13}" y="${rowY + 20}" text-anchor="middle" font-size="12" font-weight="800" fill="#222">${esc(t.letter)}</text>`);
       out.push(`<text x="${x + 34}" y="${rowY + 20}" font-size="12.5" font-weight="700" fill="#222">${esc(t.name)}</text>`);
       charLines.forEach((l, i) => out.push(`<text x="${x + 34}" y="${rowY + 36 + i * 14}" font-size="11" fill="#555">${esc(l)}</text>`));
+      if (off) out.push(`</g>`);
       rowMaxH = Math.max(rowMaxH, 36 + charLines.length * 14);
       col++;
       if (col >= 3) { col = 0; rowY += rowMaxH + 4; rowMaxH = 0; }

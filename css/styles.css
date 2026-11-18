@@ -301,3 +301,10 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .doctor-table .act-row td { background: #2a4f8f; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .05em; }
 .dev { font-size: 10px; font-weight: 800; color: #2e7d4f; margin-top: 2px; }
 .dev-bad { color: #c0392b; }
+
+/* Step line interactivo */
+.stepline-wrap svg .globe { cursor: grab; touch-action: none; }
+.stepline-wrap svg .globe:active { cursor: grabbing; }
+.stepline-wrap svg .globe:hover rect { stroke: #222; stroke-width: 2; }
+.trama-vis { gap: 6px; }
+.trama-vis.off { opacity: .4; text-decoration: line-through; }

@@ -968,9 +968,16 @@
   }
   function tabStepline(p) {
     const scenes = steplineScenes(p);
+    const hidden = new Set(p.steplineHidden || []);
     const { svg } = StepLine.render(p, scenes, {
-      tramaOf: s => tramaOf(p, s), charactersByTrama: () => charactersByTrama(p)
+      tramaOf: s => tramaOf(p, s), charactersByTrama: () => charactersByTrama(p),
+      isHidden: s => hidden.has(s.tramaId || '__none'), isTramaHidden: id => hidden.has(id)
     });
+    const visChip = (id, label, color) => `<button class="btn btn-small trama-vis ${hidden.has(id) ? 'off' : ''}" data-action="toggle-trama-vis" data-id="${id}" title="${hidden.has(id) ? 'Mostrar' : 'Ocultar'}"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button>`;
+    const filterBar = `<div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(t => visChip(t.id, t.letter + ' · ' + t.name, t.color)).join('')}${visChip('__none', 'Sin trama', '#fff')}
+      <button class="btn btn-small btn-ghost" data-action="trama-vis-all">Mostrar todas</button>
+      <span class="spacer"></span><button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
+      <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla.</p>`;
     const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(s.num)} · ${esc(s.location.slice(0, 40))}</option>`).join('');
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
     return `<section class="panel">
@@ -988,6 +995,7 @@
         <button class="btn btn-small" data-action="export-png">Descargar PNG</button>
         <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
       </div>
+      ${filterBar}
       <div class="stepline-wrap" id="steplineWrap">${svg}</div>
     </section>
     <section class="panel no-print">
@@ -1014,7 +1022,14 @@
     const p = P();
     const top = +svg.dataset.plotTop, h = +svg.dataset.plotH;
     let drag = null;
+    const toSvg = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
     svg.addEventListener('pointerdown', e => {
+      const g = e.target.closest('.globe');
+      if (g) {
+        const s = sceneById(p, g.dataset.id); const start = toSvg(e);
+        drag = { globe: g, s, start, dx0: Number(s.globeDx) || 0, dy0: Number(s.globeDy) || 0, stem: svg.querySelector(`.stem[data-id="${g.dataset.id}"]`) };
+        g.setPointerCapture(e.pointerId); e.preventDefault(); return;
+      }
       const c = e.target.closest('.pt'); if (!c) return;
       drag = { c, s: sceneById(p, c.dataset.id) };
       c.setPointerCapture(e.pointerId);
@@ -1022,13 +1037,23 @@
     });
     svg.addEventListener('pointermove', e => {
       if (!drag) return;
-      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-      const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const loc = toSvg(e);
+      if (drag.globe) {
+        const dx = Math.round(drag.dx0 + loc.x - drag.start.x), dy = Math.round(drag.dy0 + loc.y - drag.start.y);
+        drag.dx = dx; drag.dy = dy;
+        drag.globe.setAttribute('transform', `translate(${dx} ${dy})`);
+        if (drag.stem) { drag.stem.setAttribute('x2', +drag.stem.dataset.bx + dx); drag.stem.setAttribute('y2', +drag.stem.dataset.by + dy); }
+        return;
+      }
       const v = Math.round(Math.max(0, Math.min(10, (top + h - loc.y) / h * 10)) * 2) / 2;
       drag.s.intensity = v;
       drag.c.setAttribute('cy', top + h - v / 10 * h);
     });
-    const end = () => { if (!drag) return; drag = null; save(); renderTab(); };
+    const end = () => {
+      if (!drag) return;
+      if (drag.globe && drag.dx != null) { drag.s.globeDx = drag.dx; drag.s.globeDy = drag.dy; }
+      drag = null; save(); renderTab();
+    };
     svg.addEventListener('pointerup', end);
     svg.addEventListener('pointercancel', end);
   }
@@ -1326,6 +1351,13 @@
       toast(d.length ? `${d.length} nombres repetidos unificados. Revisa la lista de arriba.` : 'No se han encontrado nombres repetidos.');
     },
     'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
+    'toggle-trama-vis': (el) => {
+      const p = P(); const set = new Set(p.steplineHidden || []); const id = el.dataset.id;
+      if (set.has(id)) set.delete(id); else set.add(id);
+      p.steplineHidden = Array.from(set); save(); renderTab();
+    },
+    'trama-vis-all': () => { P().steplineHidden = []; save(); renderTab(); },
+    'reset-globes': () => { P().scenes.forEach(s => { delete s.globeDx; delete s.globeDy; }); save(); renderTab(); },
     'arc-view': (el) => { arcView = el.dataset.v; renderTab(); },
     'arc-all': () => { arcAll = !arcAll; renderTab(); },
     'ai-arc': () => { if (window.AIEditor) window.AIEditor.arcs(characterNamesForArc(P()), ARC_ACTS); },

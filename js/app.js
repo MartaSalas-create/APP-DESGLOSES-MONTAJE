@@ -631,7 +631,8 @@
     </section>
     <section class="panel">
       <h2>Personajes</h2>
-      <p class="lead">Detectados en el guion (por los nombres sobre los diálogos). Asigna su trama principal; oculta los que sean falsos positivos o figuración. Para unir dos nombres (p. ej. «TENIENTE ROJAS» y «ROJAS») usa <i>Fusionar</i>.</p>
+      <p class="lead">Detectados en el guion (por los nombres sobre los diálogos). Asigna su trama principal; oculta los que sean falsos positivos o figuración. </p>
+      <div class="note" style="margin-bottom:12px"><b>¿Para qué sirve «Es el mismo personaje que…»?</b> La app detecta los personajes por el nombre que aparece encima de cada diálogo. Si el guion llama a un mismo personaje de dos formas (por ejemplo «TENIENTE ROJAS» y «ROJAS», «MADRE» y «EMILIA», o una errata como «SUSNA»), aparecen como dos personajes distintos. Elige en esa columna el nombre bueno: se unen en uno solo, con todas sus secuencias, su trama y sus notas. Si no hay nombres repetidos, déjala vacía.</div>
       <div class="toolbar">
         <button class="btn btn-small" data-action="auto-char-tramas">Asignar trama a personajes según sus secuencias</button>
         <button class="btn btn-small" data-action="auto-scene-tramas">Asignar trama a secuencias sin trama según sus personajes</button>
@@ -639,7 +640,7 @@
         <button class="btn btn-small" data-action="add-character">+ Añadir personaje</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Personaje</th><th class="num">Secuencias</th><th class="num">Primera / última</th><th>Trama</th><th class="num">Mostrar</th><th>Fusionar con…</th></tr></thead>
+        <thead><tr><th>Personaje</th><th class="num">Secuencias</th><th class="num">Primera / última</th><th>Trama</th><th class="num">Mostrar</th><th title="Une este nombre con otro si son el mismo personaje">Es el mismo personaje que…</th></tr></thead>
         <tbody>${names.map(n => {
           const c = p.characters[n], s = st[n];
           return `<tr class="${c.hidden ? 'strike' : ''}">

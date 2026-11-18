@@ -416,12 +416,22 @@
   function needChips(s) {
     return NEEDS.map(n => `<label class="chip lbl-${n.lbl || DEPT_LABEL[n.dept]} ${s.needs[n.k] ? 'on' : ''}" title="${esc(DEPTS[n.dept])}"><input type="checkbox" data-k="s:${s.id}:needs.${n.k}" data-rerender="1" ${s.needs[n.k] ? 'checked' : ''}>${esc(n.label)}</label>`).join('');
   }
-  const isRemoved = (p, s) => s.estado === 'eliminada' || !!(p.removed && p.removed[s.id]);
-  function estadoSelect(s) {
-    const e = estadoOf(s.estado);
-    return `<select class="cell-input estado-select lbl-bg-${e.k}" data-k="s:${s.id}:estado" data-rerender="1" title="${esc(e.help)}">${ESTADOS.map(x => `<option value="${x.k}" ${x.k === e.k ? 'selected' : ''}>${x.option || x.label}</option>`).join('')}</select>`;
+  /* Estados de una secuencia: se pueden marcar varios a la vez (sin ninguno = sin rodar) */
+  function getEstados(s) {
+    if (!Array.isArray(s.estados)) s.estados = s.estado && s.estado !== 'sinrodar' ? [s.estado] : [];
+    return s.estados;
   }
-  const estadoBadge = s => { const e = estadoOf(s.estado); return `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label || '&nbsp;'}</span>`; };
+  const isRemoved = (p, s) => getEstados(s).includes('eliminada') || !!(p.removed && p.removed[s.id]);
+  function estadoSelect(s) {
+    const on = getEstados(s);
+    return `<div class="estados-cell">${on.length ? '' : '<span class="estado-badge lbl-bg-sinrodar" title="Sin rodar">&nbsp;</span>'}${ESTADOS.filter(e => e.k !== 'sinrodar').map(e =>
+      `<button type="button" class="est-chip ${on.includes(e.k) ? 'on lbl-bg-' + e.k : ''}" style="--c:${e.k === 'rodada' ? '#d0342c' : e.color}" data-action="toggle-estado" data-id="${s.id}" data-e="${e.k}" title="${esc(e.help)}">${e.label}</button>`).join('')}</div>`;
+  }
+  const estadoBadge = s => {
+    const on = getEstados(s);
+    if (!on.length) return '<span class="estado-badge lbl-bg-sinrodar" title="Sin rodar">&nbsp;</span>';
+    return ESTADOS.filter(e => on.includes(e.k)).map(e => `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label}</span>`).join(' ');
+  };
   function postLegendHTML() {
     return `<div class="post-legend"><b>LEYENDA DE POSTPRODUCCIÓN Y MONTAJE</b>${ESTADOS.map(e => `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label || '&nbsp;&nbsp;&nbsp;&nbsp;'}</span>${e.k === 'sinrodar' ? '<span class="muted" style="margin-right:4px">sin rodar</span>' : ''}`).join('')}</div>`;
   }
@@ -1060,7 +1070,7 @@
     const head = ['Estado', 'Nº', 'INT/EXT', 'Localización', 'Día/Noche', 'Trama', 'Personajes', 'Resumen', 'Conflicto / objetivo', 'Página', 'Octavos', 'Duración est. (min)', 'Intensidad', 'Punto de giro', 'Necesidades', 'Notas montaje', 'Notas color', 'Notas VFX', 'Notas sonido', 'Notas música'];
     const rows = p.scenes.map(s => {
       const t = tramaOf(p, s);
-      return [estadoOf(s.estado).label, s.num, s.intExt, s.location, s.time, t ? t.letter + ' · ' + t.name : '', s.characters.join(', '), s.summary, s.conflict, s.page, fmtEighths(s.eighths),
+      return [ESTADOS.filter(e => getEstados(s).includes(e.k)).map(e => e.label).join(', ') || 'SIN RODAR', s.num, s.intExt, s.location, s.time, t ? t.letter + ' · ' + t.name : '', s.characters.join(', '), s.summary, s.conflict, s.page, fmtEighths(s.eighths),
         (s.lengthPages * mpp).toFixed(1), s.intensity, s.keyEvent ? (s.eventLabel || 'sí') : '', NEEDS.filter(n => s.needs[n.k]).map(n => n.label).join(', '),
         s.notes.montaje, s.notes.color, s.notes.vfx, s.notes.sonido, s.notes.musica];
     });
@@ -1186,10 +1196,17 @@
       [p.montajeOrder[i], p.montajeOrder[j]] = [p.montajeOrder[j], p.montajeOrder[i]];
       save(); renderTab();
     },
+    'toggle-estado': (el) => {
+      const sc = sceneById(P(), el.dataset.id); const est = getEstados(sc); const k = el.dataset.e;
+      const i = est.indexOf(k); if (i >= 0) est.splice(i, 1); else est.push(k);
+      sc.estado = est[est.length - 1] || 'sinrodar';
+      save(); renderTab();
+    },
     'toggle-removed': (el) => {
       const p = P(); const sc = sceneById(p, el.dataset.id);
-      if (isRemoved(p, sc)) { delete p.removed[sc.id]; if (sc.estado === 'eliminada') sc.estado = sc.estadoPrev || 'sinrodar'; }
-      else { sc.estadoPrev = sc.estado; sc.estado = 'eliminada'; }
+      const est = getEstados(sc);
+      if (isRemoved(p, sc)) { delete p.removed[sc.id]; sc.estados = est.filter(x => x !== 'eliminada'); }
+      else est.push('eliminada');
       save(); renderTab();
     },
     'suggest-curve': () => {

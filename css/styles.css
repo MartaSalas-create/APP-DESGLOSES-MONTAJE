@@ -235,3 +235,15 @@ button.chip { font: inherit; font-size: 11px; }
 .need-nav { cursor: pointer; }
 .need-nav:hover { filter: brightness(1.08); }
 .need-active { outline: 3px solid var(--dark); outline-offset: 1px; }
+
+.estados-cell { display: flex; flex-wrap: wrap; gap: 3px; min-width: 250px; max-width: 330px; align-items: center; }
+.est-chip { font: inherit; font-size: 10px; font-weight: 800; letter-spacing: .03em; padding: 2px 6px; border-radius: 4px; cursor: pointer; background: #fff; color: var(--c); border: 1.5px solid var(--c); opacity: .45; }
+.est-chip:hover { opacity: .8; }
+.est-chip.on { opacity: 1; border-color: transparent; }
+.est-chip.on.lbl-bg-rodada { border-color: #d0342c; }
+.card .estados-cell { display: inline-flex; max-width: none; vertical-align: middle; margin-right: 8px; }
+@media (pointer: coarse) { .est-chip { font-size: 11px; padding: 5px 8px; } }
+.est-chip.on { color: #fff; }
+.est-chip.on.lbl-bg-urgente { color: #1f4d2a; }
+.est-chip.on.lbl-bg-vfx { color: #4d4210; }
+.est-chip.on.lbl-bg-rodada { color: #d0342c; }

@@ -241,7 +241,7 @@ ${AI.script(p)}`;
         ${d.mode === 'guion' ? `<label><input type="checkbox" data-k="${k('showCurve')}" data-rerender="1" ${d.showCurve ? 'checked' : ''}> Comparar con la intensidad del Step line</label>` : ''}
         <span class="spacer"></span>
         <button class="btn btn-small" data-action="doc-svg">Descargar SVG</button>
-        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+        <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       <div class="stepline-wrap" id="doctorChart">${chart(p, d)}</div>
     </section>

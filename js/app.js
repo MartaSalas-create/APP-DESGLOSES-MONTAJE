@@ -801,7 +801,7 @@
       ${printHeader(p, 'Escaleta coloreada por tramas')}
       <h2>${esc(p.title)} — Escaleta coloreada por tramas</h2>
       <p class="lead no-print">Documento de lectura en el orden del guion. Los datos se editan en el <b>Desglose de montaje</b>. Exporta a .csv para abrirlo en Numbers / Excel / Google Sheets.</p>
-      <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
+      <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Descargar PDF</button></div>
       ${legendHTML(p)}
       ${escFilterBar(p, p.scenes)}
       <div class="table-wrap"><table class="escaleta">
@@ -834,7 +834,7 @@
         <span class="spacer"></span>
         ${postLegendHTML()}
         <span class="muted">Duración estimada: <b>${fmtMin(totalActive)}</b> · ${list.filter(s => !isRemoved(p, s)).length} secuencias</span>
-        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+        <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       ${escFilterBar(p, list)}
       ${list.some(s => !escVisible(p, s)) ? `<p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Duración de lo visible: <b>${fmtMin(list.filter(s => escVisible(p, s) && !isRemoved(p, s)).reduce((a, s) => a + s.lengthPages * mpp, 0))}</b>. El TC de cada ficha sigue siendo el del montaje completo.</p>` : ''}
@@ -1009,7 +1009,7 @@
         <span class="spacer"></span>
         <button class="btn btn-small" data-action="export-svg">Descargar SVG</button>
         <button class="btn btn-small" data-action="export-png">Descargar PNG</button>
-        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+        <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       ${filterBar}
       <div class="stepline-wrap" id="steplineWrap">${svg}</div>
@@ -1125,7 +1125,7 @@
       ${printHeader(p, 'Necesidades de montaje y postproducción' + (DEPTS[deptView] ? ' · ' + DEPTS[deptView] : ''))}
       <h2>Necesidades por departamento</h2>
       <p class="lead no-print">Documento para la coordinación de postproducción: reúne las secuencias con necesidades marcadas en el desglose y sus notas. Puedes verlo con <b>todos los departamentos a la vez</b> (una tabla con una columna por departamento), todos uno tras otro, o un solo departamento.</p>
-      <div class="toolbar no-print">${views.map(([k, l]) => `<button class="btn btn-small ${deptView === k ? 'btn-primary' : ''} ${DEPTS[k] ? 'dept-btn dept-btn-' + k : ''}" data-action="dept-view" data-v="${k}">${esc(l)}</button>`).join('')}<span class="spacer"></span><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
+      <div class="toolbar no-print">${views.map(([k, l]) => `<button class="btn btn-small ${deptView === k ? 'btn-primary' : ''} ${DEPTS[k] ? 'dept-btn dept-btn-' + k : ''}" data-action="dept-view" data-v="${k}">${esc(l)}</button>`).join('')}<span class="spacer"></span><button class="btn btn-small" data-action="print">Descargar PDF</button></div>
       <div class="toolbar no-print"><span class="muted">Ver detalle de:</span> ${needChipsNav(p, '')}</div>
       ${deptView === 'tabla' ? deptsAllTable(p, mpp) : shown.map(d => {
         const needs = NEEDS.filter(n => n.dept === d);
@@ -1212,7 +1212,7 @@
         <button class="btn btn-small" data-action="ai-need" data-k="${n.k}">✦ Detallar con Claude</button>
         <button class="btn btn-small" data-action="reset-need" data-k="${n.k}">Volver a extraer del guion</button>
         <span class="spacer"></span><span class="muted">${rows.length} secuencias · ${fmtMin(rows.reduce((a, s) => a + s.lengthPages * mpp, 0))}</span>
-        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+        <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       ${n.k === 'sfx' ? '<div class="note no-print" style="margin-bottom:12px">Para pedir los archivos al diseñador de sonido (listado único de SFX y ambientes con secuencias, duración y nombre de archivo para importar en el Avid) ve a <button class="btn btn-small" data-action="go-sound">Listado SFX y ambientes →</button></div>' : ''}
       <div id="aiNeedStatus" class="muted" style="margin-bottom:8px"></div>
@@ -1400,9 +1400,19 @@
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
     'export-json': () => { const p = P(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
-    'print': () => {
-      if (!window.claude) { window.print(); return; }
-      exportPrintable(P());
+    'print': async () => {
+      const p = P(); if (!p || !window.PdfExport) return;
+      const tabLabel = (TABS.find(t => t.id === tab) || {}).label || 'documento';
+      renderTab();
+      showModal(`<h3><span class="spinner"></span>Generando PDF…</h3><p id="pdfProg">Preparando «${esc(tabLabel)}».</p>`);
+      try {
+        const blob = await PdfExport.exportPDF(`${p.title} — ${tabLabel}`, '', (i, n) => { const el = document.getElementById('pdfProg'); if (el) el.textContent = `Página ${i} de ${n}…`; });
+        hideModal();
+        await download(fileBase(p) + '_' + tabLabel.replace(/[^\wÀ-ÿ]+/g, '_') + '.pdf', blob, 'application/pdf');
+      } catch (e) {
+        console.error(e);
+        showModal(`<h3>No se ha podido generar el PDF</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
+      }
     },
     'delete-project': () => {
       const p = P(); if (!p) return;

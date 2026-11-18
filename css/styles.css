@@ -312,3 +312,15 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .trama-vis-wrap { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .trama-vis-wrap .trama-vis { border: 0; }
 .solo-btn { font-size: 10px; padding: 3px 6px; color: var(--muted); border-left: 1px solid var(--line) !important; border-radius: 0 8px 8px 0; }
+
+/* Copia para exportar a PDF */
+.pdf-root main, .pdf-root { font-size: 13px; }
+.pdf-root .print-header { display: block; margin: 0 0 10px; border-bottom: 2px solid #000; padding: 0 0 6px; }
+.pdf-root .print-header h1 { font-size: 20px; margin: 0; }
+.pdf-root .print-only { display: inline; }
+.pdf-root .panel { border: 0; padding: 10px 6px; margin: 0; }
+.pdf-root .table-wrap, .pdf-root .stepline-wrap, .pdf-root .emo-big { overflow: visible; border: 0; }
+.pdf-root th { position: static; }
+.pdf-root .stepline-wrap svg { min-width: 0; }
+.pdf-root .pdf-text { white-space: pre-wrap; display: inline-block; min-width: 0; }
+.pdf-root .lead { display: none; }

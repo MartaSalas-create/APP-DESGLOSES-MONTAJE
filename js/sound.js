@@ -201,7 +201,7 @@ ${g.map(s => AI.block(s, 3000) + `\n(duración estimada: ${mmss(s.lengthPages * 
         <button class="btn btn-small" data-action="snd-add" data-t="AMB">+ Ambiente</button>
         <span class="spacer"></span>
         <button class="btn btn-small" data-action="snd-csv">Exportar para el diseñador de sonido (.csv)</button>
-        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+        <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       <div id="sndStatus" class="muted" style="margin-bottom:8px"></div>
       <div class="post-legend" style="margin-bottom:10px"><b>${nS} SFX · ${nA} AMBIENTES</b>${byEst.map(([e, n]) => `<span class="estado-badge" style="background:${e.color};color:#fff">${e.label}: ${n}</span>`).join('')}</div>

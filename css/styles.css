@@ -308,3 +308,7 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .stepline-wrap svg .globe:hover rect { stroke: #222; stroke-width: 2; }
 .trama-vis { gap: 6px; }
 .trama-vis.off { opacity: .4; text-decoration: line-through; }
+
+.trama-vis-wrap { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.trama-vis-wrap .trama-vis { border: 0; }
+.solo-btn { font-size: 10px; padding: 3px 6px; color: var(--muted); border-left: 1px solid var(--line) !important; border-radius: 0 8px 8px 0; }

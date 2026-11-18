@@ -784,6 +784,18 @@
   /* ------------------------------------------------------------------ */
   /* Pestaña: Escaleta de script (tabla coloreada por tramas)              */
   /* ------------------------------------------------------------------ */
+  /* Filtro por tramas en las escaletas (de script y de montaje) */
+  const escHidden = p => new Set(p.escHidden || []);
+  const escVisible = (p, s) => !escHidden(p).has(s.tramaId || '__none');
+  function escFilterBar(p, list) {
+    const h = escHidden(p);
+    const chip = (id, label, color) => `<span class="trama-vis-wrap"><button class="btn btn-small trama-vis ${h.has(id) ? 'off' : ''}" data-action="toggle-esc-vis" data-id="${id}" title="${h.has(id) ? 'Mostrar' : 'Ocultar'} esta trama"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button><button class="btn btn-small btn-ghost solo-btn" data-action="esc-solo" data-id="${id}" title="Ver solo esta trama">solo</button></span>`;
+    const vis = list.filter(s => escVisible(p, s)).length;
+    return `<div class="toolbar no-print stepline-filter"><span class="muted">Ver tramas:</span>${p.tramas.map(t => chip(t.id, t.letter + ' · ' + t.name, t.color)).join('')}${chip('__none', 'Sin trama', '#fff')}
+      <button class="btn btn-small btn-ghost" data-action="esc-vis-all">Todas</button>
+      <span class="spacer"></span><span class="muted">${vis === list.length ? 'Todas las secuencias' : `Mostrando <b>${vis}</b> de ${list.length} secuencias`}</span></div>`;
+  }
+
   function tabEscaleta(p) {
     return `<section class="panel">
       ${printHeader(p, 'Escaleta coloreada por tramas')}
@@ -791,9 +803,10 @@
       <p class="lead no-print">Documento de lectura en el orden del guion. Los datos se editan en el <b>Desglose de montaje</b>. Exporta a .csv para abrirlo en Numbers / Excel / Google Sheets.</p>
       <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
       ${legendHTML(p)}
+      ${escFilterBar(p, p.scenes)}
       <div class="table-wrap"><table class="escaleta">
         <thead><tr><th class="num">Nº</th><th>INT/EXT</th><th>Localización</th><th>Día/Noche</th><th>Trama</th><th>Personajes</th><th>Resumen</th><th>Estado</th></tr></thead>
-        <tbody>${p.scenes.map(s => {
+        <tbody>${p.scenes.filter(s => escVisible(p, s)).map(s => {
           const t = tramaOf(p, s);
           return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">
             <td class="num">${esc(s.num)}</td><td>${esc(s.intExt)}</td><td>${esc(s.location)}</td><td>${esc(s.time)}</td>
@@ -823,11 +836,14 @@
         <span class="muted">Duración estimada: <b>${fmtMin(totalActive)}</b> · ${list.filter(s => !isRemoved(p, s)).length} secuencias</span>
         <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
       </div>
+      ${escFilterBar(p, list)}
+      ${list.some(s => !escVisible(p, s)) ? `<p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Duración de lo visible: <b>${fmtMin(list.filter(s => escVisible(p, s) && !isRemoved(p, s)).reduce((a, s) => a + s.lengthPages * mpp, 0))}</b>. El TC de cada ficha sigue siendo el del montaje completo.</p>` : ''}
       <div class="cards" id="cards">${list.map((s, i) => {
         const t = tramaOf(p, s);
         const col = t ? textColor(t.color) : '#555';
         const removed = isRemoved(p, s);
         const start = acc; if (!removed) acc += s.lengthPages * mpp;
+        if (!escVisible(p, s)) return '';
         return `<div class="card ${removed ? 'removed' : ''}" style="color:${col}" data-id="${s.id}" ${montajeView === 'montaje' ? 'draggable="true"' : ''}>
           ${montajeView === 'montaje' ? '<span class="handle" title="Arrastrar">⋮⋮</span>' : ''}
           <div class="card-tools no-print">
@@ -1356,6 +1372,9 @@
       if (set.has(id)) set.delete(id); else set.add(id);
       p.steplineHidden = Array.from(set); save(); renderTab();
     },
+    'toggle-esc-vis': (el) => { const p = P(); const h = escHidden(p); const id = el.dataset.id; if (h.has(id)) h.delete(id); else h.add(id); p.escHidden = Array.from(h); save(); renderTab(); },
+    'esc-solo': (el) => { const p = P(); p.escHidden = p.tramas.map(t => t.id).concat('__none').filter(id => id !== el.dataset.id); save(); renderTab(); },
+    'esc-vis-all': () => { P().escHidden = []; save(); renderTab(); },
     'trama-vis-all': () => { P().steplineHidden = []; save(); renderTab(); },
     'reset-globes': () => { P().scenes.forEach(s => { delete s.globeDx; delete s.globeDy; }); save(); renderTab(); },
     'arc-view': (el) => { arcView = el.dataset.v; renderTab(); },
@@ -1440,7 +1459,10 @@
     'montaje-view': (el) => { montajeView = el.dataset.v; renderTab(); },
     'reset-order': () => { const p = P(); p.montajeOrder = p.scenes.map(s => s.id); p.removed = {}; save(); renderTab(); },
     'move': (el) => {
-      const p = P(); const i = p.montajeOrder.indexOf(el.dataset.id), j = i + Number(el.dataset.d);
+      const p = P(); const i = p.montajeOrder.indexOf(el.dataset.id), d = Number(el.dataset.d);
+      let j = i + d;
+      // con filtro de tramas, saltar las secuencias ocultas
+      while (j >= 0 && j < p.montajeOrder.length && !escVisible(p, sceneById(p, p.montajeOrder[j]) || {})) j += d;
       if (i < 0 || j < 0 || j >= p.montajeOrder.length) return;
       [p.montajeOrder[i], p.montajeOrder[j]] = [p.montajeOrder[j], p.montajeOrder[i]];
       save(); renderTab();

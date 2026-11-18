@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Desglose de Montaje · Guion → Pantalla</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="brand">
+      <span class="brand-mark">✂</span>
+      <div>
+        <div class="brand-title">DESGLOSE DE MONTAJE</div>
+        <div class="brand-sub">del guion a la pantalla · preproducción</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <select id="projectSelect" title="Proyectos guardados"></select>
+      <label class="btn btn-primary btn-upload" title="PDF, Final Draft (.fdx), Fountain, Word (.docx) o texto">
+        ⬆ Subir guion
+        <input type="file" id="fileInput" accept=".pdf,.fdx,.fountain,.spmd,.txt,.docx" hidden>
+      </label>
+      <div class="menu">
+        <button class="btn" id="menuBtn">Proyecto ▾</button>
+        <div class="menu-list" id="menuList">
+          <button data-action="new-empty">Nuevo proyecto vacío</button>
+          <button data-action="export-json">Guardar copia (.json)</button>
+          <label class="menu-item">Abrir copia (.json)<input type="file" id="jsonInput" accept=".json" hidden></label>
+          <button data-action="export-csv">Exportar escaleta (.csv)</button>
+          <button data-action="print">Imprimir / PDF de esta pestaña</button>
+          <hr>
+          <button data-action="delete-project" class="danger">Borrar proyecto</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs no-print" id="tabs"></nav>
+
+  <main id="main"></main>
+
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" id="modalBody"></div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="drop-overlay" id="dropOverlay" hidden><div>Suelta aquí el guion</div></div>
+
+  <script src="vendor/pdf.min.js"></script>
+  <script src="vendor/pdf.worker.min.js"></script>
+  <script src="vendor/mammoth.browser.min.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/stepline.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

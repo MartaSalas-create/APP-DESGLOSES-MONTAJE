@@ -30,13 +30,29 @@
     sonido: 'Sonido',
     musica: 'Música'
   };
+  /* Leyenda de colores de postproducción y montaje (etiquetas de la montadora) */
+  const ESTADOS = [
+    { k: 'pendiente', label: 'PENDIENTE', color: '#e6ae66', help: 'Por montar' },
+    { k: 'ingesta', label: 'INGESTA', color: '#72bad8', help: 'Material en ingesta / por sincronizar' },
+    { k: 'preparada', label: 'PREPARADA', color: '#dd8ac6', help: 'Material preparado para montar' },
+    { k: 'montada', label: 'MONTADA', color: '#cc6b55', help: 'Secuencia montada' },
+    { k: 'urgente', label: 'URGENTE', color: '#98e0a2', help: 'Prioridad' },
+    { k: 'sono', label: 'SONO', color: '#86b86a', help: 'En sonido' },
+    { k: 'vfx', label: 'VFX', color: '#e8d660', help: 'En VFX / GFX' },
+    { k: 'color', label: 'COLOR', color: '#ad7fd6', help: 'En color / conformado' },
+    { k: 'musica', label: 'MÚSICA', color: '#4575b4', help: 'En música' },
+    { k: 'eliminada', label: 'ELIMINADA', color: '#4d4d4d', help: 'Fuera del montaje' }
+  ];
+  const estadoOf = k => ESTADOS.find(e => e.k === k) || ESTADOS[0];
+  const DEPT_LABEL = { montaje: 'montada', color: 'color', vfx: 'vfx', sonido: 'sono', musica: 'musica' };
+
   const NEEDS = [
     { k: 'accion', label: 'Acción', dept: 'montaje' },
     { k: 'secMontaje', label: 'Sec. de montaje / musical', dept: 'montaje' },
     { k: 'alterno', label: 'Montaje alterno', dept: 'montaje' },
-    { k: 'sobrante', label: 'Posible sobrante', dept: 'montaje' },
+    { k: 'sobrante', label: 'Posible sobrante', dept: 'montaje', lbl: 'eliminada' },
     { k: 'flashback', label: 'Flashback / tratamiento', dept: 'color' },
-    { k: 'archivo', label: 'Material de archivo', dept: 'color' },
+    { k: 'archivo', label: 'Material de archivo', dept: 'color', lbl: 'ingesta' },
     { k: 'vfx', label: 'VFX', dept: 'vfx' },
     { k: 'gfx', label: 'GFX / rótulos', dept: 'vfx' },
     { k: 'pantallas', label: 'Insertos de pantalla', dept: 'vfx' },
@@ -395,7 +411,16 @@
     return `<select class="${cls}" data-k="${esc(k)}" data-rerender="1"><option value="">—</option>${p.tramas.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.letter)} · ${esc(t.name)}</option>`).join('')}</select>`;
   }
   function needChips(s) {
-    return NEEDS.map(n => `<label class="chip dept-${n.dept} ${s.needs[n.k] ? 'on' : ''}" title="${esc(DEPTS[n.dept])}"><input type="checkbox" data-k="s:${s.id}:needs.${n.k}" data-rerender="1" ${s.needs[n.k] ? 'checked' : ''}>${esc(n.label)}</label>`).join('');
+    return NEEDS.map(n => `<label class="chip lbl-${n.lbl || DEPT_LABEL[n.dept]} ${s.needs[n.k] ? 'on' : ''}" title="${esc(DEPTS[n.dept])}"><input type="checkbox" data-k="s:${s.id}:needs.${n.k}" data-rerender="1" ${s.needs[n.k] ? 'checked' : ''}>${esc(n.label)}</label>`).join('');
+  }
+  const isRemoved = (p, s) => s.estado === 'eliminada' || !!(p.removed && p.removed[s.id]);
+  function estadoSelect(s) {
+    const e = estadoOf(s.estado);
+    return `<select class="cell-input estado-select lbl-bg-${e.k}" data-k="s:${s.id}:estado" data-rerender="1" title="${esc(e.help)}">${ESTADOS.map(x => `<option value="${x.k}" ${x.k === e.k ? 'selected' : ''}>${x.label}</option>`).join('')}</select>`;
+  }
+  const estadoBadge = s => { const e = estadoOf(s.estado); return `<span class="estado-badge lbl-bg-${e.k}">${e.label}</span>`; };
+  function postLegendHTML() {
+    return `<div class="post-legend"><b>LEYENDA DE POSTPRODUCCIÓN Y MONTAJE</b>${ESTADOS.map(e => `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label}</span>`).join('')}</div>`;
   }
   function legendHTML(p) {
     return `<div class="legend"><div style="grid-column:1/-1;font-weight:800;font-size:12px;letter-spacing:.05em">LEYENDA DE TRAMAS</div>${p.tramas.map(t => `<div class="sw" style="background:${t.color}">${esc(t.letter)}</div><div>${esc(t.name)}</div>`).join('')}</div>`;
@@ -408,11 +433,21 @@
   function render() {
     renderProjectSelect();
     const p = P();
-    $('#tabs').innerHTML = p ? TABS.map(t => t.group ? `<span class="tab-group">${t.group}</span>` : `<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}">${t.label}</button>`).join('') : '';
+    const secs = sections();
+    const cur = secs.find(x => x.tabs.some(t => t.id === tab)) || secs[0];
+    $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map(x => `<button data-section="${esc(x.name)}" class="${x === cur ? 'active' : ''}">${esc(x.name)}</button>`).join('')}</div>
+      <div class="tabs-sub">${cur.tabs.map(t => `<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}">${t.label}</button>`).join('')}</div>` : '';
     $('#tabs').hidden = !p;
     if (!p) { $('#main').innerHTML = welcomeHTML(); return; }
     renderTab();
   }
+
+  function sections() {
+    const out = [];
+    TABS.forEach(t => { if (t.group) out.push({ name: t.group, tabs: [] }); else out[out.length - 1].tabs.push(t); });
+    return out;
+  }
+  const lastTabOf = {};
 
   function renderTab() {
     const p = P();
@@ -499,7 +534,7 @@
         <div class="stat"><b>${Object.keys(p.characters).filter(c => !p.characters[c].hidden).length}</b><span>personajes</span></div>
         <div class="stat"><b>${new Set(sc.map(s => s.location.split(/[,.]/)[0].trim())).size}</b><span>localizaciones</span></div>
       </div>
-      ${needCounts.length ? `<h3>Necesidades detectadas automáticamente</h3><div class="needs-cell">${needCounts.map(x => `<span class="chip on dept-${x.n.dept}">${esc(x.n.label)}: ${x.c}</span>`).join('')}</div><p class="muted" style="font-size:12px">Detección por palabras clave: revísala en el <b>Desglose de montaje</b>.</p>` : ''}
+      ${needCounts.length ? `<h3>Necesidades detectadas automáticamente</h3><div class="needs-cell">${needCounts.map(x => `<span class="chip on lbl-${x.n.lbl || DEPT_LABEL[x.n.dept]}">${esc(x.n.label)}: ${x.c}</span>`).join('')}</div><p class="muted" style="font-size:12px">Detección por palabras clave: revísala en el <b>Desglose de montaje</b>.</p>` : ''}
     </section>
     <section class="panel no-print">
       <h2>Orden de trabajo sugerido</h2>
@@ -603,10 +638,11 @@
         <button class="btn btn-small" data-action="expand-all">Abrir todas</button>
         <button class="btn btn-small" data-action="collapse-all">Cerrar todas</button>
         <span class="spacer"></span>
+        ${postLegendHTML()}
         <span class="legend-inline">${p.tramas.map(t => `<span><span class="trama-dot" style="background:${t.color}"></span>${esc(t.letter)} ${esc(t.name)}</span>`).join('')}</span>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th></th><th class="num">Nº</th><th>Encabezado</th><th class="num">Pág.</th><th class="num">Octavos</th><th class="num">Dur. est.</th><th>Trama</th><th>Personajes</th><th>Acción / resumen</th><th>Conflicto / objetivo</th><th>Necesidades</th><th>Notas de montaje</th></tr></thead>
+        <thead><tr><th></th><th class="num">Nº</th><th>Encabezado</th><th class="num">Pág.</th><th class="num">Octavos</th><th class="num">Dur. est.</th><th>Estado</th><th>Trama</th><th>Personajes</th><th>Acción / resumen</th><th>Conflicto / objetivo</th><th>Necesidades</th><th>Notas de montaje</th></tr></thead>
         <tbody>${p.scenes.map(s => {
           const t = tramaOf(p, s);
           const open = expanded.has(s.id);
@@ -617,6 +653,7 @@
             <td class="num">${s.page}</td>
             <td class="num">${fmtEighths(s.eighths)}</td>
             <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
+            <td>${estadoSelect(s)}</td>
             <td>${tramaSelect('s:' + s.id + ':tramaId')}</td>
             <td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>
             <td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>
@@ -624,7 +661,7 @@
             <td><div class="needs-cell">${needChips(s)}</div></td>
             <td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>
           </tr>
-          ${open ? `<tr class="row-detail"><td></td><td colspan="11">
+          ${open ? `<tr class="row-detail"><td></td><td colspan="12">
             <div class="detail-grid">
               <div><div class="field"><label>Texto de la secuencia</label><div class="script-text">${esc(s.heading)}\n\n${esc(s.text)}</div></div></div>
               <div class="form-grid" style="grid-template-columns:1fr">
@@ -648,12 +685,12 @@
       <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
       ${legendHTML(p)}
       <div class="table-wrap"><table class="escaleta">
-        <thead><tr><th class="num">Nº</th><th>INT/EXT</th><th>Localización</th><th>Día/Noche</th><th>Trama</th><th>Personajes</th><th>Resumen</th></tr></thead>
+        <thead><tr><th class="num">Nº</th><th>INT/EXT</th><th>Localización</th><th>Día/Noche</th><th>Trama</th><th>Personajes</th><th>Resumen</th><th>Estado</th></tr></thead>
         <tbody>${p.scenes.map(s => {
           const t = tramaOf(p, s);
           return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">
             <td class="num">${esc(s.num)}</td><td>${esc(s.intExt)}</td><td>${esc(s.location)}</td><td>${esc(s.time)}</td>
-            <td>${t ? esc(t.name.toUpperCase()) : ''}</td><td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td><td>${esc(s.summary)}</td></tr>`;
+            <td>${t ? esc(t.name.toUpperCase()) : ''}</td><td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td><td>${esc(s.summary)}</td><td>${estadoBadge(s)}</td></tr>`;
         }).join('')}</tbody></table></div>
     </section>`;
   }
@@ -665,7 +702,7 @@
     const list = montajeView === 'montaje' ? montajeScenes(p) : p.scenes;
     const mpp = minutesPerPage(p);
     let acc = 0;
-    const totalActive = list.filter(s => !p.removed[s.id]).reduce((a, s) => a + s.lengthPages * mpp, 0);
+    const totalActive = list.filter(s => !isRemoved(p, s)).reduce((a, s) => a + s.lengthPages * mpp, 0);
     return `<section class="panel">
       ${printHeader(p, montajeView === 'montaje' ? 'Escaleta de montaje' : 'Escaleta (orden de guion)')}
       <h2>Escaleta de montaje</h2>
@@ -675,13 +712,14 @@
         <button class="btn btn-small ${montajeView === 'guion' ? 'btn-primary' : ''}" data-action="montaje-view" data-v="guion">Orden de guion</button>
         <button class="btn btn-small" data-action="reset-order">Restablecer orden de guion</button>
         <span class="spacer"></span>
-        <span class="muted">Duración estimada: <b>${fmtMin(totalActive)}</b> · ${list.filter(s => !p.removed[s.id]).length} secuencias</span>
+        ${postLegendHTML()}
+        <span class="muted">Duración estimada: <b>${fmtMin(totalActive)}</b> · ${list.filter(s => !isRemoved(p, s)).length} secuencias</span>
         <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
       </div>
       <div class="cards" id="cards">${list.map((s, i) => {
         const t = tramaOf(p, s);
         const col = t ? textColor(t.color) : '#555';
-        const removed = !!p.removed[s.id];
+        const removed = isRemoved(p, s);
         const start = acc; if (!removed) acc += s.lengthPages * mpp;
         return `<div class="card ${removed ? 'removed' : ''}" style="color:${col}" data-id="${s.id}" ${montajeView === 'montaje' ? 'draggable="true"' : ''}>
           ${montajeView === 'montaje' ? '<span class="handle" title="Arrastrar">⋮⋮</span>' : ''}
@@ -693,7 +731,7 @@
           <div class="row"><b><i>Personajes:</i></b><i>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', ') || '—')}</i></div>
           <div class="row"><b>Acción:</b><textarea class="edit" rows="1" data-k="s:${s.id}:summary" data-edited="summaryEdited">${esc(s.summary)}</textarea></div>
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
-          <div class="tag">[ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
+          <div class="tag"><span class="no-print">${estadoSelect(s)}</span><span class="print-only">${estadoBadge(s)}</span> [ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
         </div>`;
       }).join('')}</div>
     </section>`;
@@ -734,7 +772,7 @@
   /* Pestaña: Step line                                                   */
   /* ------------------------------------------------------------------ */
   function steplineScenes(p) {
-    return steplineOrder === 'montaje' ? montajeScenes(p).filter(s => !p.removed[s.id]) : p.scenes;
+    return steplineOrder === 'montaje' ? montajeScenes(p).filter(s => !isRemoved(p, s)) : p.scenes;
   }
   function tabStepline(p) {
     const scenes = steplineScenes(p);
@@ -844,7 +882,7 @@
           ${rows.length ? `<div class="table-wrap" style="margin-top:10px"><table>
             <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Necesidades</th><th>Descripción</th><th>Notas ${esc(DEPTS[d])}</th></tr></thead>
             <tbody>${rows.map(s => `<tr><td class="num"><b>${esc(s.num)}</b></td><td>${esc(sceneHeading(s))}</td><td class="num">${fmtMin(s.lengthPages * mpp)}</td>
-              <td><div class="needs-cell" style="min-width:140px">${needs.filter(n => s.needs[n.k]).map(n => `<span class="chip on dept-${d}">${esc(n.label)}</span>`).join('')}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div></td>
+              <td><div class="needs-cell" style="min-width:140px">${needs.filter(n => s.needs[n.k]).map(n => `<span class="chip on lbl-${n.lbl || DEPT_LABEL[d]}">${esc(n.label)}</span>`).join('')}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div></td>
               <td style="min-width:240px">${esc(s.summary)}</td>
               <td>${area('s:' + s.id + ':notes.' + d, 'class="cell-input" style="min-width:200px"')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Sin secuencias marcadas.</p>'}
         </div>`;
@@ -931,10 +969,10 @@
   function exportCSV(p) {
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const mpp = minutesPerPage(p);
-    const head = ['Nº', 'INT/EXT', 'Localización', 'Día/Noche', 'Trama', 'Personajes', 'Resumen', 'Conflicto / objetivo', 'Página', 'Octavos', 'Duración est. (min)', 'Intensidad', 'Punto de giro', 'Necesidades', 'Notas montaje', 'Notas color', 'Notas VFX', 'Notas sonido', 'Notas música'];
+    const head = ['Estado', 'Nº', 'INT/EXT', 'Localización', 'Día/Noche', 'Trama', 'Personajes', 'Resumen', 'Conflicto / objetivo', 'Página', 'Octavos', 'Duración est. (min)', 'Intensidad', 'Punto de giro', 'Necesidades', 'Notas montaje', 'Notas color', 'Notas VFX', 'Notas sonido', 'Notas música'];
     const rows = p.scenes.map(s => {
       const t = tramaOf(p, s);
-      return [s.num, s.intExt, s.location, s.time, t ? t.letter + ' · ' + t.name : '', s.characters.join(', '), s.summary, s.conflict, s.page, fmtEighths(s.eighths),
+      return [estadoOf(s.estado).label, s.num, s.intExt, s.location, s.time, t ? t.letter + ' · ' + t.name : '', s.characters.join(', '), s.summary, s.conflict, s.page, fmtEighths(s.eighths),
         (s.lengthPages * mpp).toFixed(1), s.intensity, s.keyEvent ? (s.eventLabel || 'sí') : '', NEEDS.filter(n => s.needs[n.k]).map(n => n.label).join(', '),
         s.notes.montaje, s.notes.color, s.notes.vfx, s.notes.sonido, s.notes.musica];
     });
@@ -1057,7 +1095,12 @@
       [p.montajeOrder[i], p.montajeOrder[j]] = [p.montajeOrder[j], p.montajeOrder[i]];
       save(); renderTab();
     },
-    'toggle-removed': (el) => { const p = P(); const id = el.dataset.id; if (p.removed[id]) delete p.removed[id]; else p.removed[id] = true; save(); renderTab(); },
+    'toggle-removed': (el) => {
+      const p = P(); const sc = sceneById(p, el.dataset.id);
+      if (isRemoved(p, sc)) { delete p.removed[sc.id]; if (sc.estado === 'eliminada') sc.estado = 'pendiente'; }
+      else sc.estado = 'eliminada';
+      save(); renderTab();
+    },
     'suggest-curve': () => {
       showModal(`<h3>Proponer curva inicial</h3><p>Se sustituirán las intensidades actuales por una propuesta orientativa basada en el paradigma clásico (planteamiento ascendente, desarrollo, clímax y resolución), ajustada por secuencias de acción y puntos de giro marcados.</p><p>Es solo un <b>punto de partida para discutir</b>: corrígela arrastrando los puntos.</p><div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="confirm-suggest">Proponer</button></div>`);
     },
@@ -1126,8 +1169,14 @@
     if (el.dataset.k) onFieldInput(el, true);
   });
   document.addEventListener('click', e => {
+    const secBtn = e.target.closest('[data-section]');
+    if (secBtn) {
+      const sec = sections().find(x => x.name === secBtn.dataset.section);
+      if (sec) { tab = lastTabOf[sec.name] && sec.tabs.some(t => t.id === lastTabOf[sec.name]) ? lastTabOf[sec.name] : sec.tabs[0].id; window.scrollTo(0, 0); render(); }
+      return;
+    }
     const tabBtn = e.target.closest('[data-tab]');
-    if (tabBtn) { tab = tabBtn.dataset.tab; window.scrollTo(0, 0); render(); return; }
+    if (tabBtn) { tab = tabBtn.dataset.tab; const sc = sections().find(x => x.tabs.some(t => t.id === tab)); if (sc) lastTabOf[sc.name] = tab; window.scrollTo(0, 0); render(); return; }
     const a = e.target.closest('[data-action]');
     if (a) { document.querySelector('.menu').classList.remove('open'); if (actions[a.dataset.action]) actions[a.dataset.action](a); return; }
     if (e.target.closest('#menuBtn')) { document.querySelector('.menu').classList.toggle('open'); return; }

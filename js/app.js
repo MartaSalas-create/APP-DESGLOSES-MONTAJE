@@ -426,7 +426,7 @@
         <div><b>Step line (Marimón)</b>Curva de intensidad, actos, puntos de giro y mapa de tramas.</div>
         <div><b>Postproducción</b>Necesidades para color/conformado, GFX/VFX, sonido y música, y reunión de workflow.</div>
       </div>
-      <p style="font-size:12px;margin-top:26px">Los guiones se procesan en tu navegador: no se envían a ningún servidor.</p>
+      <p style="font-size:12px;margin-top:26px">El guion se lee en tu propio dispositivo. En la versión de claude.ai, tus proyectos se guardan de forma privada en tu cuenta.</p>
     </div>`;
   }
 

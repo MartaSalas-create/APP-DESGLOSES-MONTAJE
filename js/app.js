@@ -101,13 +101,111 @@
     return { projects: {}, currentId: null };
   }
   let saveTimer = null;
+  let localWarned = false;
   function save() {
+    const p = P();
+    if (p) p.updatedAt = Date.now();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-      catch (e) { toast('⚠ No se ha podido guardar en el navegador (¿espacio lleno?). Guarda una copia .json.'); }
+      catch (e) { if (!Cloud.ready && !localWarned) { localWarned = true; toast('⚠ No se ha podido guardar en el navegador. Guarda una copia .json.'); } }
     }, 250);
+    if (p) Cloud.queue(p.id);
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Guardado en la nube (cuando la app se abre como página publicada en  */
+  /* claude.ai: iPad, iPhone, otros ordenadores). Datos privados de cada  */
+  /* persona en data/users/<id>/.                                         */
+  /* ------------------------------------------------------------------ */
+  const Cloud = {
+    db: null, uid: null, ready: false, dl: null,
+    pending: new Set(), timer: null, writing: false, textsDirty: new Set(),
+    async init() {
+      if (!window.claude || typeof window.claude.use !== 'function') return;
+      try { this.dl = await window.claude.use('downloads'); } catch (e) { this.dl = null; }
+      try {
+        const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        if (!db || !user) return;
+        const uid = await user.id();
+        if (!uid) return;
+        this.db = db; this.uid = uid;
+        await this.loadAll();
+        this.ready = true;
+        // subir los proyectos que solo existan en este navegador
+        Object.keys(state.projects).forEach(id => { if (!this.known.has(id)) { this.textsDirty.add(id); this.queue(id); } });
+      } catch (e) { console.warn('nube no disponible', e); }
+    },
+    col() { return this.db.collection('data/users/' + this.uid); },
+    known: new Set(),
+    async loadAll() {
+      const snap = await this.col().get();
+      let changed = false;
+      for (const d of snap.docs) {
+        const body = d.data();
+        if (!body || !body.json || d.id === 'settings') continue;
+        this.known.add(d.id);
+        const local = state.projects[d.id];
+        if (local && (local.updatedAt || 0) >= (body.updatedAt || 0)) continue;
+        const p = JSON.parse(body.json);
+        // textos de las secuencias, troceados
+        try {
+          const tsnap = await this.col().doc(d.id).collection('texts').get();
+          const parts = tsnap.docs.map(x => x.data()).filter(Boolean).sort((a, b) => a.i - b.i).map(x => x.json).join('');
+          if (parts) { const texts = JSON.parse(parts); p.scenes.forEach(sc => { sc.text = texts[sc.id] || sc.text || ''; }); }
+        } catch (e) { console.warn(e); }
+        state.projects[d.id] = p; changed = true;
+      }
+      try {
+        const st = await this.col().doc('settings').get();
+        if (st.exists && st.data().currentId && state.projects[st.data().currentId] && !state.currentId) state.currentId = st.data().currentId;
+      } catch (e) { /* sin ajustes */ }
+      if (!state.currentId || !state.projects[state.currentId]) state.currentId = Object.keys(state.projects)[0] || null;
+      if (changed) { render(); toast('Proyectos recuperados de tu cuenta.'); }
+    },
+    queue(id) {
+      if (!this.db) return;
+      this.pending.add(id);
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.flush(), 1500);
+    },
+    async flush() {
+      if (this.writing) { this.timer = setTimeout(() => this.flush(), 800); return; }
+      this.writing = true;
+      try {
+        for (const id of Array.from(this.pending)) {
+          this.pending.delete(id);
+          const p = state.projects[id];
+          if (!p) continue;
+          const light = Object.assign({}, p, { scenes: p.scenes.map(sc => Object.assign({}, sc, { text: '' })) });
+          await this.col().doc(id).set({ json: JSON.stringify(light), title: p.title || '', updatedAt: p.updatedAt || Date.now() });
+          if (this.textsDirty.has(id) || !this.known.has(id)) {
+            const texts = {}; p.scenes.forEach(sc => { texts[sc.id] = sc.text || ''; });
+            const str = JSON.stringify(texts), size = 180000, n = Math.ceil(str.length / size) || 1;
+            const tcol = this.col().doc(id).collection('texts');
+            for (let i = 0; i < n; i++) await tcol.doc('c' + i).set({ i, json: str.slice(i * size, (i + 1) * size) });
+            for (let i = n; i < n + 20; i++) { const d = await tcol.doc('c' + i).get(); if (!d.exists) break; await tcol.doc('c' + i).delete(); }
+            this.textsDirty.delete(id);
+          }
+          this.known.add(id);
+        }
+        if (state.currentId) await this.col().doc('settings').set({ currentId: state.currentId });
+      } catch (e) {
+        console.warn(e);
+        if (e && e.code === 'quota_exceeded') toast('⚠ Espacio de guardado lleno: guarda una copia .json y borra proyectos antiguos.');
+      } finally { this.writing = false; }
+    },
+    async remove(id) {
+      if (!this.db) return;
+      try {
+        const tcol = this.col().doc(id).collection('texts');
+        const t = await tcol.get();
+        for (const d of t.docs) await tcol.doc(d.id).delete();
+        await this.col().doc(id).delete();
+        this.known.delete(id);
+      } catch (e) { console.warn(e); }
+    }
+  };
   const P = () => state.projects[state.currentId] || null;
 
   function newProject(data) {
@@ -317,7 +415,7 @@
       <div class="dropzone" id="dropzone">
         <div class="big">📄</div>
         <div><b>Arrastra aquí el guion</b> o</div>
-        <label class="btn btn-primary">⬆ Subir guion<input type="file" class="file-trigger" accept=".pdf,.fdx,.fountain,.spmd,.txt,.docx" hidden></label>
+        <label class="btn btn-primary">⬆ Subir guion<input type="file" class="file-trigger" hidden></label>
         <div class="formats">PDF (con texto, no escaneado) · Final Draft .fdx · Fountain · Word .docx · .txt</div>
       </div>
       <div class="docs-grid">
@@ -771,6 +869,7 @@
     applyParsed(p, parsed);
   }
   function finishImport(msg) {
+    if (P()) Cloud.textsDirty.add(P().id);
     tab = 'proyecto'; expanded.clear(); save(); render();
     showModal(msg + `<div class="actions"><button class="btn btn-primary" data-action="close-modal">Empezar</button></div>`);
   }
@@ -778,7 +877,12 @@
   /* ------------------------------------------------------------------ */
   /* Exportaciones                                                        */
   /* ------------------------------------------------------------------ */
-  function download(name, content, type) {
+  async function download(name, content, type) {
+    if (Cloud.dl) {
+      try { await Cloud.dl.save({ filename: name, data: content }); toast('Archivo guardado: ' + name); }
+      catch (e) { if (e && e.code !== 'declined') toast('⚠ No se ha podido descargar (' + (e.code || e) + ').'); }
+      return;
+    }
     const blob = content instanceof Blob ? content : new Blob([content], { type });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
@@ -798,6 +902,19 @@
         s.notes.montaje, s.notes.color, s.notes.vfx, s.notes.sonido, s.notes.musica];
     });
     download(fileBase(p) + '_escaleta.csv', '﻿' + [head, ...rows].map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
+  }
+
+  function exportPrintable(p) {
+    // En la página publicada (iPad/claude.ai) no se puede imprimir directamente:
+    // se descarga un HTML con la pestaña actual, que se abre y se imprime o guarda como PDF.
+    renderTab();
+    let css = '';
+    Array.from(document.styleSheets).forEach(sh => { try { css += Array.from(sh.cssRules).map(r => r.cssText).join('\n'); } catch (e) { /* hoja externa */ } });
+    const tabLabel = (TABS.find(t => t.id === tab) || {}).label || 'documento';
+    const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(p.title + ' — ' + tabLabel) +
+      '</title><style>' + css + '\n.no-print,.toolbar,.card-tools,.handle,.btn{display:none!important}.print-header{display:block}main{max-width:none;padding:12px}.panel{border:0}</style></head><body><main>' +
+      $('#main').innerHTML + '</main><script>setTimeout(function(){try{window.print()}catch(e){}},400)<\/script></body></html>';
+    download(fileBase(p) + '_' + tabLabel.replace(/[^\wÀ-ÿ]+/g, '_') + '.html', html, 'text/html');
   }
 
   function steplineSVGString() {
@@ -831,12 +948,15 @@
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
     'export-json': () => { const p = P(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
-    'print': () => window.print(),
+    'print': () => {
+      if (!window.claude) { window.print(); return; }
+      exportPrintable(P());
+    },
     'delete-project': () => {
       const p = P(); if (!p) return;
       showModal(`<h3>¿Borrar «${esc(p.title)}»?</h3><p>Se eliminará de este navegador. Si quieres conservarlo, guarda antes una copia .json.</p><div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="confirm-delete">Borrar</button></div>`);
     },
-    'confirm-delete': () => { delete state.projects[state.currentId]; state.currentId = Object.keys(state.projects)[0] || null; hideModal(); save(); render(); },
+    'confirm-delete': () => { Cloud.remove(state.currentId); delete state.projects[state.currentId]; state.currentId = Object.keys(state.projects)[0] || null; hideModal(); save(); render(); },
     'add-trama': () => {
       const p = P(); const i = p.tramas.length;
       p.tramas.push({ id: 't' + uid(), letter: String.fromCharCode(65 + i), name: 'Trama ' + String.fromCharCode(65 + i), color: EXTRA_COLORS[i % EXTRA_COLORS.length] });
@@ -850,7 +970,12 @@
       save(); renderTab();
     },
     'add-character': () => {
-      const name = (prompt('Nombre del personaje (en mayúsculas):') || '').trim().toUpperCase();
+      showModal(`<h3>Añadir personaje</h3><div class="field"><label>Nombre</label><input id="newCharName" autocomplete="off"></div><div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="confirm-add-character">Añadir</button></div>`);
+      setTimeout(() => { const i = $('#newCharName'); if (i) i.focus(); }, 50);
+    },
+    'confirm-add-character': () => {
+      const name = ($('#newCharName').value || '').trim().toUpperCase();
+      hideModal();
       if (!name) return; const p = P();
       if (!p.characters[name]) p.characters[name] = { tramaId: '', objetivo: '', arcoInicio: '', arcoFin: '', notas: '', hidden: false };
       save(); renderTab();
@@ -1012,6 +1137,7 @@
       const p = JSON.parse(t);
       if (!p || !Array.isArray(p.scenes)) throw new Error('formato');
       p.id = 'p' + uid();
+      Cloud.textsDirty.add(p.id);
       state.projects[p.id] = p; state.currentId = p.id; tab = 'proyecto';
       save(); render(); toast(`Proyecto «${p.title}» abierto.`);
     }).catch(() => toast('⚠ El archivo no es una copia válida de esta app.'));
@@ -1029,4 +1155,5 @@
 
   window.addEventListener('beforeprint', autoGrow);
   render();
+  Cloud.init();
 })();

@@ -4,6 +4,10 @@ Aplicación web para desglosar guiones antes de empezar a montar: reuniones con 
 
 ## Cómo usarla
 
+**En iPad, iPhone o cualquier ordenador:** abre la versión publicada en claude.ai, con la sesión iniciada. Los proyectos se guardan en tu cuenta. Las descargas (.json, .csv, PNG, SVG) piden confirmación. «Imprimir / PDF» descarga un HTML de la pestaña, que se abre y se imprime o guarda como PDF.
+
+**En ordenador, sin conexión:**
+
 1. Abre `index.html` en el navegador (Chrome, Safari, Firefox o Edge). No hace falta instalar nada ni conexión a internet.
 2. Pulsa **⬆ Subir guion** (o arrastra el archivo a la ventana).
    Formatos: **PDF** con texto (no escaneado), **Final Draft (.fdx)**, **Fountain**, **Word (.docx)** y **.txt**.

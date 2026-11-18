@@ -7,7 +7,7 @@
 (function (global) {
   'use strict';
 
-  const W = 1600;
+  const BASE_W = 1600;
   const M = { left: 70, right: 70 };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -43,6 +43,8 @@
    * @param {object} helpers  { tramaOf(scene), tramaById(id), charactersByTrama() }
    */
   function render(p, scenes, helpers) {
+    const W = Math.round(BASE_W * Math.max(1, (helpers && helpers.zoom) || 1));
+    const zoomed = W > BASE_W;
     const visible = s => !(helpers.isHidden && helpers.isHidden(s));
     const credits = p.credits || {};
     const headerLines = [];
@@ -87,9 +89,10 @@
     const out = [];
     out.push(`<rect x="0" y="0" width="${W}" height="100%" fill="#fff"/>`);
     // Título
-    out.push(`<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="58" font-weight="300" letter-spacing="6" fill="#2a4f8f" font-family="Georgia, 'Times New Roman', serif">${esc((p.title || 'SIN TÍTULO').toUpperCase())}</text>`);
-    out.push(`<text x="${W / 2}" y="${creditY - 12}" text-anchor="middle" font-size="14" fill="#2a4f8f">${esc(creditBits.join('  ·  '))}</text>`);
-    out.push(`<text x="${W / 2}" y="${creditY + 8}" text-anchor="middle" font-size="13" fill="#555">${esc(dataBits.join('  ·  '))}</text>`);
+    const TX = zoomed ? M.left : W / 2, TA = zoomed ? 'start' : 'middle';
+    out.push(`<text x="${TX}" y="${titleY}" text-anchor="${TA}" font-size="58" font-weight="300" letter-spacing="6" fill="#2a4f8f" font-family="Georgia, 'Times New Roman', serif">${esc((p.title || 'SIN TÍTULO').toUpperCase())}</text>`);
+    out.push(`<text x="${TX}" y="${creditY - 12}" text-anchor="${TA}" font-size="14" fill="#2a4f8f">${esc(creditBits.join('  ·  '))}</text>`);
+    out.push(`<text x="${TX}" y="${creditY + 8}" text-anchor="${TA}" font-size="13" fill="#555">${esc(dataBits.join('  ·  '))}</text>`);
     ideaLines.forEach((l, i) => out.push(`<text x="${plotLeft}" y="${ideaY + i * 18}" font-size="14" fill="#2a4f8f">${esc(l)}</text>`));
 
     // Rejilla y ejes 0-10
@@ -114,17 +117,25 @@
         out.push(`<text transform="translate(${cx + 4} ${plotBottom - 8}) rotate(-90)" font-size="11" fill="#2a4f8f" font-weight="600">${esc(label.toUpperCase().slice(0, 40))}</text>`);
       }
       if (x - lastLabelX >= minGap) {
-        out.push(`<text x="${cx}" y="${plotBottom + 16}" text-anchor="middle" font-size="9" fill="#999">${esc(s.num)}</text>`);
+        out.push(`<text x="${cx}" y="${plotBottom + 16}" text-anchor="middle" font-size="${zoomed ? 10 : 9}" fill="${zoomed ? '#555' : '#999'}" ${zoomed ? 'font-weight="700"' : ''}>${esc(s.num)}</text>`);
         lastLabelX = x;
+      }
+      // Con zoom: rótulo vertical de cada secuencia (localización) si hay sitio
+      const wpx = X(t.end) - X(t.start);
+      if (zoomed && !label && wpx >= 15 && visible(s)) {
+        const maxChars = Math.floor((plotH * 0.52) / 6.2);
+        const txt = `${s.intExt ? s.intExt + '. ' : ''}${s.location}${s.time ? ' · ' + s.time : ''}`;
+        out.push(`<text transform="translate(${cx + 3.5} ${plotBottom - 6}) rotate(-90)" font-size="10" fill="#8a94a6">${esc(txt.length > maxChars ? txt.slice(0, maxChars - 1) + '…' : txt)}</text>`);
       }
     });
 
     // Eje temporal (minutos)
-    const step = totalMin > 150 ? 10 : totalMin > 60 ? 5 : totalMin > 20 ? 2 : 1;
+    const pxPerMin = plotW / totalMin;
+    const step = [0.5, 1, 2, 5, 10, 15, 30, 60].find(st => st * pxPerMin >= 55) || 60;
     for (let m = 0; m <= totalMin + 0.001; m += step) {
       const x = X(m);
       out.push(`<line x1="${x}" x2="${x}" y1="${plotBottom + 22}" y2="${plotBottom + 28}" stroke="#2a4f8f"/>`);
-      out.push(`<text x="${x}" y="${plotBottom + 42}" text-anchor="middle" font-size="11" fill="#2a4f8f">${Math.round(m)}'</text>`);
+      out.push(`<text x="${x}" y="${plotBottom + 42}" text-anchor="middle" font-size="11" fill="#2a4f8f">${step < 1 ? m.toFixed(1) : Math.round(m)}'</text>`);
     }
     out.push(`<text x="${plotRight}" y="${plotBottom + 58}" text-anchor="end" font-size="10" fill="#999">minutos · nº de secuencia sobre el eje</text>`);
 
@@ -178,6 +189,7 @@
     pts.forEach(pt => {
       const tr = helpers.tramaOf(pt.s);
       out.push(`<circle class="pt" data-id="${pt.s.id}" cx="${pt.x}" cy="${pt.y}" r="${pt.s.keyEvent ? 6 : 4}" fill="${tr ? tr.color : '#fff'}" stroke="#d62828" stroke-width="2"><title>Esc. ${esc(pt.s.num)} · ${esc(pt.s.location)} · intensidad ${pt.s.intensity}\n(arrastra arriba/abajo para corregir)</title></circle>`);
+      if (zoomed && !pt.s.keyEvent) out.push(`<text x="${pt.x}" y="${pt.y - 9}" text-anchor="middle" font-size="9" font-weight="700" fill="#d62828" pointer-events="none">${pt.s.intensity}</text>`);
     });
 
     // Leyenda inferior: mapa de tramas y personajes
@@ -186,7 +198,7 @@
     ly += 14;
     const byTrama = helpers.charactersByTrama();
     const tramas = p.tramas || [];
-    const colW = plotW / Math.min(3, Math.max(1, tramas.length));
+    const colW = Math.min(plotW, BASE_W - M.left - M.right) / Math.min(3, Math.max(1, tramas.length));
     let col = 0, rowY = ly, rowMaxH = 0;
     tramas.forEach(t => {
       const x = plotLeft + col * colW;

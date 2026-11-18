@@ -987,12 +987,15 @@
     const hidden = new Set(p.steplineHidden || []);
     const { svg } = StepLine.render(p, scenes, {
       tramaOf: s => tramaOf(p, s), charactersByTrama: () => charactersByTrama(p),
-      isHidden: s => hidden.has(s.tramaId || '__none'), isTramaHidden: id => hidden.has(id)
+      isHidden: s => hidden.has(s.tramaId || '__none'), isTramaHidden: id => hidden.has(id),
+      zoom: slZoom
     });
     const visChip = (id, label, color) => `<button class="btn btn-small trama-vis ${hidden.has(id) ? 'off' : ''}" data-action="toggle-trama-vis" data-id="${id}" title="${hidden.has(id) ? 'Mostrar' : 'Ocultar'}"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button>`;
     const filterBar = `<div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(t => visChip(t.id, t.letter + ' · ' + t.name, t.color)).join('')}${visChip('__none', 'Sin trama', '#fff')}
       <button class="btn btn-small btn-ghost" data-action="trama-vis-all">Mostrar todas</button>
-      <span class="spacer"></span><button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
+      <span class="spacer"></span>
+      <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
+      <button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
       <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla.</p>`;
     const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(s.num)} · ${esc(s.location.slice(0, 40))}</option>`).join('');
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
@@ -1012,7 +1015,8 @@
         <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       ${filterBar}
-      <div class="stepline-wrap" id="steplineWrap">${svg}</div>
+      <div class="stepline-wrap ${slZoom > 1 ? 'zoomed' : ''}" id="steplineWrap">${svg}</div>
+      ${slZoom > 1 ? '<p class="muted no-print" style="font-size:12px;margin-top:6px">Desliza la gráfica a izquierda y derecha para recorrerla. Con zoom se ven el nombre de cada secuencia y su intensidad.</p>' : ''}
     </section>
     <section class="panel no-print">
       <h3 style="margin-top:0">Estructura en actos</h3>
@@ -1032,9 +1036,14 @@
     </section>`;
   }
 
+  let slZoom = 1, slScroll = 0;
+  const ZOOMS = [1, 1.5, 2, 3, 4, 6, 8];
   function attachSteplineDrag() {
     const svg = document.querySelector('#steplineWrap svg');
     if (!svg) return;
+    const wrap = document.getElementById('steplineWrap');
+    if (slZoom > 1) { wrap.scrollLeft = slScroll * (wrap.scrollWidth - wrap.clientWidth); }
+    wrap.addEventListener('scroll', () => { const m = wrap.scrollWidth - wrap.clientWidth; slScroll = m > 0 ? wrap.scrollLeft / m : 0; });
     const p = P();
     const top = +svg.dataset.plotTop, h = +svg.dataset.plotH;
     let drag = null;
@@ -1376,6 +1385,12 @@
     'esc-solo': (el) => { const p = P(); p.escHidden = p.tramas.map(t => t.id).concat('__none').filter(id => id !== el.dataset.id); save(); renderTab(); },
     'esc-vis-all': () => { P().escHidden = []; save(); renderTab(); },
     'trama-vis-all': () => { P().steplineHidden = []; save(); renderTab(); },
+    'sl-zoom': (el) => {
+      const d = Number(el.dataset.d);
+      if (!d) { slZoom = 1; slScroll = 0; }
+      else { const i = ZOOMS.indexOf(slZoom); slZoom = ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (i < 0 ? 0 : i) + d))]; }
+      renderTab();
+    },
     'reset-globes': () => { P().scenes.forEach(s => { delete s.globeDx; delete s.globeDy; }); save(); renderTab(); },
     'arc-view': (el) => { arcView = el.dataset.v; renderTab(); },
     'arc-all': () => { arcAll = !arcAll; renderTab(); },

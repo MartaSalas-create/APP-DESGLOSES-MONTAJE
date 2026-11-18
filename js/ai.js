@@ -92,13 +92,14 @@ Responde SOLO con un objeto JSON con esta forma exacta:
     "preguntas": "preguntas concretas para la reunión con dirección"
   },
   "tramas": [ {"letra": "A", "nombre": "NOMBRE CORTO EN MAYÚSCULAS", "descripcion": "una frase", "personajes": ["NOMBRE", "..."]} ],
-  "personajes": [ {"nombre": "NOMBRE TAL COMO APARECE EN EL GUION", "trama": "A", "objetivo": "deseo / necesidad", "inicio": "cómo empieza", "fin": "cómo termina", "clave": "secuencias clave del arco (números) y notas"} ],
+  "personajes": [ {"nombre": "NOMBRE TAL COMO APARECE EN EL GUION", "trama": "A", "objetivo": "deseo / necesidad", "inicio": "cómo empieza", "fin": "cómo termina", "clave": "secuencias clave del arco (números) y notas", "actos": {"plant": {"t": "", "e": "", "v": 0}, "des": {"t": "", "e": "", "v": 0}, "clim": {"t": "", "e": "", "v": 0}, "res": {"t": "", "e": "", "v": 0}}} ],
   "actos": {"Prólogo": "nº de secuencia donde empieza o null", "Planteamiento": "nº", "Desarrollo": "nº", "Convergencia / Clímax": "nº", "Resolución": "nº"},
   "giros": [ {"esc": "nº de secuencia", "etiqueta": "máx. 4 palabras, p. ej. INCIDENTE DESENCADENANTE"} ]
 }
 Reglas:
 - Entre 2 y 8 tramas, letras A, B, C… por orden de importancia (A = trama principal).
 - "personajes": los principales y secundarios con peso dramático (no figuración), con los nombres EXACTOS del guion.
+- "actos" de cada personaje: plant = Acto I Planteamiento (incluye prólogo), des = Acto II Desarrollo, clim = Acto III-A Clímax, res = Acto III-B Resolución. "t": qué le ocurre (1-2 frases), "e": su emoción dominante (1-2 palabras), "v": estado emocional de -5 (hundimiento) a +5 (plenitud).
 - "giros": entre 5 y 14 puntos de giro y eventos clave en toda la película (detonante, primer punto de giro, punto medio, crisis, clímax, etc.).
 - Usa los números de secuencia tal como aparecen tras "ESC".
 - En los textos puedes usar saltos de línea y viñetas con "- ".
@@ -208,6 +209,7 @@ ${scenes.map(s => sceneBlock(s, 5000)).join('\n\n')}`;
         if (c.inicio) ch.arcoInicio = String(c.inicio);
         if (c.fin) ch.arcoFin = String(c.fin);
         if (c.clave) ch.notas = String(c.clave);
+        if (c.actos && typeof c.actos === 'object') applyActs(ch, c.actos);
       });
     }
     if (opts.stepline) {
@@ -225,6 +227,52 @@ ${scenes.map(s => sceneBlock(s, 5000)).join('\n\n')}`;
         g.giros.forEach(x => { const s = findScene(p, x.esc); if (s) { s.keyEvent = true; s.eventLabel = String(x.etiqueta || '').toUpperCase(); } });
       }
     }
+  }
+
+  function applyActs(ch, actos) {
+    ch.arcoActos = ch.arcoActos || {};
+    ['plant', 'des', 'clim', 'res'].forEach(k => {
+      const a = actos[k]; if (!a || typeof a !== 'object') return;
+      const cur = ch.arcoActos[k] = ch.arcoActos[k] || {};
+      if (a.t) cur.t = String(a.t);
+      if (a.e) cur.e = String(a.e);
+      const v = parseFloat(a.v); if (!isNaN(v)) cur.v = String(Math.max(-5, Math.min(5, Math.round(v))));
+    });
+  }
+
+  /* Arcos emocionales por acto (pestaña Arco de personajes) */
+  async function arcs(names, acts) {
+    const p = A.P();
+    const say = m => { const el = document.getElementById('aiArcStatus'); if (el) el.textContent = m; };
+    if (!sampleFn) { A.toast('Proponer arcos con Claude solo funciona en la versión de claude.ai.'); return; }
+    if (!names.length) return;
+    say('✦ Claude está leyendo el guion para trazar los arcos… (1-3 minutos)');
+    try {
+      const r = await sampleFn.json(`${PERSONA}
+
+TAREA: traza el ARCO EMOCIONAL de estos personajes a lo largo de la película, por actos, como lo harías para preparar el montaje (qué le ocurre a cada uno y cómo está emocionalmente en cada tramo).
+Personajes: ${names.join(', ')}
+Actos:
+${acts.map(a => `- ${a.k}: ${a.label} ${a.sub || ''}`).join('\n')}
+
+Responde SOLO con JSON: {"personajes": [ {"nombre": "NOMBRE", "actos": {"plant": {"t": "", "e": "", "v": 0}, "des": {"t": "", "e": "", "v": 0}, "clim": {"t": "", "e": "", "v": 0}, "res": {"t": "", "e": "", "v": 0}}} ]}
+- "t": qué le ocurre en ese acto (1-2 frases concretas, con hechos del guion).
+- "e": emoción dominante en 1-2 palabras (p. ej. "ilusión", "culpa", "terror", "rabia contenida").
+- "v": estado emocional de -5 (hundimiento) a +5 (plenitud), entero. Usa el rango completo y sé coherente entre personajes.
+- Si un personaje no aparece en un acto, "t": "No aparece" y "v": null.
+
+Contexto:
+${globalContext(p)}
+
+GUION (secuencias en orden):
+${scriptForGlobal(p)}`, { modelTier: 'complex', cache: false });
+      let n = 0;
+      ((r && r.personajes) || []).forEach(c => {
+        const key = matchCharacter(p, c.nombre); if (!key || !c.actos) return;
+        applyActs(p.characters[key], c.actos); n++;
+      });
+      A.save(); A.renderTab(); A.toast(`Arcos propuestos para ${n} personajes. Revísalos y corrígelos.`);
+    } catch (e) { say(errText(e)); }
   }
 
   function matchCharacter(p, name) {
@@ -450,7 +498,7 @@ ${g.map(s => sceneBlock(s, 4000)).join('\n\n')}`, { modelTier: 'complex', cache:
   }
 
   window.AIEditor = {
-    tab, portada, detailNeed,
+    tab, portada, detailNeed, arcs,
     available: () => !!sampleFn,
     ask: (prompt, o) => sampleFn.json(prompt, Object.assign({ modelTier: 'complex', cache: false }, o || {})),
     context: p => globalContext(p), block: (s, n) => sceneBlock(s, n), PERSONA, errText

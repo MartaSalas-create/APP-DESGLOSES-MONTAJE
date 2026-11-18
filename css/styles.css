@@ -288,3 +288,12 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .merge-log { background: #f1f7ee; border: 1px solid #cfe3c4; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; }
 .merge-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px solid #dfeed7; }
 .merge-item:first-of-type { border-top: 0; }
+
+/* Arco emocional */
+.arc-table td { vertical-align: top; }
+.arc-name { min-width: 130px; background: #fff; }
+.emo-row { display: grid; grid-template-columns: 1fr 120px; gap: 4px; margin-top: 4px; }
+.emo-sel { min-width: 0 !important; font-size: 12px; }
+.emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.emo-card { border: 1px solid var(--line); border-radius: 10px; padding: 6px; background: #fff; break-inside: avoid; }
+.emo-big { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: #fff; overflow-x: auto; }

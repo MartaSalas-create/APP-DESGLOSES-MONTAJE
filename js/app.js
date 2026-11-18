@@ -846,12 +846,97 @@
   /* ------------------------------------------------------------------ */
   /* Pestaña: Arco de personajes                                          */
   /* ------------------------------------------------------------------ */
+  /* ---------- Arco emocional por actos ---------- */
+  const ARC_ACTS = [
+    { k: 'plant', label: 'Acto I — Planteamiento', sub: '(incl. prólogo)', short: 'I · Planteamiento' },
+    { k: 'des', label: 'Acto II — Desarrollo', sub: '', short: 'II · Desarrollo' },
+    { k: 'clim', label: 'Acto III-A — Clímax', sub: '', short: 'III-A · Clímax' },
+    { k: 'res', label: 'Acto III-B — Resolución', sub: '', short: 'III-B · Resolución' }
+  ];
+  const EMO_SCALE = [[5, '+5 plenitud'], [4, '+4'], [3, '+3 esperanza'], [2, '+2'], [1, '+1'], [0, '0 neutro'], [-1, '−1'], [-2, '−2'], [-3, '−3 angustia'], [-4, '−4'], [-5, '−5 hundimiento']];
+  const CHAR_COLORS = ['#c0392b', '#2a6fb0', '#d68910', '#1e8449', '#7d3c98', '#17a2b8', '#b03a69', '#6e5b2e', '#34495e', '#e67e22', '#16a085', '#8e44ad'];
+  let arcView = 'grid', arcAll = false;
+  const arcOf = (p, n) => { const c = p.characters[n]; c.arcoActos = c.arcoActos || {}; return c.arcoActos; };
+  const emoVal = (p, n, k) => { const a = (p.characters[n].arcoActos || {})[k]; const v = a && a.v; return v === '' || v == null || isNaN(Number(v)) ? null : Number(v); };
+
+  function emoChart(p, list, opt) {
+    const W = opt.w, H = opt.h, L = opt.small ? 30 : 110, R = opt.small ? 14 : 130, T = opt.small ? 26 : 30, B = opt.small ? 30 : 46;
+    const pw = W - L - R, ph = H - T - B;
+    const X = i => L + (ARC_ACTS.length === 1 ? pw / 2 : i * pw / (ARC_ACTS.length - 1));
+    const Y = v => T + (5 - v) / 10 * ph;
+    const o = [`<rect width="${W}" height="${H}" fill="#fff"/>`];
+    if (opt.title) o.push(`<text x="${L}" y="17" font-size="13" font-weight="800" fill="${opt.titleColor || '#222'}">${esc(opt.title)}</text>`);
+    // franjas positivo / negativo
+    o.push(`<rect x="${L}" y="${T}" width="${pw}" height="${ph / 2}" fill="#f2f8ef"/><rect x="${L}" y="${T + ph / 2}" width="${pw}" height="${ph / 2}" fill="#fbf0ee"/>`);
+    [5, 0, -5].concat(opt.small ? [] : [3, -3]).forEach(v => {
+      o.push(`<line x1="${L}" x2="${L + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? '#999' : '#e3e1dc'}" ${v === 0 ? 'stroke-dasharray="4 3"' : ''}/>`);
+      const lab = opt.small ? (v > 0 ? '+' + v : String(v)) : (EMO_SCALE.find(e => e[0] === v) || [0, v])[1];
+      o.push(`<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="${opt.small ? 9 : 11}" fill="#888">${esc(lab)}</text>`);
+    });
+    ARC_ACTS.forEach((a, i) => {
+      o.push(`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${T + ph}" stroke="#ece9e4"/>`);
+      o.push(`<text x="${X(i)}" y="${H - B + 16}" text-anchor="${i === 0 ? 'start' : i === ARC_ACTS.length - 1 ? 'end' : 'middle'}" font-size="${opt.small ? 9 : 11}" fill="#555" font-weight="600">${esc(opt.small ? a.short.split(' · ')[0] : a.short)}</text>`);
+    });
+    list.forEach(({ n, color }) => {
+      const pts = ARC_ACTS.map((a, i) => ({ i, v: emoVal(p, n, a.k), word: ((p.characters[n].arcoActos || {})[a.k] || {}).e || '' })).filter(x => x.v !== null);
+      if (!pts.length) return;
+      const d = pts.map((q, j) => (j ? 'L' : 'M') + X(q.i).toFixed(1) + ',' + Y(q.v).toFixed(1)).join(' ');
+      o.push(`<path d="${d}" fill="none" stroke="${color}" stroke-width="${opt.small ? 3 : 3}" stroke-linejoin="round" stroke-linecap="round"/>`);
+      pts.forEach(q => {
+        o.push(`<circle cx="${X(q.i)}" cy="${Y(q.v)}" r="${opt.small ? 4.5 : 5}" fill="#fff" stroke="${color}" stroke-width="2.5"><title>${esc(n)} · ${esc(ARC_ACTS[q.i].label)}: ${q.v > 0 ? '+' : ''}${q.v} ${esc(q.word)}</title></circle>`);
+        if (opt.small && q.word) o.push(`<text x="${X(q.i)}" y="${Y(q.v) + (q.v >= 0 ? -9 : 16)}" text-anchor="${q.i === 0 ? 'start' : q.i === ARC_ACTS.length - 1 ? 'end' : 'middle'}" font-size="10" font-style="italic" fill="#333">${esc(q.word.slice(0, 22))}</text>`);
+      });
+      if (!opt.small) { const last = pts[pts.length - 1]; o.push(`<text x="${X(last.i) + 8}" y="${Y(last.v) + 4}" font-size="11" font-weight="700" fill="${color}">${esc(n)}</text>`); }
+    });
+    if (!list.some(({ n }) => ARC_ACTS.some(a => emoVal(p, n, a.k) !== null))) o.push(`<text x="${L + pw / 2}" y="${T + ph / 2 + 4}" text-anchor="middle" font-size="12" fill="#aaa">Sin valores todavía</text>`);
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
+  }
+
+  function arcSection(p, names) {
+    const shown = arcAll ? names : names.slice(0, 12);
+    const colorOf = (n, i) => { const t = tramaById(p, p.characters[n].tramaId); return arcView === 'grid' && t ? textColor(t.color) : CHAR_COLORS[i % CHAR_COLORS.length]; };
+    const valSel = (n, k) => { const v = emoVal(p, n, k); return `<select class="cell-input emo-sel" data-k="c:${esc(n)}:arcoActos.${k}.v" data-rerender="1" title="Estado emocional (−5 a +5)"><option value="">—</option>${EMO_SCALE.map(([x, l]) => `<option value="${x}" ${v === x ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`; };
+    return `<section class="panel">
+      <h2>Esquema: arco de los personajes por acto</h2>
+      <p class="lead no-print">Qué le pasa a cada personaje en cada acto y su <b>estado emocional</b> (de −5 hundimiento a +5 plenitud), que dibuja la gráfica del arco emocional. Es una interpretación para discutir: escribe, corrige o pide una propuesta a Claude.</p>
+      <div class="toolbar no-print">
+        <button class="btn btn-small btn-primary" data-action="ai-arc">✦ Proponer arcos con Claude</button>
+        ${names.length > 12 ? `<button class="btn btn-small" data-action="arc-all">${arcAll ? 'Ver solo los 12 principales' : 'Ver los ' + names.length + ' personajes'}</button>` : ''}
+        <span id="aiArcStatus" class="muted"></span>
+      </div>
+      <div class="table-wrap"><table class="arc-table">
+        <thead><tr><th>Personaje</th>${ARC_ACTS.map(a => `<th>${esc(a.label)}${a.sub ? '<br><span style="font-weight:400">' + a.sub + '</span>' : ''}</th>`).join('')}</tr></thead>
+        <tbody>${shown.map(n => {
+          const t = tramaById(p, p.characters[n].tramaId); arcOf(p, n);
+          return `<tr><td class="arc-name" style="border-left:5px solid ${t ? t.color : '#ddd'}"><b>${esc(n)}</b>${t ? `<div class="muted" style="font-size:11px">${esc(t.letter + ' · ' + t.name)}</div>` : ''}</td>
+            ${ARC_ACTS.map(a => `<td>${area('c:' + n + ':arcoActos.' + a.k + '.t', 'class="cell-input" style="min-width:200px;min-height:70px" placeholder="Qué le ocurre en este acto"')}
+              <div class="emo-row no-print">${inp('c:' + n + ':arcoActos.' + a.k + '.e', 'class="cell-input" placeholder="Emoción (p. ej. ilusión)" style="min-width:0"')}${valSel(n, a.k)}</div>
+              <div class="print-only muted">${esc(((p.characters[n].arcoActos || {})[a.k] || {}).e || '')} ${emoVal(p, n, a.k) !== null ? '(' + emoVal(p, n, a.k) + ')' : ''}</div></td>`).join('')}</tr>`;
+        }).join('')}</tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2>Arco emocional</h2>
+      <div class="toolbar no-print">
+        <button class="btn btn-small ${arcView === 'grid' ? 'btn-primary' : ''}" data-action="arc-view" data-v="grid">Por personaje</button>
+        <button class="btn btn-small ${arcView === 'all' ? 'btn-primary' : ''}" data-action="arc-view" data-v="all">Todos juntos</button>
+        <span class="muted">Eje vertical: estado emocional (−5 hundimiento · +5 plenitud). Eje horizontal: actos.</span>
+      </div>
+      ${arcView === 'grid'
+        ? `<div class="emo-grid">${shown.map((n, i) => `<div class="emo-card">${emoChart(p, [{ n, color: colorOf(n, i) }], { w: 340, h: 190, small: true, title: n, titleColor: colorOf(n, i) })}</div>`).join('')}</div>`
+        : `<div class="emo-big">${emoChart(p, shown.map((n, i) => ({ n, color: colorOf(n, i) })), { w: 1100, h: 440, small: false })}</div>
+           <div class="legend-inline" style="margin-top:8px">${shown.map((n, i) => `<span><span class="trama-dot" style="background:${colorOf(n, i)}"></span>${esc(n)}</span>`).join('')}</div>`}
+    </section>`;
+  }
+
+  function characterNamesForArc(p) {
+    const st = characterStats(p);
+    return Object.keys(p.characters).filter(n => !p.characters[n].hidden && st[n]).sort((a, b) => st[b].count - st[a].count).slice(0, arcAll ? 30 : 12);
+  }
   function tabArcos(p) {
     const st = characterStats(p);
     const names = Object.keys(p.characters).filter(n => !p.characters[n].hidden && st[n]).sort((a, b) => st[b].count - st[a].count);
-    return `<section class="panel">
-      ${printHeader(p, 'Arco de personajes')}
-      <h2>Arco de personajes</h2>
+    return `${printHeader(p, 'Arco de personajes')}${arcSection(p, names)}<section class="panel">
+      <h2>Presencia y evolución</h2>
       <p class="lead">Presencia de cada personaje por secuencia (color = trama de la secuencia) y evolución dramática: de dónde parte, a dónde llega y qué secuencias marcan el cambio.</p>
       <div class="table-wrap" style="padding:10px"><table class="matrix">
         <thead><tr><th></th>${p.scenes.map(s => `<th class="vert" title="${esc(sceneHeading(s))}">${esc(s.num)}</th>`).join('')}</tr></thead>
@@ -1240,6 +1325,9 @@
       toast(d.length ? `${d.length} nombres repetidos unificados. Revisa la lista de arriba.` : 'No se han encontrado nombres repetidos.');
     },
     'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
+    'arc-view': (el) => { arcView = el.dataset.v; renderTab(); },
+    'arc-all': () => { arcAll = !arcAll; renderTab(); },
+    'ai-arc': () => { if (window.AIEditor) window.AIEditor.arcs(characterNamesForArc(P()), ARC_ACTS); },
     'dept-view': (el) => { deptView = el.dataset.v; renderTab(); },
     'go-need': (el) => { needSel = el.dataset.k; tab = 'necesidad'; window.scrollTo(0, 0); render(); },
     'reset-need': (el) => { const k = el.dataset.k; P().scenes.forEach(s => { if (s.needDetail) delete s.needDetail[k]; }); save(); renderTab(); },

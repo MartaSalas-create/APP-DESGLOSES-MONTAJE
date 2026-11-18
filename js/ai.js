@@ -449,6 +449,11 @@ ${g.map(s => sceneBlock(s, 4000)).join('\n\n')}`, { modelTier: 'complex', cache:
     A.renderTab(); A.toast(`${need.label}: ${done} secuencias detalladas. Revísalas y edítalas.`);
   }
 
-  window.AIEditor = { tab, portada, detailNeed };
+  window.AIEditor = {
+    tab, portada, detailNeed,
+    available: () => !!sampleFn,
+    ask: (prompt, o) => sampleFn.json(prompt, Object.assign({ modelTier: 'complex', cache: false }, o || {})),
+    context: p => globalContext(p), block: (s, n) => sceneBlock(s, n), PERSONA, errText
+  };
   init();
 })();

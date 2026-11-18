@@ -278,3 +278,4 @@ button.chip { font: inherit; font-size: 11px; }
 .dept-btn-vfx { border-left-color: #e8d660; }
 .dept-btn-sonido { border-left-color: #86b86a; }
 .dept-btn-musica { border-left-color: #4575b4; }
+input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }

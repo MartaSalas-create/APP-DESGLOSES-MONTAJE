@@ -81,6 +81,7 @@
     { group: 'Postproducción' },
     { id: 'departamentos', label: 'Necesidades por departamento' },
     { id: 'necesidad', label: 'Detalle por necesidad' },
+    { id: 'sonido', label: 'Listado SFX y ambientes' },
     { id: 'workflow', label: 'Reunión workflow' }
   ];
 
@@ -471,7 +472,7 @@
     const p = P();
     const fn = {
       proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
-      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, necesidad: tabNecesidad, workflow: tabWorkflow
+      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
     $('#main').innerHTML = fn(p);
@@ -999,6 +1000,7 @@
         <span class="spacer"></span><span class="muted">${rows.length} secuencias · ${fmtMin(rows.reduce((a, s) => a + s.lengthPages * mpp, 0))}</span>
         <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
       </div>
+      ${n.k === 'sfx' ? '<div class="note no-print" style="margin-bottom:12px">Para pedir los archivos al diseñador de sonido (listado único de SFX y ambientes con secuencias, duración y nombre de archivo para importar en el Avid) ve a <button class="btn btn-small" data-action="go-sound">Listado SFX y ambientes →</button></div>' : ''}
       <div id="aiNeedStatus" class="muted" style="margin-bottom:8px"></div>
       ${rows.length ? `<div class="table-wrap"><table>
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${fields.map(f => `<th>${esc(f[1])}</th>`).join('')}<th>Notas ${esc(DEPTS[n.dept])}</th></tr></thead>
@@ -1138,6 +1140,7 @@
   /* ------------------------------------------------------------------ */
   const actions = {
     'close-modal': () => hideModal(),
+    'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
     'dept-view': (el) => { deptView = el.dataset.v; renderTab(); },
     'go-need': (el) => { needSel = el.dataset.k; tab = 'necesidad'; window.scrollTo(0, 0); render(); },
     'reset-need': (el) => { const k = el.dataset.k; P().scenes.forEach(s => { if (s.needDetail) delete s.needDetail[k]; }); save(); renderTab(); },
@@ -1394,7 +1397,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    applyPortada, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

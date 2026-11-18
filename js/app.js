@@ -884,15 +884,35 @@
   /* ------------------------------------------------------------------ */
   /* Pestaña: Necesidades por departamento                                */
   /* ------------------------------------------------------------------ */
+  let deptView = 'tabla';   // 'tabla' (todos a la vez) | 'bloques' (todos, uno tras otro) | clave de departamento
+  function needChipsFor(s, d) {
+    return NEEDS.filter(n => n.dept === d && s.needs[n.k]).map(n => `<button class="chip on need-nav lbl-${n.lbl || DEPT_LABEL[d]}" data-action="go-need" data-k="${n.k}">${esc(n.label)}</button>`).join('');
+  }
+  function deptsAllTable(p, mpp) {
+    const ds = Object.keys(DEPTS);
+    const rows = p.scenes.filter(s => NEEDS.some(n => s.needs[n.k]) || ds.some(d => s.notes && s.notes[d]));
+    return `<div class="form-grid" style="margin-bottom:12px">${ds.map(d => field('Notas generales · ' + DEPTS[d], area('p:deptNotes.' + d, 'rows="2"'))).join('')}</div>
+      ${rows.length ? `<div class="table-wrap"><table class="depts-all">
+        <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${ds.map(d => `<th class="dept-th dept-th-${d}">${esc(DEPTS[d])}<br><span style="font-weight:400">${p.scenes.filter(s => NEEDS.some(n => n.dept === d && s.needs[n.k])).length} sec.</span></th>`).join('')}</tr></thead>
+        <tbody>${rows.map(s => `<tr>
+          <td class="num"><b>${esc(s.num)}</b></td>
+          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 140))}</div></td>
+          <td>${estadoSelect(s)}</td>
+          <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
+          ${ds.map(d => `<td class="dept-td-${d}" style="min-width:190px"><div class="needs-cell" style="min-width:0;margin-bottom:4px">${needChipsFor(s, d)}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div>${area('s:' + s.id + ':notes.' + d, 'class="cell-input" style="min-width:170px;min-height:44px" placeholder="Notas"')}</td>`).join('')}
+        </tr>`).join('')}</tbody></table></div>` : '<p class="muted">Sin secuencias con necesidades marcadas.</p>'}`;
+  }
   function tabDepartamentos(p) {
     const mpp = minutesPerPage(p);
+    const views = [['tabla', 'Todos a la vez'], ['bloques', 'Todos, uno tras otro']].concat(Object.keys(DEPTS).map(d => [d, DEPTS[d]]));
+    const shown = DEPTS[deptView] ? [deptView] : Object.keys(DEPTS);
     return `<section class="panel">
-      ${printHeader(p, 'Necesidades de montaje y postproducción por departamento')}
+      ${printHeader(p, 'Necesidades de montaje y postproducción' + (DEPTS[deptView] ? ' · ' + DEPTS[deptView] : ''))}
       <h2>Necesidades por departamento</h2>
-      <p class="lead no-print">Documento para la coordinación de postproducción: reúne, por departamento, las secuencias con necesidades marcadas en el desglose y sus notas. Añade notas generales de cada departamento.</p>
-      <div class="toolbar no-print"><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
+      <p class="lead no-print">Documento para la coordinación de postproducción: reúne las secuencias con necesidades marcadas en el desglose y sus notas. Puedes verlo con <b>todos los departamentos a la vez</b> (una tabla con una columna por departamento), todos uno tras otro, o un solo departamento.</p>
+      <div class="toolbar no-print">${views.map(([k, l]) => `<button class="btn btn-small ${deptView === k ? 'btn-primary' : ''} ${DEPTS[k] ? 'dept-btn dept-btn-' + k : ''}" data-action="dept-view" data-v="${k}">${esc(l)}</button>`).join('')}<span class="spacer"></span><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
       <div class="toolbar no-print"><span class="muted">Ver detalle de:</span> ${needChipsNav(p, '')}</div>
-      ${Object.keys(DEPTS).map(d => {
+      ${deptView === 'tabla' ? deptsAllTable(p, mpp) : shown.map(d => {
         const needs = NEEDS.filter(n => n.dept === d);
         const rows = p.scenes.filter(s => needs.some(n => s.needs[n.k]) || (s.notes && s.notes[d]));
         return `<div class="dept dept-${d}">
@@ -1118,6 +1138,7 @@
   /* ------------------------------------------------------------------ */
   const actions = {
     'close-modal': () => hideModal(),
+    'dept-view': (el) => { deptView = el.dataset.v; renderTab(); },
     'go-need': (el) => { needSel = el.dataset.k; tab = 'necesidad'; window.scrollTo(0, 0); render(); },
     'reset-need': (el) => { const k = el.dataset.k; P().scenes.forEach(s => { if (s.needDetail) delete s.needDetail[k]; }); save(); renderTab(); },
     'ai-need': (el) => { if (window.AIEditor) window.AIEditor.detailNeed(el.dataset.k, NEED_FIELDS[el.dataset.k], NEEDS.find(n => n.k === el.dataset.k)); },

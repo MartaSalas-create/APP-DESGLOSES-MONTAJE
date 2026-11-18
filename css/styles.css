@@ -263,3 +263,18 @@ button.chip { font: inherit; font-size: 11px; }
 .card .est-dd { vertical-align: middle; margin-right: 8px; }
 @media (pointer: coarse) { .est-opt { padding: 10px 8px; font-size: 13px; } }
 .est-dd { min-width: 220px; }
+
+/* Necesidades: todos los departamentos a la vez */
+.depts-all th.dept-th { border-bottom: 4px solid #999; }
+.dept-th-montaje { border-bottom-color: #cc6b55 !important; }
+.dept-th-color { border-bottom-color: #ad7fd6 !important; }
+.dept-th-vfx { border-bottom-color: #e8d660 !important; }
+.dept-th-sonido { border-bottom-color: #86b86a !important; }
+.dept-th-musica { border-bottom-color: #4575b4 !important; }
+.depts-all td[class^="dept-td-"] { border-left: 1px solid #ebe9e4; }
+.dept-btn { border-left: 5px solid #999; }
+.dept-btn-montaje { border-left-color: #cc6b55; }
+.dept-btn-color { border-left-color: #ad7fd6; }
+.dept-btn-vfx { border-left-color: #e8d660; }
+.dept-btn-sonido { border-left-color: #86b86a; }
+.dept-btn-musica { border-left-color: #4575b4; }

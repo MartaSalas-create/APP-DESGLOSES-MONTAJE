@@ -78,6 +78,7 @@
     { id: 'montaje', label: 'Escaleta de montaje' },
     { id: 'arcos', label: 'Arco de personajes' },
     { id: 'stepline', label: 'Step line' },
+    { id: 'doctor', label: 'Script doctor' },
     { group: 'Postproducción' },
     { id: 'departamentos', label: 'Necesidades por departamento' },
     { id: 'necesidad', label: 'Detalle por necesidad' },
@@ -555,7 +556,7 @@
     const p = P();
     const fn = {
       proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
-      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
+      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
     $('#main').innerHTML = fn(p);
@@ -1575,7 +1576,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    applyPortada, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

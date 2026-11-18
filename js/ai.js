@@ -501,7 +501,7 @@ ${g.map(s => sceneBlock(s, 4000)).join('\n\n')}`, { modelTier: 'complex', cache:
     tab, portada, detailNeed, arcs,
     available: () => !!sampleFn,
     ask: (prompt, o) => sampleFn.json(prompt, Object.assign({ modelTier: 'complex', cache: false }, o || {})),
-    context: p => globalContext(p), block: (s, n) => sceneBlock(s, n), PERSONA, errText
+    context: p => globalContext(p), script: p => scriptForGlobal(p), block: (s, n) => sceneBlock(s, n), PERSONA, errText
   };
   init();
 })();

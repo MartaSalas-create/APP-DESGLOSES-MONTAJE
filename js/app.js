@@ -422,10 +422,15 @@
     return s.estados;
   }
   const isRemoved = (p, s) => getEstados(s).includes('eliminada') || !!(p.removed && p.removed[s.id]);
+  let openEst = null;   // desplegable de estados abierto
   function estadoSelect(s) {
     const on = getEstados(s);
-    return `<div class="estados-cell">${on.length ? '' : '<span class="estado-badge lbl-bg-sinrodar" title="Sin rodar">&nbsp;</span>'}${ESTADOS.filter(e => e.k !== 'sinrodar').map(e =>
-      `<button type="button" class="est-chip ${on.includes(e.k) ? 'on lbl-bg-' + e.k : ''}" style="--c:${e.k === 'rodada' ? '#d0342c' : e.color}" data-action="toggle-estado" data-id="${s.id}" data-e="${e.k}" title="${esc(e.help)}">${e.label}</button>`).join('')}</div>`;
+    return `<details class="est-dd" data-id="${s.id}" ${openEst === s.id ? 'open' : ''}>
+      <summary title="Estado (selección múltiple)">${estadoBadge(s)}<span class="est-caret">▾</span></summary>
+      <div class="est-menu">${ESTADOS.filter(e => e.k !== 'sinrodar').map(e =>
+        `<button type="button" class="est-opt ${on.includes(e.k) ? 'on' : ''}" data-action="toggle-estado" data-id="${s.id}" data-e="${e.k}"><span class="est-check">${on.includes(e.k) ? '✓' : ''}</span><span class="estado-badge lbl-bg-${e.k}">${e.label}</span><span class="muted">${esc(e.help)}</span></button>`).join('')}
+        <button type="button" class="est-opt est-clear" data-action="clear-estado" data-id="${s.id}"><span class="est-check"></span><span class="estado-badge lbl-bg-sinrodar">&nbsp;</span><span class="muted">Sin rodar (quitar todas)</span></button>
+      </div></details>`;
   }
   const estadoBadge = s => {
     const on = getEstados(s);
@@ -1200,8 +1205,9 @@
       const sc = sceneById(P(), el.dataset.id); const est = getEstados(sc); const k = el.dataset.e;
       const i = est.indexOf(k); if (i >= 0) est.splice(i, 1); else est.push(k);
       sc.estado = est[est.length - 1] || 'sinrodar';
-      save(); renderTab();
+      openEst = sc.id; save(); renderTab();
     },
+    'clear-estado': (el) => { const sc = sceneById(P(), el.dataset.id); sc.estados = []; sc.estado = 'sinrodar'; openEst = null; save(); renderTab(); },
     'toggle-removed': (el) => {
       const p = P(); const sc = sceneById(p, el.dataset.id);
       const est = getEstados(sc);
@@ -1276,7 +1282,14 @@
     if (el.dataset.actionChange) { changeActions[el.dataset.actionChange](el); return; }
     if (el.dataset.k) onFieldInput(el, true);
   });
+  document.addEventListener('toggle', e => {
+    const d = e.target;
+    if (!d.classList || !d.classList.contains('est-dd')) return;
+    if (d.open) { openEst = d.dataset.id; document.querySelectorAll('.est-dd[open]').forEach(x => { if (x !== d) x.open = false; }); }
+    else if (openEst === d.dataset.id) openEst = null;
+  }, true);
   document.addEventListener('click', e => {
+    if (!e.target.closest('.est-dd') && openEst) { openEst = null; document.querySelectorAll('.est-dd[open]').forEach(x => { x.open = false; }); }
     const secBtn = e.target.closest('[data-section]');
     if (secBtn) {
       const sec = sections().find(x => x.name === secBtn.dataset.section);

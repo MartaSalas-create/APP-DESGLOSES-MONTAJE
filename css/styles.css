@@ -247,3 +247,19 @@ button.chip { font: inherit; font-size: 11px; }
 .est-chip.on.lbl-bg-urgente { color: #1f4d2a; }
 .est-chip.on.lbl-bg-vfx { color: #4d4210; }
 .est-chip.on.lbl-bg-rodada { color: #d0342c; }
+
+/* Desplegable de estados (selección múltiple) */
+.est-dd { display: inline-block; min-width: 150px; }
+.est-dd summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.est-dd summary::-webkit-details-marker { display: none; }
+.est-dd[open] summary { border-color: var(--accent); }
+.est-caret { margin-left: auto; padding-left: 6px; color: var(--muted); font-size: 11px; }
+.est-menu { margin-top: 4px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 4px; min-width: 260px; }
+.est-opt { display: grid; grid-template-columns: 18px auto 1fr; gap: 8px; align-items: center; width: 100%; text-align: left; border: 0; background: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.est-opt:hover { background: #f3f1ed; }
+.est-opt.on { background: #f7f5f1; }
+.est-check { font-weight: 800; color: var(--accent); }
+.est-clear { border-top: 1px solid var(--line); border-radius: 0 0 6px 6px; margin-top: 2px; }
+.card .est-dd { vertical-align: middle; margin-right: 8px; }
+@media (pointer: coarse) { .est-opt { padding: 10px 8px; font-size: 13px; } }
+.est-dd { min-width: 190px; } .est-dd summary { flex-wrap: nowrap; } .est-dd summary .estado-badge { flex-shrink: 0; } .est-dd summary { overflow: hidden; }

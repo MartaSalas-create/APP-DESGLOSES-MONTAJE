@@ -284,3 +284,7 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .needs-dd summary { flex-wrap: wrap; }
 .needs-group { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 2px; }
 .needs-dd .est-opt { grid-template-columns: 18px auto 1fr; padding: 4px 6px; }
+
+.merge-log { background: #f1f7ee; border: 1px solid #cfe3c4; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; }
+.merge-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px solid #dfeed7; }
+.merge-item:first-of-type { border-top: 0; }

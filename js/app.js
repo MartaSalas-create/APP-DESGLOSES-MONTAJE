@@ -263,6 +263,8 @@
     p.montajeOrder = p.scenes.map(s => s.id);
     p.removed = {};
     ensureCharacters(p);
+    p.mergeLog = [];
+    autoUnify(p);
     p.acts = defaultActs(p);
   }
 
@@ -315,7 +317,78 @@
     p.source = { filename: parsed.filename, format: parsed.format, importedAt: new Date().toISOString() };
     p.acts = (p.acts || []).map(a => ({ name: a.name, start: ids.has(a.start) ? a.start : '' }));
     ensureCharacters(p);
+    // volver a aplicar las uniones de nombres de la versión anterior y buscar nuevas
+    (p.mergeLog || []).forEach(m => { if (p.characters[m.from] && p.characters[m.into]) mergeChars(p, m.from, m.into, null); });
+    autoUnify(p);
     return kept;
+  }
+
+  /* ---------- Personajes repetidos con nombres distintos ---------- */
+  const TITLES = new Set(['TENIENTE', 'CAPITAN', 'SARGENTO', 'CORONEL', 'GENERAL', 'COMANDANTE', 'CABO', 'SOLDADO', 'COMISARIO', 'INSPECTOR', 'INSPECTORA', 'AGENTE', 'DETECTIVE',
+    'SENOR', 'SENORA', 'SENORITA', 'SR', 'SRA', 'SRTA', 'DON', 'DONA', 'DOCTOR', 'DOCTORA', 'DR', 'DRA', 'PROFESOR', 'PROFESORA', 'PADRE', 'MADRE', 'HERMANO', 'HERMANA', 'TIO', 'TIA',
+    'ABUELO', 'ABUELA', 'SOR', 'FRAY', 'MISTER', 'MR', 'MRS', 'MS', 'MISS', 'EL', 'LA', 'JOVEN', 'VIEJO', 'VIEJA', 'PEQUENO', 'PEQUENA']);
+  const plain = n => String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  function sceneCount(p, n) { return p.scenes.filter(s => s.characters.includes(n)).length; }
+  function findDuplicates(p) {
+    const names = Object.keys(p.characters).filter(n => !p.characters[n].hidden);
+    const cnt = {}; names.forEach(n => { cnt[n] = sceneCount(p, n); });
+    const out = [];
+    names.forEach(a => {
+      let best = null;
+      names.forEach(b => {
+        if (a === b) return;
+        // b es el nombre que más aparece (a es la variante)
+        if (cnt[b] < cnt[a] || (cnt[b] === cnt[a] && b.length > a.length)) return;
+        const pa = plain(a), pb = plain(b);
+        if (!pa || !pb) return;
+        if (pa.replace(/\D/g, '') !== pb.replace(/\D/g, '')) return;      // POLICÍA 1 ≠ POLICÍA 2
+        let reason = '';
+        if (pa === pb) reason = 'mismo nombre con distinta tilde o signo';
+        else {
+          const wa = pa.split(' '), wb = pb.split(' ');
+          const [lng, sht] = wa.length > wb.length ? [wa, wb] : [wb, wa];
+          const contained = sht.every(w => lng.includes(w)) && sht.length < lng.length;
+          const extra = lng.filter(w => !sht.includes(w));
+          if (contained && (extra.every(w => TITLES.has(w)) || cnt[a] <= 2)) reason = 'el mismo nombre con o sin cargo/tratamiento';
+          else if (pa.length >= 5 && cnt[a] <= 2 && cnt[b] > cnt[a] && lev(pa, pb) <= (pa.length >= 9 ? 2 : 1)) reason = 'posible errata';
+        }
+        if (reason && (!best || cnt[b] > cnt[best.into])) best = { from: a, into: b, reason, n: cnt[a], m: cnt[b] };
+      });
+      if (best) out.push(best);
+    });
+    // evitar cadenas (A→B y B→C): resolver al destino final
+    out.forEach(x => { let t = x.into, guard = 0; while (out.find(y => y.from === t) && guard++ < 5) t = out.find(y => y.from === t).into; x.into = t; });
+    return out.filter(x => x.from !== x.into);
+  }
+  function mergeChars(p, from, into, log) {
+    const touched = [];
+    p.scenes.forEach(s => {
+      const rep = (arr, main) => { const i = arr.indexOf(from); if (i >= 0) { const had = arr.includes(into); if (main) touched.push({ id: s.id, had }); if (had) arr.splice(i, 1); else arr[i] = into; } };
+      rep(s.characters, true); rep(s.offCharacters || [], false);
+    });
+    const a = p.characters[from] || {}, b = p.characters[into] || (p.characters[into] = { tramaId: '', objetivo: '', arcoInicio: '', arcoFin: '', notas: '', hidden: false });
+    ['tramaId', 'objetivo', 'arcoInicio', 'arcoFin', 'notas'].forEach(k => { if (!b[k] && a[k]) b[k] = a[k]; });
+    delete p.characters[from];
+    if (log) { p.mergeLog = (p.mergeLog || []).filter(m => m.from !== from); p.mergeLog.push({ from, into, reason: log, scenes: touched, data: a }); }
+  }
+  function autoUnify(p) {
+    const d = findDuplicates(p);
+    d.forEach(x => { if (p.characters[x.from] && p.characters[x.into]) mergeChars(p, x.from, x.into, x.reason + ' (automático)'); });
+    return d;
+  }
+  function undoMerge(p, i) {
+    const m = (p.mergeLog || [])[i]; if (!m) return;
+    m.scenes.forEach(t => { const s = sceneById(p, t.id); if (!s) return; const k = s.characters.indexOf(m.into); if (!t.had && k >= 0) s.characters[k] = m.from; else if (!s.characters.includes(m.from)) s.characters.push(m.from); });
+    p.characters[m.from] = Object.assign({ tramaId: '', objetivo: '', arcoInicio: '', arcoFin: '', notas: '', hidden: false }, m.data || {}, { hidden: false });
+    p.mergeLog.splice(i, 1);
   }
 
   function ensureCharacters(p) {
@@ -632,15 +705,17 @@
     <section class="panel">
       <h2>Personajes</h2>
       <p class="lead">Detectados en el guion (por los nombres sobre los diálogos). Asigna su trama principal; oculta los que sean falsos positivos o figuración. </p>
-      <div class="note" style="margin-bottom:12px"><b>¿Para qué sirve «Es el mismo personaje que…»?</b> La app detecta los personajes por el nombre que aparece encima de cada diálogo. Si el guion llama a un mismo personaje de dos formas (por ejemplo «TENIENTE ROJAS» y «ROJAS», «MADRE» y «EMILIA», o una errata como «SUSNA»), aparecen como dos personajes distintos. Elige en esa columna el nombre bueno: se unen en uno solo, con todas sus secuencias, su trama y sus notas. Si no hay nombres repetidos, déjala vacía.</div>
+      <div class="note" style="margin-bottom:12px"><b>Nombres repetidos.</b> Al subir el guion, la app une automáticamente los nombres que son el mismo personaje (con o sin cargo —«TENIENTE ROJAS» / «ROJAS»—, distinta tilde o erratas como «SUSNA» / «SUSANA») en el nombre que <b>más aparece</b>. Abajo verás lo que ha unido y puedes deshacerlo. Si queda alguno sin unir (por ejemplo «MADRE» y «EMILIA»), en la última columna elige el nombre bueno y pulsa <b>Unir</b>.</div>
+      ${(p.mergeLog || []).length ? `<div class="merge-log"><b>Nombres unificados (${p.mergeLog.length}):</b>${p.mergeLog.map((m, i) => `<div class="merge-item"><span><b>${esc(m.from)}</b> → <b>${esc(m.into)}</b> <span class="muted">· ${esc(m.reason)} · ${m.scenes.length} sec.</span></span><button class="btn btn-small" data-action="undo-merge" data-i="${i}">Deshacer</button></div>`).join('')}</div>` : ''}
       <div class="toolbar">
         <button class="btn btn-small" data-action="auto-char-tramas">Asignar trama a personajes según sus secuencias</button>
         <button class="btn btn-small" data-action="auto-scene-tramas">Asignar trama a secuencias sin trama según sus personajes</button>
         <span class="spacer"></span>
+        <button class="btn btn-small" data-action="detect-dups">Buscar nombres repetidos</button>
         <button class="btn btn-small" data-action="add-character">+ Añadir personaje</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Personaje</th><th class="num">Secuencias</th><th class="num">Primera / última</th><th>Trama</th><th class="num">Mostrar</th><th title="Une este nombre con otro si son el mismo personaje">Es el mismo personaje que…</th></tr></thead>
+        <thead><tr><th>Personaje</th><th class="num">Secuencias</th><th class="num">Primera / última</th><th>Trama</th><th class="num">Mostrar</th><th title="Une este nombre con otro si son el mismo personaje">Es el mismo personaje que…</th><th></th></tr></thead>
         <tbody>${names.map(n => {
           const c = p.characters[n], s = st[n];
           return `<tr class="${c.hidden ? 'strike' : ''}">
@@ -649,7 +724,8 @@
             <td class="num">${s ? esc(s.first.num) + ' → ' + esc(s.last.num) : '—'}</td>
             <td>${tramaSelect('c:' + n + ':tramaId')}</td>
             <td class="num"><input type="checkbox" data-k="c:${esc(n)}:hidden" data-invert="1" data-rerender="1" ${c.hidden ? '' : 'checked'}></td>
-            <td><select class="cell-input" data-action-change="merge-char" data-name="${esc(n)}"><option value="">—</option>${names.filter(m => m !== n).map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}</select></td>
+            <td><select class="cell-input merge-sel" id="merge-${esc(n.replace(/[^A-Za-z0-9]/g, '_'))}"><option value="">—</option>${names.filter(m => m !== n).map(m => `<option value="${esc(m)}">${esc(m)} (${st[m] ? st[m].count : 0})</option>`).join('')}</select></td>
+            <td><button class="btn btn-small" data-action="merge-char-btn" data-name="${esc(n)}">Unir</button></td>
           </tr>`;
         }).join('')}</tbody></table></div>
     </section>`;
@@ -1151,6 +1227,18 @@
   /* ------------------------------------------------------------------ */
   const actions = {
     'close-modal': () => hideModal(),
+    'merge-char-btn': (el) => {
+      const from = el.dataset.name;
+      const sel = el.closest('tr').querySelector('.merge-sel');
+      const into = sel && sel.value;
+      if (!into) { toast('Elige primero en el desplegable el nombre con el que unir «' + from + '».'); if (sel) sel.focus(); return; }
+      mergeChars(P(), from, into, 'unido a mano'); save(); renderTab(); toast(`«${from}» unido a «${into}».`);
+    },
+    'undo-merge': (el) => { undoMerge(P(), Number(el.dataset.i)); save(); renderTab(); toast('Unión deshecha.'); },
+    'detect-dups': () => {
+      const d = autoUnify(P()); save(); renderTab();
+      toast(d.length ? `${d.length} nombres repetidos unificados. Revisa la lista de arriba.` : 'No se han encontrado nombres repetidos.');
+    },
     'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
     'dept-view': (el) => { deptView = el.dataset.v; renderTab(); },
     'go-need': (el) => { needSel = el.dataset.k; tab = 'necesidad'; window.scrollTo(0, 0); render(); },
@@ -1262,17 +1350,7 @@
   };
 
   const changeActions = {
-    'merge-char': (el) => {
-      const p = P(); const from = el.dataset.name, into = el.value; if (!into) return;
-      p.scenes.forEach(s => {
-        const rep = arr => { const i = arr.indexOf(from); if (i >= 0) { if (arr.includes(into)) arr.splice(i, 1); else arr[i] = into; } };
-        rep(s.characters); rep(s.offCharacters || []);
-      });
-      const a = p.characters[from], b = p.characters[into];
-      ['tramaId', 'objetivo', 'arcoInicio', 'arcoFin', 'notas'].forEach(k => { if (!b[k] && a[k]) b[k] = a[k]; });
-      delete p.characters[from];
-      save(); renderTab(); toast(`«${from}» fusionado con «${into}».`);
-    },
+
     'stepline-order': (el) => { steplineOrder = el.value; renderTab(); },
     'set-act': (el) => {
       const p = P(); const name = el.dataset.act;

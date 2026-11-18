@@ -17,6 +17,17 @@ Todo se guarda en el propio navegador. Los guiones **no se envían a ningún ser
 
 Para cargar una **nueva versión del guion**, súbela con el proyecto abierto y elige «Nueva versión». Se conservan las anotaciones de las secuencias que tienen el mismo número.
 
+## ✦ Desglose automático con criterio de montaje
+
+En la versión publicada en claude.ai, la pestaña **✦ Desglose automático** pide a Claude que lea el guion como una montadora con más de 30 años de experiencia y que proponga:
+- la lectura de guion;
+- las tramas, los personajes y sus arcos;
+- el desglose secuencia a secuencia (trama, acción, conflicto, necesidades);
+- las notas por departamento;
+- el step line: intensidad, actos y puntos de giro.
+
+Se puede elegir qué partes proponer. Todo queda en los campos normales y es editable. **Deshacer** vuelve al estado anterior mientras la página siga abierta. Para repetir solo una secuencia está el botón **✦ Proponer desglose de esta secuencia**, en el detalle (▸) del Desglose de montaje. El análisis usa la cuenta de Claude de quien abre la página.
+
 ## Documentos
 
 | Pestaña | Para qué sirve |

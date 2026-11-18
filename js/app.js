@@ -51,6 +51,7 @@
   const TABS = [
     { group: 'Preparación' },
     { id: 'proyecto', label: 'Proyecto' },
+    { id: 'ia', label: '✦ Desglose automático' },
     { id: 'analisis', label: 'Lectura de guion' },
     { id: 'tramas', label: 'Tramas y personajes' },
     { group: 'Documentos' },
@@ -390,7 +391,7 @@
   function renderTab() {
     const p = P();
     const fn = {
-      proyecto: tabProyecto, analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
+      proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
       montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
@@ -595,6 +596,7 @@
               <div><div class="field"><label>Texto de la secuencia</label><div class="script-text">${esc(s.heading)}\n\n${esc(s.text)}</div></div></div>
               <div class="form-grid" style="grid-template-columns:1fr">
                 ${Object.keys(DEPTS).filter(d => d !== 'montaje').map(d => field('Notas · ' + DEPTS[d], area('s:' + s.id + ':notes.' + d, 'rows="2"'))).join('')}
+                <div class="field"><button class="btn btn-small" data-action="ai-scene" data-id="${s.id}">✦ Proponer desglose de esta secuencia</button><small id="aiScene-${s.id}"></small></div>
                 ${field('Personajes en off', `<input data-k="s:${s.id}:offCharacters" data-list="1" value="${esc((s.offCharacters || []).join(', '))}">`)}
               </div>
             </div></td></tr>` : ''}`;
@@ -855,7 +857,7 @@
     if (!cur || !cur.scenes.length) {
       if (cur && !cur.scenes.length) { applyParsed(cur, parsed); if (cur.title === 'Proyecto sin título' && parsed.title) cur.title = parsed.title; }
       else createFromParsed(parsed);
-      finishImport(`<h3>Guion cargado</h3>${summary}<p>Siguiente paso: revisa los <b>datos del proyecto</b> y define las <b>tramas</b>.</p>`);
+      finishImport(`<h3>Guion cargado</h3>${summary}<p>Siguiente paso: pide el <b>desglose automático</b> (criterio de montaje profesional) o empieza a desglosar a mano. Todo queda editable.</p>`, true);
       return;
     }
     pendingParsed = parsed;
@@ -868,10 +870,10 @@
     const p = newProject({ title: parsed.title || parsed.filename.replace(/\.[^.]+$/, '') });
     applyParsed(p, parsed);
   }
-  function finishImport(msg) {
+  function finishImport(msg, offerAI) {
     if (P()) Cloud.textsDirty.add(P().id);
     tab = 'proyecto'; expanded.clear(); save(); render();
-    showModal(msg + `<div class="actions"><button class="btn btn-primary" data-action="close-modal">Empezar</button></div>`);
+    showModal(msg + `<div class="actions"><button class="btn" data-action="close-modal">${offerAI ? 'Desglosar a mano' : 'Empezar'}</button>${offerAI ? '<button class="btn btn-primary" data-action="go-ia">✦ Desglose automático</button>' : ''}</div>`);
   }
 
   /* ------------------------------------------------------------------ */
@@ -940,6 +942,7 @@
   /* ------------------------------------------------------------------ */
   const actions = {
     'close-modal': () => hideModal(),
+    'go-ia': () => { hideModal(); tab = 'ia'; window.scrollTo(0, 0); render(); },
     'import-new': () => { createFromParsed(pendingParsed); pendingParsed = null; finishImport('<h3>Proyecto nuevo creado</h3>'); },
     'import-version': () => {
       const p = P(); const kept = mergeVersion(p, pendingParsed); pendingParsed = null;
@@ -1154,6 +1157,12 @@
   function autoGrow() { document.querySelectorAll('textarea.edit').forEach(grow); }
 
   window.addEventListener('beforeprint', autoGrow);
+  // API para el módulo de desglose automático (js/ai.js)
+  window.DesgloseApp = {
+    P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
+    NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
+    actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+  };
   render();
   Cloud.init();
 })();

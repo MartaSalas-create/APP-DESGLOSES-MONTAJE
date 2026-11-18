@@ -262,4 +262,4 @@ button.chip { font: inherit; font-size: 11px; }
 .est-clear { border-top: 1px solid var(--line); border-radius: 0 0 6px 6px; margin-top: 2px; }
 .card .est-dd { vertical-align: middle; margin-right: 8px; }
 @media (pointer: coarse) { .est-opt { padding: 10px 8px; font-size: 13px; } }
-.est-dd { min-width: 190px; } .est-dd summary { flex-wrap: nowrap; } .est-dd summary .estado-badge { flex-shrink: 0; } .est-dd summary { overflow: hidden; }
+.est-dd { min-width: 220px; }

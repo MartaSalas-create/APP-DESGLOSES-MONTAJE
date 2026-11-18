@@ -227,3 +227,11 @@ textarea.cell-input { min-height: 54px; resize: vertical; min-width: 220px; }
 }
 @media (max-width: 1100px) { .topbar { position: static; flex-wrap: wrap; } .tabs { top: 0; } main { padding: 14px; } .panel { padding: 16px; } }
 .card .estado-select { width: auto; display: inline-block; margin-right: 8px; vertical-align: middle; padding: 3px 6px; }
+
+.lbl-bg-sinrodar { background: #fff !important; color: transparent !important; box-shadow: inset 0 0 0 2px #d0342c; min-width: 34px; }
+.lbl-bg-rodada { background: #fff !important; color: #d0342c !important; box-shadow: inset 0 0 0 2px #d0342c; }
+select.lbl-bg-sinrodar, select.lbl-bg-rodada { border: 0 !important; }
+button.chip { font: inherit; font-size: 11px; }
+.need-nav { cursor: pointer; }
+.need-nav:hover { filter: brightness(1.08); }
+.need-active { outline: 3px solid var(--dark); outline-offset: 1px; }

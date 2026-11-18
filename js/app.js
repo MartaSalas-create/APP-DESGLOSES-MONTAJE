@@ -32,9 +32,11 @@
   };
   /* Leyenda de colores de postproducción y montaje (etiquetas de la montadora) */
   const ESTADOS = [
-    { k: 'pendiente', label: 'PENDIENTE', color: '#e6ae66', help: 'Por montar' },
+    { k: 'sinrodar', label: '', option: '(sin rodar)', color: '#ffffff', help: 'Todavía no se ha rodado' },
+    { k: 'rodada', label: 'RODADA', color: '#ffffff', help: 'Rodada' },
     { k: 'ingesta', label: 'INGESTA', color: '#72bad8', help: 'Material en ingesta / por sincronizar' },
     { k: 'preparada', label: 'PREPARADA', color: '#dd8ac6', help: 'Material preparado para montar' },
+    { k: 'pendiente', label: 'PENDIENTE', color: '#e6ae66', help: 'Por montar' },
     { k: 'montada', label: 'MONTADA', color: '#cc6b55', help: 'Secuencia montada' },
     { k: 'urgente', label: 'URGENTE', color: '#98e0a2', help: 'Prioridad' },
     { k: 'sono', label: 'SONO', color: '#86b86a', help: 'En sonido' },
@@ -78,6 +80,7 @@
     { id: 'stepline', label: 'Step line' },
     { group: 'Postproducción' },
     { id: 'departamentos', label: 'Necesidades por departamento' },
+    { id: 'necesidad', label: 'Detalle por necesidad' },
     { id: 'workflow', label: 'Reunión workflow' }
   ];
 
@@ -416,11 +419,11 @@
   const isRemoved = (p, s) => s.estado === 'eliminada' || !!(p.removed && p.removed[s.id]);
   function estadoSelect(s) {
     const e = estadoOf(s.estado);
-    return `<select class="cell-input estado-select lbl-bg-${e.k}" data-k="s:${s.id}:estado" data-rerender="1" title="${esc(e.help)}">${ESTADOS.map(x => `<option value="${x.k}" ${x.k === e.k ? 'selected' : ''}>${x.label}</option>`).join('')}</select>`;
+    return `<select class="cell-input estado-select lbl-bg-${e.k}" data-k="s:${s.id}:estado" data-rerender="1" title="${esc(e.help)}">${ESTADOS.map(x => `<option value="${x.k}" ${x.k === e.k ? 'selected' : ''}>${x.option || x.label}</option>`).join('')}</select>`;
   }
-  const estadoBadge = s => { const e = estadoOf(s.estado); return `<span class="estado-badge lbl-bg-${e.k}">${e.label}</span>`; };
+  const estadoBadge = s => { const e = estadoOf(s.estado); return `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label || '&nbsp;'}</span>`; };
   function postLegendHTML() {
-    return `<div class="post-legend"><b>LEYENDA DE POSTPRODUCCIÓN Y MONTAJE</b>${ESTADOS.map(e => `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label}</span>`).join('')}</div>`;
+    return `<div class="post-legend"><b>LEYENDA DE POSTPRODUCCIÓN Y MONTAJE</b>${ESTADOS.map(e => `<span class="estado-badge lbl-bg-${e.k}" title="${esc(e.help)}">${e.label || '&nbsp;&nbsp;&nbsp;&nbsp;'}</span>${e.k === 'sinrodar' ? '<span class="muted" style="margin-right:4px">sin rodar</span>' : ''}`).join('')}</div>`;
   }
   function legendHTML(p) {
     return `<div class="legend"><div style="grid-column:1/-1;font-weight:800;font-size:12px;letter-spacing:.05em">LEYENDA DE TRAMAS</div>${p.tramas.map(t => `<div class="sw" style="background:${t.color}">${esc(t.letter)}</div><div>${esc(t.name)}</div>`).join('')}</div>`;
@@ -453,7 +456,7 @@
     const p = P();
     const fn = {
       proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
-      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, workflow: tabWorkflow
+      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, departamentos: tabDepartamentos, necesidad: tabNecesidad, workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
     $('#main').innerHTML = fn(p);
@@ -534,7 +537,7 @@
         <div class="stat"><b>${Object.keys(p.characters).filter(c => !p.characters[c].hidden).length}</b><span>personajes</span></div>
         <div class="stat"><b>${new Set(sc.map(s => s.location.split(/[,.]/)[0].trim())).size}</b><span>localizaciones</span></div>
       </div>
-      ${needCounts.length ? `<h3>Necesidades detectadas automáticamente</h3><div class="needs-cell">${needCounts.map(x => `<span class="chip on lbl-${x.n.lbl || DEPT_LABEL[x.n.dept]}">${esc(x.n.label)}: ${x.c}</span>`).join('')}</div><p class="muted" style="font-size:12px">Detección por palabras clave: revísala en el <b>Desglose de montaje</b>.</p>` : ''}
+      ${needCounts.length ? `<h3>Necesidades detectadas automáticamente</h3><div class="needs-cell">${needCounts.map(x => `<button class="chip on need-nav lbl-${x.n.lbl || DEPT_LABEL[x.n.dept]}" data-action="go-need" data-k="${x.n.k}">${esc(x.n.label)}: ${x.c}</button>`).join('')}</div><p class="muted" style="font-size:12px">Pincha una etiqueta para ver su desglose detallado. Detección por palabras clave: revísala en el <b>Desglose de montaje</b>.</p>` : ''}
     </section>
     <section class="panel no-print">
       <h2>Orden de trabajo sugerido</h2>
@@ -873,6 +876,7 @@
       <h2>Necesidades por departamento</h2>
       <p class="lead no-print">Documento para la coordinación de postproducción: reúne, por departamento, las secuencias con necesidades marcadas en el desglose y sus notas. Añade notas generales de cada departamento.</p>
       <div class="toolbar no-print"><button class="btn btn-small" data-action="print">Imprimir / PDF</button></div>
+      <div class="toolbar no-print"><span class="muted">Ver detalle de:</span> ${needChipsNav(p, '')}</div>
       ${Object.keys(DEPTS).map(d => {
         const needs = NEEDS.filter(n => n.dept === d);
         const rows = p.scenes.filter(s => needs.some(n => s.needs[n.k]) || (s.notes && s.notes[d]));
@@ -882,11 +886,95 @@
           ${rows.length ? `<div class="table-wrap" style="margin-top:10px"><table>
             <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Necesidades</th><th>Descripción</th><th>Notas ${esc(DEPTS[d])}</th></tr></thead>
             <tbody>${rows.map(s => `<tr><td class="num"><b>${esc(s.num)}</b></td><td>${esc(sceneHeading(s))}</td><td class="num">${fmtMin(s.lengthPages * mpp)}</td>
-              <td><div class="needs-cell" style="min-width:140px">${needs.filter(n => s.needs[n.k]).map(n => `<span class="chip on lbl-${n.lbl || DEPT_LABEL[d]}">${esc(n.label)}</span>`).join('')}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div></td>
+              <td><div class="needs-cell" style="min-width:140px">${needs.filter(n => s.needs[n.k]).map(n => `<button class="chip on need-nav lbl-${n.lbl || DEPT_LABEL[d]}" data-action="go-need" data-k="${n.k}">${esc(n.label)}</button>`).join('')}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div></td>
               <td style="min-width:240px">${esc(s.summary)}</td>
               <td>${area('s:' + s.id + ':notes.' + d, 'class="cell-input" style="min-width:200px"')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Sin secuencias marcadas.</p>'}
         </div>`;
       }).join('')}
+    </section>`;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Pestaña: Detalle por necesidad (al pinchar una etiqueta)             */
+  /* ------------------------------------------------------------------ */
+  const NEED_FIELDS = {
+    accion: [['desc', 'Qué ocurre (coreografía, cobertura, ritmo)']],
+    secMontaje: [['desc', 'Contenido de la secuencia de montaje / musical']],
+    alterno: [['con', 'Alterna con (secuencias / acciones)']],
+    sobrante: [['motivo', 'Por qué podría caer o compactarse']],
+    flashback: [['trat', 'Tiempo / realidad y tratamiento de imagen']],
+    archivo: [['material', 'Material de archivo (qué, fuente, derechos)']],
+    vfx: [['planos', 'Efectos / planos VFX']],
+    gfx: [['rotulos', 'Rótulos y grafismo (texto exacto)']],
+    pantallas: [['contenido', 'Contenido de pantallas / monitores']],
+    off: [['quien', 'Quién habla en off y en qué momento']],
+    sfx: [['sfx', 'SFX (efectos puntuales)'], ['amb', 'Ambientes']],
+    cancion: [['cancion', 'Canción / fuente diegética (radio, baile, actuación…)']],
+    musica: [['momento', 'Momento musical (entrada, función, tono)']]
+  };
+  const AMB_RE = /lluvia|llueve|viento|tormenta|truenos?|tr[aá]fico|coches|multitud|gente|murmullo|bullicio|bar\b|cafeter[ií]a|mar\b|olas|p[aá]jaros|grillos|silencio|mercado|f[aá]brica|oficina|p[uú]blico|risas|aplausos|campo|ciudad|calle|pasillo|tel[eé]fono|radio|televisi[oó]n|m[aá]quinas|motor/i;
+  function sentencesMatching(text, re, max) {
+    const out = [];
+    (text || '').replace(/\n\s*\n/g, '\u0001').replace(/\s*\n\s*/g, ' ').replace(/([.!?…])\s+/g, '$1\u0001').split('\u0001').forEach(t => {
+      t = t.trim(); if (t && re.test(t) && !out.includes(t) && out.length < max) out.push(t.length > 220 ? t.slice(0, 220) + '…' : t);
+    });
+    return out;
+  }
+  function autoNeedDetail(s, k) {
+    const re = (ScriptParser.NEED_PATTERNS || {})[k];
+    const ev = re ? sentencesMatching(s.heading + '\n' + s.text, re, 4) : [];
+    const d = {};
+    if (k === 'sfx') {
+      d.sfx = ev.map(x => '- ' + x).join('\n');
+      const amb = sentencesMatching(s.text, AMB_RE, 3);
+      d.amb = [`- Base: ${s.intExt} ${s.location}${s.time ? ' — ' + s.time : ''}`].concat(amb.map(x => '- ' + x)).join('\n');
+    } else if (k === 'off') {
+      d.quien = (s.offCharacters && s.offCharacters.length ? 'En off: ' + s.offCharacters.join(', ') + '\n' : '') + ev.map(x => '- ' + x).join('\n');
+    } else {
+      d[NEED_FIELDS[k][0][0]] = ev.map(x => '- ' + x).join('\n');
+    }
+    return d;
+  }
+  let needSel = 'sfx';
+  function needChipsNav(p, active) {
+    return `<div class="needs-cell" style="min-width:0">${NEEDS.map(n => {
+      const c = p.scenes.filter(s => s.needs[n.k]).length;
+      return `<button class="chip lbl-${n.lbl || DEPT_LABEL[n.dept]} on need-nav ${n.k === active ? 'need-active' : ''}" data-action="go-need" data-k="${n.k}">${esc(n.label)}: ${c}</button>`;
+    }).join('')}</div>`;
+  }
+  function tabNecesidad(p) {
+    const n = NEEDS.find(x => x.k === needSel) || NEEDS[0];
+    const fields = NEED_FIELDS[n.k];
+    const rows = p.scenes.filter(s => s.needs[n.k]);
+    const mpp = minutesPerPage(p);
+    let filled = false;
+    rows.forEach(s => {
+      s.needDetail = s.needDetail || {};
+      if (!s.needDetail[n.k]) { s.needDetail[n.k] = autoNeedDetail(s, n.k); filled = true; }
+    });
+    if (filled) save();
+    return `<section class="panel">
+      ${printHeader(p, 'Detalle: ' + n.label)}
+      <h2>Detalle por necesidad · <span class="estado-badge lbl-bg-${n.lbl || DEPT_LABEL[n.dept]}" style="font-size:14px">${esc(n.label.toUpperCase())}</span></h2>
+      <p class="lead no-print">Departamento: <b>${esc(DEPTS[n.dept])}</b>. Secuencias con esta necesidad y lo que piden en concreto. Los campos se rellenan con las frases del guion que lo mencionan: revísalos y edítalos, o pide a Claude que los detalle con criterio profesional.</p>
+      <div class="toolbar no-print">${needChipsNav(p, n.k)}</div>
+      <div class="toolbar no-print">
+        <button class="btn btn-small" data-action="ai-need" data-k="${n.k}">✦ Detallar con Claude</button>
+        <button class="btn btn-small" data-action="reset-need" data-k="${n.k}">Volver a extraer del guion</button>
+        <span class="spacer"></span><span class="muted">${rows.length} secuencias · ${fmtMin(rows.reduce((a, s) => a + s.lengthPages * mpp, 0))}</span>
+        <button class="btn btn-small" data-action="print">Imprimir / PDF</button>
+      </div>
+      <div id="aiNeedStatus" class="muted" style="margin-bottom:8px"></div>
+      ${rows.length ? `<div class="table-wrap"><table>
+        <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${fields.map(f => `<th>${esc(f[1])}</th>`).join('')}<th>Notas ${esc(DEPTS[n.dept])}</th></tr></thead>
+        <tbody>${rows.map(s => `<tr>
+          <td class="num"><b>${esc(s.num)}</b></td>
+          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 160))}</div></td>
+          <td>${estadoSelect(s)}</td>
+          <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
+          ${fields.map(f => `<td>${area('s:' + s.id + ':needDetail.' + n.k + '.' + f[0], 'class="cell-input" style="min-width:260px;min-height:80px"')}</td>`).join('')}
+          <td>${area('s:' + s.id + ':notes.' + n.dept, 'class="cell-input" style="min-width:180px"')}</td>
+        </tr>`).join('')}</tbody></table></div>` : '<p class="muted">Ninguna secuencia tiene marcada esta necesidad. Márcala en el Desglose de montaje.</p>'}
     </section>`;
   }
 
@@ -1015,6 +1103,9 @@
   /* ------------------------------------------------------------------ */
   const actions = {
     'close-modal': () => hideModal(),
+    'go-need': (el) => { needSel = el.dataset.k; tab = 'necesidad'; window.scrollTo(0, 0); render(); },
+    'reset-need': (el) => { const k = el.dataset.k; P().scenes.forEach(s => { if (s.needDetail) delete s.needDetail[k]; }); save(); renderTab(); },
+    'ai-need': (el) => { if (window.AIEditor) window.AIEditor.detailNeed(el.dataset.k, NEED_FIELDS[el.dataset.k], NEEDS.find(n => n.k === el.dataset.k)); },
     'go-ia': () => { hideModal(); tab = 'ia'; window.scrollTo(0, 0); render(); },
     'import-new': () => {
       const parsed = pendingParsed; createFromParsed(parsed); pendingParsed = null;
@@ -1097,8 +1188,8 @@
     },
     'toggle-removed': (el) => {
       const p = P(); const sc = sceneById(p, el.dataset.id);
-      if (isRemoved(p, sc)) { delete p.removed[sc.id]; if (sc.estado === 'eliminada') sc.estado = 'pendiente'; }
-      else sc.estado = 'eliminada';
+      if (isRemoved(p, sc)) { delete p.removed[sc.id]; if (sc.estado === 'eliminada') sc.estado = sc.estadoPrev || 'sinrodar'; }
+      else { sc.estadoPrev = sc.estado; sc.estado = 'eliminada'; }
       save(); renderTab();
     },
     'suggest-curve': () => {

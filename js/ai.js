@@ -411,6 +411,44 @@ ${raw.slice(0, 3000)}`, { modelTier: 'quick' });
     } catch (e) { /* sin IA: quedan los datos detectados automáticamente */ }
   }
 
-  window.AIEditor = { tab, portada };
+  /* Detalle de una necesidad (p. ej. qué SFX y qué ambientes) secuencia a secuencia */
+  async function detailNeed(k, fields, need) {
+    const p = A.P(); const st = document.getElementById('aiNeedStatus');
+    const say = m => { const el = document.getElementById('aiNeedStatus'); if (el) el.textContent = m; };
+    if (!sampleFn) { A.toast('Detallar con Claude solo funciona en la versión de claude.ai.'); return; }
+    const rows = p.scenes.filter(s => s.needs[k]);
+    if (!rows.length) return;
+    const groups = []; for (let i = 0; i < rows.length; i += 20) groups.push(rows.slice(i, i + 20));
+    let done = 0;
+    for (const g of groups) {
+      say(`✦ Detallando ${need.label}: secuencias ${g[0].num}–${g[g.length - 1].num}… (${done}/${rows.length})`);
+      try {
+        const r = await sampleFn.json(`${PERSONA}
+
+TAREA: para la necesidad de postproducción «${need.label}» (departamento: ${A.DEPTS[need.dept]}), detalla en cada secuencia QUÉ se necesita exactamente, de forma concreta y útil para pasarlo al departamento.
+${k === 'sfx' ? 'Separa los SFX (efectos puntuales: golpes, disparos, puertas, objetos, foley destacado) de los AMBIENTES (fondo sonoro continuo del lugar y momento: interior/exterior, día/noche, época, multitudes, tráfico, naturaleza, room tone).' : ''}
+Campos a rellenar por secuencia:
+${fields.map(f => `- "${f[0]}": ${f[1]}`).join('\n')}
+Usa viñetas que empiecen por "- ". Si en una secuencia no hace falta realmente, escribe "No necesario: " y el motivo.
+
+Contexto de la película:
+${globalContext(p)}
+
+Responde SOLO con JSON: {"secuencias": [ {"esc": "nº", ${fields.map(f => `"${f[0]}": ""`).join(', ')}} ]}
+
+SECUENCIAS:
+${g.map(s => sceneBlock(s, 4000)).join('\n\n')}`, { modelTier: 'complex', cache: false });
+        ((r && r.secuencias) || []).forEach(x => {
+          const s = findScene(p, x.esc); if (!s) return;
+          s.needDetail = s.needDetail || {}; s.needDetail[k] = s.needDetail[k] || {};
+          fields.forEach(f => { if (x[f[0]]) s.needDetail[k][f[0]] = Array.isArray(x[f[0]]) ? x[f[0]].map(v => '- ' + v).join('\n') : String(x[f[0]]); });
+        });
+        done += g.length; A.save();
+      } catch (e) { say(errText(e)); return; }
+    }
+    A.renderTab(); A.toast(`${need.label}: ${done} secuencias detalladas. Revísalas y edítalas.`);
+  }
+
+  window.AIEditor = { tab, portada, detailNeed };
   init();
 })();

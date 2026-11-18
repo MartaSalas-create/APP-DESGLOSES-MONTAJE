@@ -2,8 +2,8 @@
    LISTADO DE SFX Y AMBIENTES PARA EL DISEÑADOR DE SONIDO
    Un listado único (sin repeticiones) de los archivos de sonido que hay que
    pedir para importarlos en el Avid y montar el sonido de referencia:
-   cada SFX y cada ambiente con las secuencias en que se usa, la duración
-   necesaria y un nombre de archivo.
+   cada SFX y cada ambiente con las secuencias en que se usa y la duración
+   necesaria.
    ========================================================================== */
 (function () {
   'use strict';
@@ -180,11 +180,9 @@ ${g.map(s => AI.block(s, 3000) + `\n(duración estimada: ${mmss(s.lengthPages * 
       const k = f => `p:soundList.${i}.${f}`;
       return `<tr class="${it.estado === 'descartado' ? 'strike' : ''}">
         <td><span class="estado-badge" style="background:${it.tipo === 'AMB' ? '#5f8f4a' : '#86b86a'};color:#fff">${it.tipo === 'AMB' ? 'AMBIENTE' : 'SFX'}</span><div style="margin-top:4px">${sel(k('tipo'), [['SFX', 'SFX'], ['AMB', 'Ambiente']], it.tipo)}</div></td>
-        <td><input class="cell-input mono" data-k="${k('archivo')}" value="${esc(it.archivo)}" style="min-width:220px"></td>
         <td><textarea class="cell-input" data-k="${k('desc')}" style="min-width:260px">${esc(it.desc)}</textarea></td>
         <td><input class="cell-input" data-k="${k('escenas')}" value="${esc(it.escenas)}" style="min-width:110px"></td>
         <td><textarea class="cell-input" data-k="${k('uso')}" style="min-width:200px">${esc(it.uso)}</textarea></td>
-        <td>${sel(k('prioridad'), PRIORIDADES.map(x => [x, x]), it.prioridad)}</td>
         <td>${sel(k('estado'), ESTADOS_SND.map(e => [e.k, e.label]), it.estado, 'snd-estado')}<div style="height:4px;border-radius:2px;margin-top:3px;background:${est.color}"></div></td>
         <td><textarea class="cell-input" data-k="${k('notas')}" style="min-width:160px">${esc(it.notas)}</textarea></td>
         <td class="no-print"><button class="btn btn-small btn-ghost" data-action="snd-del" data-i="${i}" title="Quitar">✕</button></td>
@@ -208,7 +206,7 @@ ${g.map(s => AI.block(s, 3000) + `\n(duración estimada: ${mmss(s.lengthPages * 
       <div id="sndStatus" class="muted" style="margin-bottom:8px"></div>
       <div class="post-legend" style="margin-bottom:10px"><b>${nS} SFX · ${nA} AMBIENTES</b>${byEst.map(([e, n]) => `<span class="estado-badge" style="background:${e.color};color:#fff">${e.label}: ${n}</span>`).join('')}</div>
       ${items.length ? `<div class="table-wrap"><table>
-        <thead><tr><th>Tipo</th><th>Archivo (nombre para el Avid)</th><th>Descripción</th><th>Secuencias</th><th>Uso / duración</th><th>Prioridad</th><th>Estado</th><th>Notas</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Descripción</th><th>Secuencias</th><th>Uso / duración</th><th>Estado</th><th>Notas</th><th class="no-print"></th></tr></thead>
         <tbody>${items.map(row).join('')}</tbody></table></div>`
         : `<div class="note">Todavía no hay listado. Pulsa <b>✦ Preparar listado con Claude</b> (lee el guion con criterio de montaje y agrupa SFX y ambientes) o <b>Listado automático desde el guion</b> (rápido, por palabras clave: un ambiente por cada lugar y momento del día, y los SFX habituales de librería que se mencionan).</div>`}
     </section>`;
@@ -217,8 +215,8 @@ ${g.map(s => AI.block(s, 3000) + `\n(duración estimada: ${mmss(s.lengthPages * 
   /* ---------------- Exportar ---------------- */
   function csv(p) {
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-    const head = ['Tipo', 'Archivo', 'Descripción', 'Secuencias', 'Uso / duración', 'Prioridad', 'Estado', 'Notas'];
-    const rows = list(p).filter(i => i.estado !== 'descartado').map(i => [i.tipo === 'AMB' ? 'AMBIENTE' : 'SFX', i.archivo, i.desc, i.escenas, i.uso, i.prioridad, (ESTADOS_SND.find(e => e.k === i.estado) || {}).label, i.notas]);
+    const head = ['Tipo', 'Descripción', 'Secuencias', 'Uso / duración', 'Estado', 'Notas'];
+    const rows = list(p).filter(i => i.estado !== 'descartado').map(i => [i.tipo === 'AMB' ? 'AMBIENTE' : 'SFX', i.desc, i.escenas, i.uso, (ESTADOS_SND.find(e => e.k === i.estado) || {}).label, i.notas]);
     A.download(A.fileBase(p) + '_SFX_ambientes.csv', '﻿' + [head, ...rows].map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
   }
 

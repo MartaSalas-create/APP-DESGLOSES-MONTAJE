@@ -246,6 +246,32 @@
     p.acts = defaultActs(p);
   }
 
+  /* Datos de portada -> proyecto. En una versión nueva se actualizan versión y
+     fecha, y el resto solo se rellena si estaba vacío (para no pisar cambios). */
+  const PORTADA_FIELDS = [
+    ['title', 'Título', 'title'], ['version', 'Versión', 'version'], ['fecha', 'Fecha', 'fecha'],
+    ['guion', 'Guion', 'credits.guion'], ['basadoEn', 'Basado en', 'basadoEn'], ['direccion', 'Dirección', 'credits.direccion'],
+    ['produccion', 'Producción', 'produccion'], ['episodio', 'Episodio / serie', 'episodio'],
+    ['registro', 'Registro / derechos', 'registro'], ['contacto', 'Contacto', 'contacto']
+  ];
+  function applyPortada(p, info, isVersion) {
+    if (!info) return [];
+    const changed = [];
+    PORTADA_FIELDS.forEach(([k, label, path]) => {
+      const v = String(info[k] || '').trim(); if (!v) return;
+      const cur = getPath(p, path);
+      const always = !isVersion || k === 'version' || k === 'fecha';
+      const empty = !cur || (k === 'title' && cur === 'Proyecto sin título');
+      if (always || empty) { setPath(p, path, v); changed.push([label, v]); }
+    });
+    if (info.raw) p.portada = info.raw;
+    return changed;
+  }
+  function portadaHTML(changed) {
+    if (!changed || !changed.length) return '<p class="muted">No se han encontrado datos de portada: puedes escribirlos en <b>Proyecto</b>.</p>';
+    return `<p><b>Datos de la portada:</b></p><div class="legend" style="grid-template-columns:auto 1fr;font-size:13px">${changed.map(([l, v]) => `<div class="muted">${esc(l)}</div><div>${esc(v)}</div>`).join('')}</div>`;
+  }
+
   function mergeVersion(p, parsed) {
     const old = {};
     p.scenes.forEach(s => { old[String(s.num).toUpperCase()] = s; });
@@ -405,7 +431,7 @@
   function renderProjectSelect() {
     const sel = $('#projectSelect');
     const ids = Object.keys(state.projects);
-    sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}" ${id === state.currentId ? 'selected' : ''}>${esc(state.projects[id].title)}${state.projects[id].version ? ' · v' + esc(state.projects[id].version) : ''}</option>`).join('') : '<option>— sin proyectos —</option>';
+    sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}" ${id === state.currentId ? 'selected' : ''}>${esc(state.projects[id].title)}${state.projects[id].version ? ' · ' + esc(state.projects[id].version) : ''}</option>`).join('') : '<option>— sin proyectos —</option>';
     sel.disabled = !ids.length;
   }
 
@@ -446,7 +472,8 @@
       <p class="lead">Datos que aparecerán en la cabecera del step line y de los documentos. ${p.source ? `Guion cargado: <b>${esc(p.source.filename)}</b> (${esc(p.source.format)}, ${new Date(p.source.importedAt).toLocaleString('es-ES')}). Para cargar una versión nueva del guion usa <b>Subir guion</b>: se conservarán tus anotaciones en las secuencias con el mismo número.` : 'Todavía no hay guion cargado: usa <b>Subir guion</b>.'}</p>
       <div class="form-grid">
         ${field('Título', inp('p:title', 'data-rerender-select="1"'))}
-        ${field('Versión del guion', inp('p:version', 'placeholder="p. ej. 3ª versión, 12/10/2026"'))}
+        ${field('Versión del guion', inp('p:version', 'placeholder="p. ej. 3ª versión"'))}
+        ${field('Fecha del guion', inp('p:fecha', 'placeholder="p. ej. 12 de octubre de 2026"'))}
         ${field('Formato', `<select data-k="p:formato">${['Largometraje', 'Cortometraje', 'Serie (episodio)', 'TV movie', 'Documental', 'Otro'].map(o => `<option ${p.formato === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`)}
         ${field('Páginas del guion', inp('p:pages', 'type="number" min="0"'))}
         ${field('Duración real / prevista (min)', inp('p:durationMin', 'type="number" min="0" step="0.5" placeholder="' + Math.round(estMin) + ' estimados"'), '', 'Si se deja vacío se estima 1 página ≈ 1 minuto.')}
@@ -455,7 +482,13 @@
         ${field('Dirección', inp('p:credits.direccion'))}
         ${field('Montaje', inp('p:credits.montaje'))}
         ${field('Otros créditos (música, fotografía…)', inp('p:credits.otros'))}
+        ${field('Basado en', inp('p:basadoEn'))}
+        ${field('Producción', inp('p:produccion'))}
+        ${field('Episodio / serie', inp('p:episodio'))}
+        ${field('Registro / derechos', inp('p:registro'))}
+        ${field('Contacto', inp('p:contacto'))}
         ${field('Idea / logline', area('p:logline', 'rows="2"'), 'wide')}
+        ${p.portada ? field('Texto de la portada (tal como aparece en el guion)', `<div class="script-text" style="max-height:200px">${esc(p.portada)}</div>`, 'wide') : ''}
       </div>
       <div class="stats">
         <div class="stat"><b>${sc.length}</b><span>secuencias</span></div>
@@ -855,9 +888,11 @@
     const cur = P();
     const summary = `<p><b>${parsed.scenes.length}</b> secuencias · <b>${parsed.pages}</b> páginas · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
     if (!cur || !cur.scenes.length) {
-      if (cur && !cur.scenes.length) { applyParsed(cur, parsed); if (cur.title === 'Proyecto sin título' && parsed.title) cur.title = parsed.title; }
+      if (cur && !cur.scenes.length) applyParsed(cur, parsed);
       else createFromParsed(parsed);
-      finishImport(`<h3>Guion cargado</h3>${summary}<p>Siguiente paso: pide el <b>desglose automático</b> (criterio de montaje profesional) o empieza a desglosar a mano. Todo queda editable.</p>`, true);
+      const changed = applyPortada(P(), parsed.portada, false);
+      if (window.AIEditor) window.AIEditor.portada(P(), parsed, false);
+      finishImport(`<h3>Guion cargado</h3>${summary}${portadaHTML(changed)}<p>Siguiente paso: pide el <b>desglose automático</b> (criterio de montaje profesional) o empieza a desglosar a mano. Todo queda editable.</p>`, true);
       return;
     }
     pendingParsed = parsed;
@@ -943,10 +978,17 @@
   const actions = {
     'close-modal': () => hideModal(),
     'go-ia': () => { hideModal(); tab = 'ia'; window.scrollTo(0, 0); render(); },
-    'import-new': () => { createFromParsed(pendingParsed); pendingParsed = null; finishImport('<h3>Proyecto nuevo creado</h3>'); },
+    'import-new': () => {
+      const parsed = pendingParsed; createFromParsed(parsed); pendingParsed = null;
+      const changed = applyPortada(P(), parsed.portada, false);
+      if (window.AIEditor) window.AIEditor.portada(P(), parsed, false);
+      finishImport('<h3>Proyecto nuevo creado</h3>' + portadaHTML(changed), true);
+    },
     'import-version': () => {
-      const p = P(); const kept = mergeVersion(p, pendingParsed); pendingParsed = null;
-      finishImport(`<h3>Versión actualizada</h3><p>${p.scenes.length} secuencias; se han conservado las anotaciones de ${kept}. Actualiza el campo <b>Versión del guion</b>.</p>`);
+      const parsed = pendingParsed; const p = P(); const kept = mergeVersion(p, parsed); pendingParsed = null;
+      const changed = applyPortada(p, parsed.portada, true);
+      if (window.AIEditor) window.AIEditor.portada(p, parsed, true);
+      finishImport(`<h3>Versión actualizada</h3><p>${p.scenes.length} secuencias; se han conservado las anotaciones de ${kept}.</p>${portadaHTML(changed)}<p class="muted">Comprueba la versión y la fecha en <b>Proyecto</b>.</p>`);
     },
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
     'export-json': () => { const p = P(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
@@ -1161,7 +1203,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

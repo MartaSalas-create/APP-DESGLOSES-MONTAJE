@@ -50,8 +50,11 @@
     if (credits.direccion) creditBits.push('Dirección: ' + credits.direccion);
     if (credits.montaje) creditBits.push('Montaje: ' + credits.montaje);
     if (credits.otros) creditBits.push(credits.otros);
+    if (p.basadoEn) creditBits.push('Basado en ' + p.basadoEn);
     const dataBits = [];
-    if (p.version) dataBits.push('Guion versión ' + p.version);
+    if (p.version) dataBits.push('Guion: ' + p.version + (p.fecha ? ' (' + p.fecha + ')' : ''));
+    else if (p.fecha) dataBits.push('Guion de ' + p.fecha);
+    if (p.episodio) dataBits.unshift(p.episodio);
     if (p.pages) dataBits.push(p.pages + ' págs.');
     dataBits.push(scenes.length + ' secuencias');
     if (p.durationMin) dataBits.push('Duración real ' + p.durationMin + "'");

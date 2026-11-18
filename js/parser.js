@@ -173,7 +173,7 @@
         scenes.push(cur);
         return;
       }
-      if (!cur) { if (l.type !== 'blank' && l.type !== 'skip') preamble.push(l.text.trim()); return; }
+      if (!cur) { if (l.type !== 'blank' && l.type !== 'skip') preamble.push({ text: l.text.trim(), size: l.size || 0, page: l.page || 1 }); return; }
       if (l.type === 'cue') {
         if (l.character && !cur.characters.includes(l.character)) cur.characters.push(l.character);
         if (l.off && !cur.offCharacters.includes(l.character)) cur.offCharacters.push(l.character);
@@ -207,7 +207,8 @@
       delete s.action; delete s.body;
     });
 
-    return { scenes, title: guessTitle(preamble) };
+    const portada = parsePortada(preamble);
+    return { scenes, title: portada.title, portada };
   }
 
   function joinParagraphs(arr) {
@@ -220,6 +221,92 @@
     const cut = text.slice(0, max);
     const lastDot = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('.'));
     return lastDot > 60 ? cut.slice(0, lastDot + 1) : cut.replace(/\s+\S*$/, '') + '…';
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Portada: título, versión, fecha, guion, basado en, producción…      */
+  /* ------------------------------------------------------------------ */
+  const MONTHS = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|january|february|march|april|may|june|july|august|september|october|november|december|ene|feb|mar|abr|jun|jul|ago|sep|sept|oct|nov|dic';
+  const DATE_RES = [
+    new RegExp('\\b\\d{1,2}\\s+(?:de\\s+)?(?:' + MONTHS + ')\\.?\\s+(?:de\\s+|del\\s+)?\\d{4}\\b', 'i'),
+    new RegExp('\\b(?:' + MONTHS + ')\\.?\\s+\\d{1,2},?\\s+\\d{4}\\b', 'i'),
+    new RegExp('\\b(?:' + MONTHS + ')\\.?\\s+(?:de\\s+|del\\s+)?\\d{4}\\b', 'i'),
+    /\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/,
+    /\b\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}\b/
+  ];
+  const LABELS = {
+    version: /\b(versi[oó]n|borrador|draft|tratamiento|revisi[oó]n|v\.\s?\d|\d+\s*[ªºa]\s*(?:versi[oó]n)?|final|shooting script|guion de rodaje|guion t[eé]cnico)\b/i,
+    guion: /^(un\s+)?(guion|gui[oó]n|escrit[oa]|written|screenplay|teleplay|story by|historia de|idea original|argumento|creado por|created by|autor|autora|author)\b/i,
+    basado: /\b(basad[oa]|a partir de|adaptaci[oó]n|adaptad[oa]|based on|inspirad[oa]|versi[oó]n libre)\b/i,
+    direccion: /\b(direcci[oó]n|dirigid[oa]|directed by|director[a]?\b|un film de|una pel[ií]cula de|a film by)/i,
+    produccion: /\b(producci[oó]n|productora|producid[oa]|produced by|producer|productor[a]?\b|producciones|films\b|pictures\b|s\.\s?l\.?\b|s\.\s?a\.?\b|media\b|studios?\b)/i,
+    registro: /(registr|sgae|wga|propiedad intelectual|safe ?creative|©|\(c\)|copyright|dama\b|isbn|todos los derechos)/i,
+    episodio: /\b(episodio|cap[ií]tulo|episode|temporada|season|serie\b|\d+\s?x\s?\d+)\b/i,
+    contacto: /(@|\btel[eé]?f?\.?\b|tel[eé]fono|m[oó]vil|\+\d{2}|\b\d{3}[\s.]?\d{2,3}[\s.]?\d{2,3}[\s.]?\d{2,3}\b|www\.|https?:|\bcalle\b|\bc\/|avda|avenida|contacto|contact|agente|agent)/i
+  };
+  const stripLabel = (t, re) => t.replace(re, '').replace(/^[\s:.\-–—,]+|[\s:\-–—,]+$/g, '').replace(/^(de|del|por|by|en|on)\s+/i, '').trim();
+
+  function parsePortada(preamble) {
+    // Solo la portada: primeras líneas (o la primera página si hay geometría)
+    let lines = preamble.filter(l => l.text && !/^\d{1,3}\.?$/.test(l.text));
+    if (lines.some(l => l.page > 1) && lines.filter(l => l.page === 1).length >= 2) lines = lines.filter(l => l.page === 1);
+    lines = lines.slice(0, 60);
+    const out = { title: '', version: '', fecha: '', guion: '', basadoEn: '', direccion: '', produccion: '', contacto: '', registro: '', episodio: '', raw: lines.map(l => l.text).join('\n').slice(0, 3000) };
+    if (!lines.length) return out;
+    const used = new Set();
+    const nextVal = i => { const n = lines[i + 1]; return n ? (used.add(i + 1), n.text) : ''; };
+    const append = (k, v) => { v = (v || '').trim(); if (v && !out[k].includes(v)) out[k] = out[k] ? out[k] + ' · ' + v : v; };
+
+    lines.forEach((l, i) => {
+      const t = l.text;
+      if (!out.fecha) { for (const re of DATE_RES) { const m = t.match(re); if (m) { out.fecha = m[0]; break; } } }
+      if (/^(de|por|by|un guion de|una pel[ií]cula de)$/i.test(t)) { append('guion', nextVal(i)); used.add(i); return; }
+      if (LABELS.registro.test(t)) { append('registro', t); used.add(i); return; }
+      if (LABELS.contacto.test(t) && !LABELS.guion.test(t)) { append('contacto', t); used.add(i); return; }
+      if (LABELS.basado.test(t)) {
+        let v = t; if (/\b(en|de|on|of)\s*:?$/i.test(t)) v += ' ' + nextVal(i);
+        append('basadoEn', stripLabel(v, /^.*?\b(basad[oa]\s+en|a partir de|adaptaci[oó]n de|adaptad[oa] de|based on|inspirad[oa]\s+en|versi[oó]n libre de)\b/i) || v); used.add(i); return;
+      }
+      if (LABELS.guion.test(t)) {
+        let v = stripLabel(t, /^(un\s+)?(guion|gui[oó]n|escrit[oa]|written|screenplay|teleplay|story|historia|idea original|argumento|creado|created|autor|autora|author)(\s+(original|literario|cinematogr[aá]fico))?(\s+(y\s+)?(di[aá]logos|direcci[oó]n))?(\s+(de|por|by|del))?\s*:?/i);
+        if (!v) v = nextVal(i);
+        append('guion', v); used.add(i); return;
+      }
+      if (LABELS.direccion.test(t) && t.length < 90) {
+        let v = stripLabel(t, /^.*?\b(direcci[oó]n|dirigid[oa]\s+por|directed by|director[a]?|un film de|una pel[ií]cula de|a film by)\b\s*:?/i);
+        if (!v) v = nextVal(i);
+        append('direccion', v); used.add(i); return;
+      }
+      if (LABELS.episodio.test(t) && t.length < 80) { append('episodio', t); used.add(i); return; }
+      if (LABELS.version.test(t) && t.length < 90) { append('version', t.replace(/^versi[oó]n\s*:\s*/i, '')); used.add(i); return; }
+      if (LABELS.produccion.test(t) && t.length < 90) { append('produccion', stripLabel(t, /^(producci[oó]n|productora|producid[oa]\s+por|produced by)\b\s*:?/i) || t); used.add(i); return; }
+      if (out.fecha && DATE_RES.some(re => re.test(t)) && t.replace(/[\d\s\/.\-,de]+/gi, '').length < 12) used.add(i);
+    });
+
+    // Título: la línea de mayor tamaño de letra; si no hay tamaños, la primera en mayúsculas
+    const free = lines.map((l, i) => ({ l, i })).filter(x => !used.has(x.i) && x.l.text.length < 90 && !/^(de|por|by|un|una)\s/i.test(x.l.text));
+    let titleIdx = -1;
+    const sized = free.filter(x => x.l.size);
+    if (sized.length) {
+      const max = Math.max(...sized.map(x => x.l.size));
+      const big = sized.filter(x => x.l.size >= max - 0.5);
+      if (max > Math.min(...sized.map(x => x.l.size)) + 0.5 || big.length === 1) {
+        out.title = big.map(x => x.l.text).join(' ');
+        titleIdx = big[big.length - 1].i;
+      }
+    }
+    if (!out.title) {
+      const c = free.find(x => upperRatio(x.l.text) > 0.8 && x.l.text.length > 1) || free[0];
+      if (c) { out.title = c.l.text; titleIdx = c.i; }
+    }
+    out.title = out.title.replace(/^["“'«]+|["”'»]+$/g, '').replace(/\s+/g, ' ').trim();
+    // «de Fulano» / «por Fulana» justo debajo del título = guion
+    if (!out.guion && titleIdx >= 0) {
+      const n = lines.slice(titleIdx + 1, titleIdx + 4).find(l => /^(de|por|by)\s+\S/i.test(l.text));
+      if (n) out.guion = n.text.replace(/^(de|por|by)\s+/i, '').trim();
+    }
+    if (!out.version && /versi[oó]n|borrador|draft/i.test(out.fecha)) out.version = out.fecha;
+    return out;
   }
 
   function guessTitle(preamble) {
@@ -249,7 +336,7 @@
         const x = it.transform[4], y = it.transform[5];
         let row = rows.find(r => Math.abs(r.y - y) < 2.5);
         if (!row) { row = { y, items: [] }; rows.push(row); }
-        row.items.push({ x, str: it.str, w: it.width });
+        row.items.push({ x, str: it.str, w: it.width, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 0 });
       });
       rows.sort((a, b) => b.y - a.y);
       let prevY = null;
@@ -264,7 +351,7 @@
         // línea en blanco si hay un salto vertical grande (para separar bloques)
         if (prevY !== null && prevY - r.y > 20) lines.push({ text: '', page: p, pos: (p - 1) + (1 - prevY / vp.height), x: 0, width: vp.width });
         // ignorar números de secuencia repetidos a la derecha: se mantienen en el texto y se limpian en parseHeading
-        lines.push({ text, page: p, pos: (p - 1) + (1 - r.y / vp.height), x: r.items[0].x, width: vp.width });
+        lines.push({ text, page: p, pos: (p - 1) + (1 - r.y / vp.height), x: r.items[0].x, width: vp.width, size: Math.round(Math.max(...r.items.map(it => it.size)) * 10) / 10 });
         prevY = r.y;
       });
       lines.push({ text: '', page: p, pos: p - 0.001, x: 0, width: vp.width });
@@ -294,6 +381,12 @@
   function fountainTitle(text) {
     const m = text.match(/^\s*Title:\s*(.+)$/im);
     return m ? m[1].replace(/[_*]/g, '').trim() : '';
+  }
+  function fountainPortada(text) {
+    const head = text.replace(/\r/g, '').split(/\n\s*\n/)[0];
+    if (!/^\s*(title|credit|author|authors|source|draft date|date|contact|copyright|notes|version)\s*:/im.test(head)) return null;
+    const get = k => { const m = head.match(new RegExp('^\\s*(?:' + k + ')\\s*:\\s*([^\\n]*(?:\\n(?:\\s{2,}|\\t)[^\\n]+)*)', 'im')); return m ? m[1].replace(/\n\s+/g, ' · ').replace(/[_*]/g, '').trim() : ''; };
+    return { title: get('title'), guion: get('author|authors'), basadoEn: get('source'), fecha: get('draft date|date'), contacto: get('contact'), registro: get('copyright'), version: get('version|draft'), raw: head };
   }
 
   /* ------------------------------------------------------------------ */
@@ -330,8 +423,13 @@
       }
       count += Math.max(1, Math.ceil(text.length / width));
     });
-    const titleEl = doc.querySelector('TitlePage Paragraph Text');
-    return { typed, pages: Math.max(1, Math.ceil(count / LINES_PER_PAGE)), title: titleEl ? titleEl.textContent.trim() : '' };
+    const tp = Array.from(doc.querySelectorAll('TitlePage Paragraph')).map(p => ({
+      text: Array.from(p.querySelectorAll('Text')).map(t => t.textContent).join('').trim(),
+      size: Math.max(0, ...Array.from(p.querySelectorAll('Text')).map(t => parseFloat(t.getAttribute('Size')) || (/Bold/i.test(t.getAttribute('Style') || '') ? 13 : 12))),
+      page: 1
+    })).filter(x => x.text);
+    const portada = tp.length ? parsePortada(tp) : null;
+    return { typed, pages: Math.max(1, Math.ceil(count / LINES_PER_PAGE)), title: portada ? portada.title : '', portada };
   }
 
   /* ------------------------------------------------------------------ */
@@ -348,8 +446,9 @@
       result = buildScenes(typed, pages); result.pages = pages;
     } else if (ext === 'fdx') {
       format = 'Final Draft';
-      const { typed, pages, title } = fdxToTyped(await file.text());
+      const { typed, pages, title, portada } = fdxToTyped(await file.text());
       result = buildScenes(typed, pages); result.pages = pages; result.title = title || result.title;
+      if (portada) result.portada = portada;
     } else if (ext === 'docx') {
       format = 'Word';
       if (!global.mammoth) throw new Error('No se ha podido cargar el lector de Word.');
@@ -362,7 +461,10 @@
       const text = await file.text();
       const { lines, pages } = textToLines(text);
       result = buildScenes(classifyLines(lines, false), pages); result.pages = pages;
-      if (ext === 'fountain') result.title = fountainTitle(text) || result.title;
+      if (ext === 'fountain') {
+        const fp = fountainPortada(text);
+        if (fp) { result.portada = Object.assign({}, result.portada, Object.fromEntries(Object.entries(fp).filter(([, v]) => v))); result.title = fp.title || result.title; }
+      }
     }
     result.format = format;
     result.filename = name;
@@ -372,5 +474,5 @@
     return result;
   }
 
-  global.ScriptParser = { parseFile, parseHeading, classifyLines, buildScenes, textToLines, detectNeeds, NEED_PATTERNS };
+  global.ScriptParser = { parseFile, parsePortada, parseHeading, classifyLines, buildScenes, textToLines, detectNeeds, NEED_PATTERNS };
 })(typeof window !== 'undefined' ? window : globalThis);

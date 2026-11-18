@@ -382,6 +382,35 @@ ${scenes.map(s => sceneBlock(s, 5000)).join('\n\n')}`;
     if (k) opts[k] = e.target.checked;
   });
 
-  window.AIEditor = { tab };
+  /* Portada: Claude revisa los datos detectados (rápido, modelo ligero) */
+  async function portada(p, parsed, isVersion) {
+    const raw = parsed && parsed.portada && parsed.portada.raw;
+    if (!raw || !raw.trim()) return;
+    if (available === null) { await new Promise(r => setTimeout(r, 1500)); }
+    if (!sampleFn) return;
+    try {
+      const info = await sampleFn.json(`Este es el texto de la portada (primera página) de un guion cinematográfico o de televisión. Extrae sus datos.
+Responde SOLO con JSON: {"title": "", "version": "", "fecha": "", "guion": "", "basadoEn": "", "direccion": "", "produccion": "", "episodio": "", "registro": "", "contacto": ""}
+- title: título de la obra (sin comillas).
+- version: versión, borrador o tratamiento tal como figura (p. ej. "3ª versión", "Borrador 2", "Guion de rodaje").
+- fecha: fecha del guion tal como figura.
+- guion: autor/es del guion (solo nombres).
+- basadoEn: obra original si es una adaptación.
+- direccion, produccion (productora/s), episodio (serie, temporada, capítulo), registro (registro de propiedad intelectual, SGAE, WGA, copyright), contacto (email, teléfono, agencia).
+Deja "" lo que no aparezca. No inventes nada.
+
+PORTADA:
+${raw.slice(0, 3000)}`, { modelTier: 'quick' });
+      if (!info || typeof info !== 'object') return;
+      const before = JSON.stringify([p.title, p.version, p.fecha, p.credits]);
+      A.applyPortada(p, Object.assign({}, info, { raw }), isVersion);
+      if (JSON.stringify([p.title, p.version, p.fecha, p.credits]) !== before) {
+        A.save(); A.render();
+        A.toast('Datos de portada revisados. Puedes corregirlos en Proyecto.');
+      }
+    } catch (e) { /* sin IA: quedan los datos detectados automáticamente */ }
+  }
+
+  window.AIEditor = { tab, portada };
   init();
 })();

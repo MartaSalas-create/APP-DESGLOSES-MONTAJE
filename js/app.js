@@ -990,13 +990,13 @@
       isHidden: s => hidden.has(s.tramaId || '__none'), isTramaHidden: id => hidden.has(id),
       zoom: slZoom
     });
-    const visChip = (id, label, color) => `<button class="btn btn-small trama-vis ${hidden.has(id) ? 'off' : ''}" data-action="toggle-trama-vis" data-id="${id}" title="${hidden.has(id) ? 'Mostrar' : 'Ocultar'}"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button>`;
+    const visChip = (id, label, color) => `<span class="trama-vis-wrap"><button class="btn btn-small trama-vis ${hidden.has(id) ? 'off' : ''}" data-action="toggle-trama-vis" data-id="${id}" title="${hidden.has(id) ? 'Mostrar' : 'Ocultar'}"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button><button class="btn btn-small btn-ghost solo-btn" data-action="trama-vis-solo" data-id="${id}" title="Ver solo esta trama">solo</button></span>`;
     const filterBar = `<div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(t => visChip(t.id, t.letter + ' · ' + t.name, t.color)).join('')}${visChip('__none', 'Sin trama', '#fff')}
       <button class="btn btn-small btn-ghost" data-action="trama-vis-all">Mostrar todas</button>
       <span class="spacer"></span>
       <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
       <button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
-      <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla.</p>`;
+      <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla, o «solo» para ver únicamente esa trama.</p>`;
     const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(s.num)} · ${esc(s.location.slice(0, 40))}</option>`).join('');
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
     return `<section class="panel">
@@ -1384,6 +1384,7 @@
     'toggle-esc-vis': (el) => { const p = P(); const h = escHidden(p); const id = el.dataset.id; if (h.has(id)) h.delete(id); else h.add(id); p.escHidden = Array.from(h); save(); renderTab(); },
     'esc-solo': (el) => { const p = P(); p.escHidden = p.tramas.map(t => t.id).concat('__none').filter(id => id !== el.dataset.id); save(); renderTab(); },
     'esc-vis-all': () => { P().escHidden = []; save(); renderTab(); },
+    'trama-vis-solo': (el) => { const p = P(); p.steplineHidden = p.tramas.map(t => t.id).concat('__none').filter(id => id !== el.dataset.id); save(); renderTab(); },
     'trama-vis-all': () => { P().steplineHidden = []; save(); renderTab(); },
     'sl-zoom': (el) => {
       const d = Number(el.dataset.d);

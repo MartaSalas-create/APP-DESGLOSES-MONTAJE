@@ -414,6 +414,16 @@
     const p = P(); const cur = val(k) || '';
     return `<select class="${cls}" data-k="${esc(k)}" data-rerender="1"><option value="">—</option>${p.tramas.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.letter)} · ${esc(t.name)}</option>`).join('')}</select>`;
   }
+  function needsDropdown(s) {
+    const key = 'n:' + s.id;
+    const on = NEEDS.filter(n => s.needs[n.k]);
+    const chip = n => `<span class="chip on lbl-${n.lbl || DEPT_LABEL[n.dept]}">${esc(n.label)}</span>`;
+    return `<details class="est-dd needs-dd" data-id="${key}" ${openEst === key ? 'open' : ''}>
+      <summary title="Necesidades (selección múltiple)">${on.length ? on.map(chip).join('') : '<span class="muted" style="font-size:12px">— ninguna —</span>'}<span class="est-caret">▾</span></summary>
+      <div class="est-menu">${Object.keys(DEPTS).map(d => `<div class="needs-group">${esc(DEPTS[d])}</div>` + NEEDS.filter(n => n.dept === d).map(n =>
+        `<button type="button" class="est-opt ${s.needs[n.k] ? 'on' : ''}" data-action="toggle-need" data-id="${s.id}" data-n="${n.k}"><span class="est-check">${s.needs[n.k] ? '✓' : ''}</span>${chip(n)}<span></span></button>`).join('')).join('')}
+      </div></details>`;
+  }
   function needChips(s) {
     return NEEDS.map(n => `<label class="chip lbl-${n.lbl || DEPT_LABEL[n.dept]} ${s.needs[n.k] ? 'on' : ''}" title="${esc(DEPTS[n.dept])}"><input type="checkbox" data-k="s:${s.id}:needs.${n.k}" data-rerender="1" ${s.needs[n.k] ? 'checked' : ''}>${esc(n.label)}</label>`).join('');
   }
@@ -652,7 +662,7 @@
     return `<section class="panel">
       ${printHeader(p, 'Desglose de montaje')}
       <h2>Desglose de montaje</h2>
-      <p class="lead">Una fila por secuencia. Las necesidades se han marcado automáticamente por palabras clave del guion: revísalas (clic para activar/desactivar). Abre ▸ para ver el texto de la secuencia y las notas por departamento.</p>
+      <p class="lead">Una fila por secuencia. Las necesidades se han marcado automáticamente por palabras clave del guion: revísalas en su desplegable (muestra solo las marcadas; ábrelo para marcar o desmarcar). Abre ▸ para ver el texto de la secuencia y las notas por departamento.</p>
       <div class="toolbar">
         <button class="btn btn-small" data-action="expand-all">Abrir todas</button>
         <button class="btn btn-small" data-action="collapse-all">Cerrar todas</button>
@@ -677,7 +687,7 @@
             <td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>
             <td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>
             <td>${area('s:' + s.id + ':conflict', 'class="cell-input" placeholder="¿Qué cambia? ¿Qué quiere cada personaje?"')}</td>
-            <td><div class="needs-cell">${needChips(s)}</div></td>
+            <td>${needsDropdown(s)}</td>
             <td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>
           </tr>
           ${open ? `<tr class="row-detail"><td></td><td colspan="12">
@@ -1231,6 +1241,7 @@
       sc.estado = est[est.length - 1] || 'sinrodar';
       openEst = sc.id; save(); renderTab();
     },
+    'toggle-need': (el) => { const sc = sceneById(P(), el.dataset.id); sc.needs[el.dataset.n] = !sc.needs[el.dataset.n]; openEst = 'n:' + sc.id; save(); renderTab(); },
     'clear-estado': (el) => { const sc = sceneById(P(), el.dataset.id); sc.estados = []; sc.estado = 'sinrodar'; openEst = null; save(); renderTab(); },
     'toggle-removed': (el) => {
       const p = P(); const sc = sceneById(p, el.dataset.id);

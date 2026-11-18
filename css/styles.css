@@ -279,3 +279,8 @@ button.chip { font: inherit; font-size: 11px; }
 .dept-btn-sonido { border-left-color: #86b86a; }
 .dept-btn-musica { border-left-color: #4575b4; }
 input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
+
+.needs-dd { min-width: 200px; max-width: 320px; }
+.needs-dd summary { flex-wrap: wrap; }
+.needs-group { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 2px; }
+.needs-dd .est-opt { grid-template-columns: 18px auto 1fr; padding: 4px 6px; }

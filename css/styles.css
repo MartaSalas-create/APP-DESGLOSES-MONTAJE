@@ -349,3 +349,5 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .pdf-root .map-wrap { max-height: none; overflow: visible; border: 0; }
 .pdf-root .map-wrap svg { width: 100% !important; height: auto !important; }
 .pdf-root .map-layout { grid-template-columns: 1fr; }
+
+.map-view-btns { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; margin-bottom: 10px; }

@@ -13,7 +13,7 @@
 
   const VW = 1200, VH = 760, CX = VW / 2, CY = VH / 2;
   let sel = null;            // nodo o enlace seleccionado: 't:<id>', 'c:<nombre>', 'e:<a>|<b>'
-  let showChars = true, showCo = false, allChars = false, zoom = 1;
+  let showChars = true, showCo = false, allChars = false, showGiros = true, zoom = 1;
 
   const st = p => { p.mapa = p.mapa || { pos: {}, notes: {}, hidden: [] }; p.mapa.pos = p.mapa.pos || {}; p.mapa.notes = p.mapa.notes || {}; p.mapa.hidden = p.mapa.hidden || []; return p.mapa; };
   const textColor = hex => { // tono oscuro de la trama para textos
@@ -49,6 +49,19 @@
       const ts = new Set(Object.keys(chars[c].byT).concat(own ? [own] : []));
       ts.forEach(tid => { if (tIds.has(tid)) edges.push({ id: 'ct:' + c + '|' + tid, kind: 'ct', a: 'c:' + c, b: 't:' + tid, w: chars[c].byT[tid] || 1, main: tid === own }); });
     });
+    // puntos de giro: unidos a su trama y a los personajes que intervienen
+    if (showGiros) {
+      const charIds = new Set(nodes.filter(n => n.kind === 'c').map(n => n.id));
+      p.scenes.filter(s => s.keyEvent && (!s.tramaId || tIds.has(s.tramaId))).forEach(s => {
+        if (s.tramaId && !tIds.has(s.tramaId)) return;
+        if (!s.tramaId && hidden.size) return;
+        const tr = p.tramas.find(t => t.id === s.tramaId);
+        const id = 'g:' + s.id;
+        nodes.push({ id, kind: 'g', s, tr, label: (s.eventLabel || 'Esc. ' + s.num).toUpperCase(), r: 13, color: tr ? tr.color : '#ddd' });
+        if (tr) edges.push({ id: 'gt:' + s.id, kind: 'gt', a: id, b: 't:' + tr.id });
+        s.characters.forEach(c => { if (charIds.has('c:' + c)) edges.push({ id: 'gc:' + s.id + '|' + c, kind: 'gc', a: id, b: 'c:' + c }); });
+      });
+    }
     // trama–trama: personajes que aparecen en ambas
     for (let i = 0; i < tramas.length; i++) for (let j = i + 1; j < tramas.length; j++) {
       const a = tramas[i].id, b = tramas[j].id;
@@ -74,6 +87,10 @@
       const home = n.tr && pos['t:' + n.tr.id] || { x: CX, y: CY };
       const a = i * 2.39996; pos[n.id] = { x: home.x + Math.cos(a) * 90, y: home.y + Math.sin(a) * 90 };
     });
+    g.nodes.filter(n => n.kind === 'g').forEach((n, i) => {
+      const home = n.tr && pos['t:' + n.tr.id] || { x: CX, y: CY };
+      const a = i * 2.39996 + 1.2; pos[n.id] = { x: home.x + Math.cos(a) * 130, y: home.y + Math.sin(a) * 130 };
+    });
     const fixed = id => !reset && m.pos[id];
     g.nodes.forEach(n => { if (fixed(n.id)) pos[n.id] = { x: m.pos[n.id].x, y: m.pos[n.id].y }; });
     const free = g.nodes.filter(n => !fixed(n.id));
@@ -88,8 +105,8 @@
         }
         g.edges.forEach(e => {
           const pa = pos[e.a], pb = pos[e.b]; if (!pa || !pb) return;
-          const L = e.kind === 'tt' ? 300 : e.kind === 'ct' ? (e.main ? 105 : 170) : 150;
-          const k = e.kind === 'ct' ? (e.main ? 0.06 : 0.015) : e.kind === 'tt' ? 0.01 : 0.008;
+          const L = e.kind === 'tt' ? 300 : e.kind === 'ct' ? (e.main ? 105 : 170) : e.kind === 'gt' ? 120 : e.kind === 'gc' ? 160 : 150;
+          const k = e.kind === 'ct' ? (e.main ? 0.06 : 0.015) : e.kind === 'tt' ? 0.01 : e.kind === 'gt' ? 0.05 : e.kind === 'gc' ? 0.004 : 0.008;
           let dx = pb.x - pa.x, dy = pb.y - pa.y; const d = Math.hypot(dx, dy) || 0.1; const s = (d - L) * k;
           dx /= d; dy /= d; f[e.a].x += dx * s; f[e.a].y += dy * s; f[e.b].x -= dx * s; f[e.b].y -= dy * s;
         });
@@ -142,12 +159,19 @@
       } else if (e.kind === 'ct') {
         const tn = g.nodes.find(n => n.id === e.b);
         o.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${tn ? textColor(tn.color) : '#999'}" stroke-width="${e.main ? 2 : 1}" stroke-opacity="${faded ? 0.06 : e.main ? 0.55 : 0.3}" ${e.main ? '' : 'stroke-dasharray="4 4"'}/>`);
+      } else if (e.kind === 'gt') {
+        const tn = g.nodes.find(n => n.id === e.b);
+        o.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${tn ? textColor(tn.color) : '#999'}" stroke-width="2.5" stroke-opacity="${faded ? 0.06 : 0.6}"/>`);
+      } else if (e.kind === 'gc') {
+        const show = sel === e.a || sel === e.b;
+        if (show) o.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#d62828" stroke-width="1.5" stroke-opacity="0.6" stroke-dasharray="2 4"/>`);
       } else {
         o.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#b03a69" stroke-width="${1 + Math.min(5, e.w * 0.5)}" stroke-opacity="${faded ? 0.05 : 0.35}"><title>${e.w} secuencias juntos</title></line>`);
       }
     });
     // nodos (primero personajes, encima tramas)
-    g.nodes.slice().sort((x, y) => (x.kind === 't') - (y.kind === 't')).forEach(n => {
+    const order = { c: 0, g: 1, t: 2 };
+    g.nodes.slice().sort((x, y) => order[x.kind] - order[y.kind]).forEach(n => {
       const q = pos[n.id]; const f = dim(n.id) ? 0.15 : 1; const on = sel === n.id;
       if (n.kind === 't') {
         o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
@@ -156,6 +180,14 @@
           <text y="14" text-anchor="middle" font-size="10" fill="#333" pointer-events="none">${n.scenes} sec.</text>
           <text y="${n.r + 16}" text-anchor="middle" font-size="13" font-weight="800" fill="${textColor(n.color)}" pointer-events="none">${esc(n.label.toUpperCase().slice(0, 32))}</text>
           <title>${esc(n.t.letter + ' · ' + n.label)} — ${n.scenes} secuencias (arrastra para mover, toca para ver sus conexiones)</title></g>`);
+      } else if (n.kind === 'g') {
+        const r = n.r;
+        o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
+          <rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" transform="rotate(45)" fill="${n.color}" stroke="${on ? '#222' : '#d62828'}" stroke-width="${on ? 4 : 2.5}"/>
+          <text y="4" text-anchor="middle" font-size="12" fill="#d62828" pointer-events="none">★</text>
+          <text y="${r + 18}" text-anchor="middle" font-size="10" font-weight="800" fill="#d62828" pointer-events="none">${esc(n.label.slice(0, 26))}</text>
+          <text y="${r + 30}" text-anchor="middle" font-size="9" fill="#666" pointer-events="none">esc. ${esc(n.s.num)}</text>
+          <title>Punto de giro · esc. ${esc(n.s.num)}: ${esc(n.label)}</title></g>`);
       } else {
         o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
           <circle r="${n.r}" fill="#fff" stroke="${n.color}" stroke-width="${on ? 5 : 3.5}"/>
@@ -164,7 +196,8 @@
           <title>${esc(n.name)} — ${n.n} secuencias</title></g>`);
       }
     });
-    o.push(`<text x="16" y="${VH - 14}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
+    o.push(`<text x="16" y="${VH - 28}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ◆★ punto de giro</text>`);
+    o.push(`<text x="16" y="${VH - 14}" font-size="10" fill="#888">━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
     return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="0 0 ${VW} ${VH}" width="${Math.round(VW * zoom)}" height="${Math.round(VH * zoom)}" font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
   }
 
@@ -179,6 +212,11 @@
       return `<div class="map-panel" style="border-top:6px solid ${t.color}">
         <h3 style="margin:0">${esc(t.letter)} · ${esc(t.name)}</h3>
         <p class="muted" style="margin:4px 0 10px">${sc.length} secuencias · ${cs.length} personajes propios</p>
+        <div class="map-view-btns">${isSolo(p, t.id)
+          ? `<button class="btn btn-small btn-primary" data-action="map-vis-all">Ver todas las tramas</button>`
+          : `<button class="btn btn-small btn-primary" data-action="map-solo" data-id="${t.id}">Ver solo esta trama en el mapa</button>`}
+          <span class="muted" style="font-size:11px">${isSolo(p, t.id) ? 'Se muestra solo esta trama.' : 'Ahora se resaltan sus conexiones sobre el mapa completo.'}</span></div>
+        ${sc.filter(s => s.keyEvent).length ? `<div class="field"><label>Puntos de giro</label><div>${sc.filter(s => s.keyEvent).map(s => `<button class="chip on map-go" data-action="map-sel" data-id="g:${s.id}" style="background:#fff;color:#d62828;border:1px solid #d62828">★ ${esc((s.eventLabel || 'Esc. ' + s.num).toUpperCase())} · ${esc(s.num)}</button>`).join(' ')}</div></div>` : ''}
         ${A.field('Descripción de la trama', A.area('t:' + t.id + ':desc', 'rows="3"'))}
         <div class="field"><label>Personajes</label><div>${cs.map(c => `<button class="chip on map-go" data-action="map-sel" data-id="c:${esc(c)}" style="background:${t.color};color:#222">${esc(c)}</button>`).join(' ') || '—'}</div></div>
         <div class="field"><label>Secuencias</label><div class="map-scenes">${sc.map(s => `<span title="${esc(s.summary)}">${esc(s.num)}</span>`).join('') || '—'}</div></div>
@@ -198,6 +236,19 @@
         <div class="field"><label>Secuencias</label><div class="map-scenes">${sc.map(s => { const tt = p.tramas.find(x => x.id === s.tramaId); return `<span style="background:${tt ? tt.color : '#eee'}" title="${esc(s.summary)}">${esc(s.num)}</span>`; }).join('')}</div></div>
       </div>`;
     }
+    if (sel.startsWith('g:')) {
+      const s = p.scenes.find(x => x.id === sel.slice(2)); if (!s) return '';
+      const t = p.tramas.find(x => x.id === s.tramaId);
+      return `<div class="map-panel" style="border-top:6px solid #d62828">
+        <h3 style="margin:0;color:#d62828">★ Punto de giro · esc. ${esc(s.num)}</h3>
+        <p class="muted" style="margin:4px 0 10px">${esc(s.intExt ? s.intExt + '. ' : '')}${esc(s.location)}${s.time ? ' — ' + esc(s.time) : ''} · intensidad ${esc(s.intensity)}</p>
+        ${A.field('Etiqueta del punto de giro', A.inp('s:' + s.id + ':eventLabel'))}
+        <div class="field"><label>Trama</label><div>${t ? `<button class="chip on map-go" data-action="map-sel" data-id="t:${t.id}" style="background:${t.color};color:#222">${esc(t.letter + ' · ' + t.name)}</button>` : '—'}</div></div>
+        <div class="field"><label>Acción</label><div>${esc(s.summary) || '—'}</div></div>
+        ${s.conflict ? `<div class="field"><label>Conflicto / objetivo</label><div>${esc(s.conflict)}</div></div>` : ''}
+        <div class="field"><label>Personajes que intervienen</label><div>${s.characters.map(c => `<button class="chip on map-go" data-action="map-sel" data-id="c:${esc(c)}">${esc(c)}</button>`).join(' ') || '—'}</div></div>
+      </div>`;
+    }
     if (sel.startsWith('e:')) {
       const key = sel.slice(2); const [a, b] = key.split('|');
       const ta = p.tramas.find(x => x.id === a), tb = p.tramas.find(x => x.id === b); if (!ta || !tb) return '';
@@ -212,6 +263,11 @@
     return '';
   }
 
+  function isSolo(p, id) {
+    const h = new Set(st(p).hidden); const used = new Set(p.scenes.map(s => s.tramaId).filter(Boolean));
+    return !h.has(id) && p.tramas.filter(t => t.id !== id && used.has(t.id)).every(t => h.has(t.id)) && p.tramas.some(t => t.id !== id && h.has(t.id));
+  }
+
   /* ---------------- Pestaña ---------------- */
   function tab(p) {
     const m = st(p); const hidden = new Set(m.hidden);
@@ -219,9 +275,10 @@
     return `<section class="panel">
       ${A.printHeader(p, 'Mapa de tramas')}
       <h2>Mapa de tramas</h2>
-      <p class="lead no-print">Mapa conceptual de las tramas y sus personajes. <b>Arrastra</b> los nodos para ordenarlo a tu manera (se recuerda), <b>toca</b> una trama o un personaje para ver sus conexiones y su ficha, y toca la <b>cifra</b> de un enlace entre tramas para anotar cómo se cruzan.</p>
+      <p class="lead no-print">Mapa conceptual de las tramas, sus personajes y sus puntos de giro (◆★). <b>Arrastra</b> los nodos para ordenarlo a tu manera (se recuerda), <b>toca</b> una trama o un personaje para ver sus conexiones y su ficha, y toca la <b>cifra</b> de un enlace entre tramas para anotar cómo se cruzan.</p>
       <div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(chip).join('')}<button class="btn btn-small btn-ghost" data-action="map-vis-all">Todas</button></div>
       <div class="toolbar no-print">
+        <label><input type="checkbox" data-action-change="map-opt" data-o="giros" ${showGiros ? 'checked' : ''}> Puntos de giro</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="chars" ${showChars ? 'checked' : ''}> Personajes</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="co" ${showCo ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Relaciones entre personajes (escenas juntos)</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="all" ${allChars ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Todos los personajes</label>
@@ -277,12 +334,12 @@
   /* ---------------- Acciones ---------------- */
   const setHidden = (p, arr) => { st(p).hidden = arr; A.save(); A.renderTab(); };
   A.actions['map-vis'] = el => { const p = A.P(); const h = new Set(st(p).hidden); const id = el.dataset.id; if (h.has(id)) h.delete(id); else h.add(id); setHidden(p, Array.from(h)); };
-  A.actions['map-solo'] = el => { const p = A.P(); setHidden(p, p.tramas.map(t => t.id).filter(id => id !== el.dataset.id)); };
+  A.actions['map-solo'] = el => { const p = A.P(); sel = 't:' + el.dataset.id; setHidden(p, p.tramas.map(t => t.id).filter(id => id !== el.dataset.id)); };
   A.actions['map-vis-all'] = () => setHidden(A.P(), []);
   A.actions['map-sel'] = el => { sel = el.dataset.id; redraw(); };
   A.actions['map-zoom'] = el => { const d = Number(el.dataset.d); zoom = Math.max(0.6, Math.min(2.5, Math.round((zoom + d * 0.25) * 100) / 100)); A.renderTab(); };
   A.actions['map-relayout'] = () => { const p = A.P(); st(p).pos = {}; A.save(); A.renderTab(); };
   A.actions['map-svg'] = () => { const p = A.P(); A.download(A.fileBase(p) + '_mapa_tramas.svg', svg(p).replace(/ width="\d+" height="\d+"/, ` width="${VW}" height="${VH}"`), 'image/svg+xml'); };
   A.changeActions = A.changeActions || {};
-  window.MapaTramas = { tab, setOpt: (o, v) => { if (o === 'chars') showChars = v; if (o === 'co') showCo = v; if (o === 'all') allChars = v; A.renderTab(); } };
+  window.MapaTramas = { tab, setOpt: (o, v) => { if (o === 'chars') showChars = v; if (o === 'co') showCo = v; if (o === 'all') allChars = v; if (o === 'giros') showGiros = v; A.renderTab(); } };
 })();

@@ -750,7 +750,7 @@
         <span class="legend-inline">${p.tramas.map(t => `<span><span class="trama-dot" style="background:${t.color}"></span>${esc(t.letter)} ${esc(t.name)}</span>`).join('')}</span>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th></th><th class="num">Nº</th><th>Encabezado</th><th class="num">Pág.</th><th class="num">Octavos</th><th class="num">Dur. est.</th><th>Estado</th><th>Trama</th><th>Personajes</th><th>Acción / resumen</th><th>Conflicto / objetivo</th><th>Necesidades</th><th>Notas de montaje</th></tr></thead>
+        <thead><tr><th></th><th class="num">Nº</th><th>Encabezado</th><th class="num">Pág.</th><th class="num">Octavos</th><th class="num">Dur. est.</th><th>Estado</th><th>Trama</th><th>Personajes</th><th>Acción / resumen</th><th>Conflicto / objetivo</th><th>Necesidades</th><th>Script</th><th>Notas de montaje</th></tr></thead>
         <tbody>${p.scenes.map(s => {
           const t = tramaOf(p, s);
           const open = expanded.has(s.id);
@@ -767,9 +767,10 @@
             <td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>
             <td>${area('s:' + s.id + ':conflict', 'class="cell-input" placeholder="¿Qué cambia? ¿Qué quiere cada personaje?"')}</td>
             <td>${needsDropdown(s)}</td>
+            <td>${window.Attach ? Attach.cell(s) : ''}</td>
             <td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>
           </tr>
-          ${open ? `<tr class="row-detail"><td></td><td colspan="12">
+          ${open ? `<tr class="row-detail"><td></td><td colspan="13">
             <div class="detail-grid">
               <div><div class="field"><label>Texto de la secuencia</label><div class="script-text">${esc(s.heading)}\n\n${esc(s.text)}</div></div></div>
               <div class="form-grid" style="grid-template-columns:1fr">

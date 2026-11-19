@@ -367,3 +367,7 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .att-pdf { overflow: auto; padding: 12px; text-align: center; -webkit-overflow-scrolling: touch; }
 .att-page { display: block; margin: 0 auto 12px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); }
 .att-pages { font-size: 12px; margin-bottom: 8px; }
+
+.att-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 120px; }
+.att-mini { font-size: 11px; padding: 2px 6px; color: #2f3338; border-color: #c9c5bd; }
+.att-cell .att-add { padding: 1px 8px; }

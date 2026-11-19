@@ -1,4 +1,4 @@
-# martasalas.com · rediseño
+# martasalas.com · rediseño (versión timeline)
 
 Web estática (HTML, CSS y JS, sin dependencias) para sustituir la web actual hecha con el editor MyWebsite de IONOS.
 

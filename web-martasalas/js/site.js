@@ -124,7 +124,7 @@
   }).join("");
 
   // el nombre solo se muestra si cabe en el clip
-  function fitClipLabels() { $$(".cclip", tracksEl).forEach(function (el) { el.classList.toggle("mini", el.clientWidth < 64); }); }
+  function fitClipLabels() { $$(".cclip", tracksEl).forEach(function (el) { el.classList.toggle("mini", false); el.classList.toggle("mini", el.scrollWidth > el.clientWidth + 1); }); }
   fitClipLabels();
   window.addEventListener("resize", fitClipLabels);
 

@@ -176,6 +176,7 @@ window.SITE = {
   ],
 
   training: [
+    ["2026", "Inteligencia Artificial aplicada a la industria cinematográfica", "Academia de Cine (AACCE)"],
     ["2026", "Curso de IA en el audiovisual", "Proyecto HAZ · RTVE"],
     ["2024–2025", "Certificado profesional de habilitación para la docencia (grados A, B y C de FP)", "Grupo Colón"],
     ["2024", "Tutorización del aprendizaje en la empresa", "Grupo Colón"],

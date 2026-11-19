@@ -269,7 +269,7 @@
     reelGrid.innerHTML = D.reels[kind].map(function (v, i) {
       return '<a class="reel-item" href="https://www.youtube.com/watch?v=' + esc(v.id) + '" target="_blank" rel="noopener" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
         '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'no-thumb\');this.remove()">' +
-        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "TV" : "CINE") + " · CLIP " + pad(i + 1) + "</span></a>";
+        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "TV" : "Cine") + " · Clip " + pad(i + 1) + "</span></a>";
     }).join("");
   }
   renderReel("tv");
@@ -323,7 +323,7 @@
       var items = c.items.filter(function (it) { return !query || norm(it.join(" ")).indexOf(query) !== -1; });
       if (!items.length) return;
       count += items.length;
-      html += '<div class="credit-group"><h3 class="credit-cat">' + esc(c.cat) + ' <span class="mono">' + items.length + "</span></h3><ul>" +
+      html += '<div class="credit-group"><h3 class="credit-cat">' + esc(c.cat) + ' <span class="count">' + items.length + "</span></h3><ul>" +
         items.map(function (it) {
           return '<li><span class="yr">' + esc(it[0]) + '</span><span class="ct"><strong>' + esc(it[1]) + "</strong>" + (it[2] ? "<span>" + esc(it[2]) + "</span>" : "") + "</span></li>";
         }).join("") + "</ul></div>";

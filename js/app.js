@@ -724,10 +724,11 @@
     autoGrow();
   }
 
+  const projName = pr => (pr && (pr.name || pr.title)) || 'Proyecto sin título';
   function renderProjectSelect() {
     const sel = $('#projectSelect');
     const ids = Object.keys(state.projects);
-    sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}" ${id === state.currentId ? 'selected' : ''}>${esc(state.projects[id].title)}${state.projects[id].version ? ' · ' + esc(state.projects[id].version) : ''}</option>`).join('') : '<option>— sin proyectos —</option>';
+    sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}" ${id === state.currentId ? 'selected' : ''}>${esc(projName(state.projects[id]))}${!state.projects[id].name && state.projects[id].version ? ' · ' + esc(state.projects[id].version) : ''}</option>`).join('') : '<option>— sin proyectos —</option>';
     sel.disabled = !ids.length;
     const es = $('#epSelect'); const rp = RP();
     if (es) {
@@ -771,9 +772,11 @@
     <section class="panel">
       ${printHeader(p, 'Datos del proyecto')}
       <h2>Datos de partida</h2>
-      <p class="lead">Datos que aparecerán en la cabecera del step line y de los documentos. ${p.source ? `Guion cargado: <b>${esc(p.source.filename)}</b> (${esc(p.source.format)}, ${new Date(p.source.importedAt).toLocaleString('es-ES')}). Para cargar una versión nueva del guion usa <b>Subir guion</b>: se conservarán tus anotaciones en las secuencias con el mismo número.` : 'Todavía no hay guion cargado: usa <b>Subir guion</b>.'}</p>
+      <p class="lead">Datos que aparecerán en la cabecera del step line y de los documentos. ${p.source ? `Guion cargado: <b>${esc(p.source.filename)}</b>. Para cargar una versión nueva del guion usa <b>Subir guion</b>: se conservarán tus anotaciones en las secuencias con el mismo número.` : 'Todavía no hay guion cargado: usa <b>Subir guion</b>.'}</p>
       <div class="form-grid">
-        ${field('Título', inp('p:title', 'data-rerender-select="1"'))}
+        ${field('Nombre del proyecto (en tu lista)', inp('p:name', `data-rerender-select="1" placeholder="${esc(p.title || '')}"`), '', 'Solo para identificarlo en tu lista. Si lo dejas vacío se usa el título.')}
+        ${field('Título de la obra', inp('p:title', 'data-rerender-select="1"'))}
+        ${p.source && !isSerie(p) ? field('Nombre del guion', inp('p:source.filename'), '', `Archivo original importado el ${new Date(p.source.importedAt).toLocaleDateString('es-ES')} (${esc(p.source.format || '')}).`) : ''}
         ${field('Versión del guion', inp('p:version', 'placeholder="p. ej. 3ª versión"'))}
         ${field('Fecha del guion', inp('p:fecha', 'placeholder="p. ej. 12 de octubre de 2026"'))}
         ${field('Formato', `<select data-k="p:formato">${['Largometraje', 'Cortometraje', 'Serie', 'TV movie', 'Documental', 'Otro'].map(o => `<option ${p.formato === o || (o === 'Serie' && isSerie(p)) ? 'selected' : ''}>${o}</option>`).join('')}</select>`, '', isSerie(p) ? 'Serie: puedes subir varios guiones (episodios) en este proyecto.' : '')}
@@ -824,12 +827,12 @@
       <p class="lead no-print">Proyecto de serie: cada guion es un episodio. Elige arriba (junto al proyecto) si trabajas en un episodio o en la temporada completa. Al subir un guion te preguntará si es un episodio nuevo o una versión nueva de uno existente; puedes subir varios a la vez.</p>
       <div class="toolbar no-print"><label class="btn btn-small btn-primary">⬆ Subir episodios (uno o varios)<input type="file" class="file-trigger" multiple hidden></label></div>
       ${eps.length ? `<div class="table-wrap"><table>
-        <thead><tr><th class="num">#</th><th>Episodio</th><th>Título</th><th>Guion (archivo)</th><th class="num">Sec.</th><th class="num">Págs.</th><th>Versión / fecha</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th class="num">#</th><th>Episodio</th><th>Título</th><th>Nombre del guion</th><th class="num">Sec.</th><th class="num">Págs.</th><th>Versión / fecha</th><th class="no-print"></th></tr></thead>
         <tbody>${eps.map((e, i) => `<tr class="${cur === e.id ? 'ep-current' : ''}">
           <td class="num">${i + 1}</td>
           <td><input class="cell-input" data-k="p:episodes.${i}.label" data-rerender-select="1" value="${esc(e.label || '')}" style="min-width:80px;max-width:110px"></td>
           <td><input class="cell-input" data-k="p:episodes.${i}.title" data-rerender-select="1" value="${esc(e.title || '')}" placeholder="Título del episodio"></td>
-          <td class="muted" style="font-size:12px">${esc(e.filename || '')}</td>
+          <td><input class="cell-input" data-k="p:episodes.${i}.filename" value="${esc(e.filename || '')}" placeholder="Nombre del guion" style="font-size:12px"></td>
           <td class="num">${rp.scenes.filter(x => x.ep === e.id).length}</td>
           <td class="num">${e.pages || '—'}</td>
           <td style="font-size:12px">${esc([e.version, e.fecha].filter(Boolean).join(' · ') || '—')}</td>
@@ -1502,6 +1505,18 @@
   }
   function editLayout(fn) { const ph = getPhases(); fn(ph); setPhases(ph); render(); layoutPanel(); }
 
+  /* ---------- Panel «Mis proyectos»: renombrar, abrir, borrar ---------- */
+  function projectsPanel() {
+    const ids = Object.keys(state.projects);
+    showModal(`<h3>Mis proyectos</h3><p>Cambia el nombre con el que aparece cada proyecto en tu lista (el título de la obra no cambia), ábrelo o bórralo.</p>
+      <div class="cols-list">${ids.map(id => { const pr = state.projects[id]; const eps = epList(pr).length; return `<div class="cols-item proj-item ${id === state.currentId ? 'proj-cur' : ''}">
+        <div style="flex:1;min-width:0"><input class="cell-input" value="${esc(projName(pr))}" data-action-change="proj-rename" data-id="${id}" style="font-weight:700">
+        <div class="muted" style="font-size:11px;margin-top:3px">${esc(pr.title || '')}${pr.version ? ' · ' + esc(pr.version) : ''} · ${esc(pr.formato || '')}${eps ? ' · ' + eps + ' episodios' : ''} · ${pr.scenes.length} secuencias${id === state.currentId ? ' · <b>abierto</b>' : ''}</div></div>
+        <span>${id === state.currentId ? '' : `<button class="btn btn-small" data-action="proj-open" data-id="${id}">Abrir</button>`}<button class="btn btn-small" data-action="proj-dup" data-id="${id}" title="Duplicar">⧉</button><button class="btn btn-small btn-ghost" data-action="proj-del" data-id="${id}" title="Borrar">✕</button></span>
+      </div>`; }).join('') || '<p class="muted">No hay proyectos.</p>'}</div>
+      <div class="actions"><button class="btn btn-primary" data-action="close-modal">Listo</button></div>`);
+  }
+
   /* ------------------------------------------------------------------ */
   /* Pestaña: Seguimiento de rodaje                                       */
   /* ------------------------------------------------------------------ */
@@ -1729,6 +1744,22 @@
     'lay-addgroup': (el) => editLayout(ph => { ph[+el.dataset.p].groups.push(['Nuevo grupo', []]); }),
     'lay-delgroup': (el) => editLayout(ph => { ph[+el.dataset.p].groups.splice(+el.dataset.g, 1); }),
     'lay-reset': () => { state.ui = state.ui || {}; delete state.ui.phases; save(); render(); layoutPanel(); toast('Organización original restaurada.'); },
+    'projects-panel': () => projectsPanel(),
+    'proj-open': (el) => { state.currentId = el.dataset.id; expanded.clear(); save(); render(); projectsPanel(); },
+    'proj-dup': (el) => {
+      const src = state.projects[el.dataset.id]; if (!src) return;
+      const cp = JSON.parse(JSON.stringify(src)); cp.id = 'p' + uid(); cp.name = projName(src) + ' (copia)'; cp.updatedAt = Date.now();
+      state.projects[cp.id] = cp; Cloud.textsDirty.add(cp.id); Cloud.queue(cp.id); save(); renderProjectSelect(); projectsPanel(); toast('Proyecto duplicado.');
+    },
+    'proj-del': (el) => {
+      const pr = state.projects[el.dataset.id]; if (!pr) return;
+      showModal(`<h3>¿Borrar «${esc(projName(pr))}»?</h3><p>Se eliminará de este navegador y de tu cuenta. Si quieres conservarlo, guarda antes una copia .json.</p><div class="actions"><button class="btn" data-action="projects-panel">Cancelar</button><button class="btn btn-primary" data-action="proj-del-ok" data-id="${el.dataset.id}">Borrar</button></div>`);
+    },
+    'proj-del-ok': (el) => {
+      const id = el.dataset.id; Cloud.remove(id); delete state.projects[id];
+      if (state.currentId === id) state.currentId = Object.keys(state.projects)[0] || null;
+      save(); render(); projectsPanel(); toast('Proyecto borrado.');
+    },
     'nav-mode': (el) => { state.ui = state.ui || {}; state.ui.nav = el.dataset.v; curSec = null; save(); render(); toast(el.dataset.v === 'fases' ? 'Vista por fases: Preproducción · Producción/Rodaje · Postproducción.' : 'Vista clásica.'); },
     'rodaje-mark': (el) => { const sc = sceneById(P(), el.dataset.id); const est = getEstados(sc); if (!est.includes('rodada')) est.push('rodada'); sc.estado = 'rodada'; sc.rodaje = sc.rodaje || {}; if (!sc.rodaje.fecha) sc.rodaje.fecha = new Date().toISOString().slice(0, 10); save(); renderTab(); },
     'rodaje-filter': (el) => { rodajeFilter = el.dataset.v; renderTab(); },
@@ -1911,6 +1942,12 @@
 
   const changeActions = {
 
+    'proj-rename': (el) => {
+      const pr = state.projects[el.dataset.id]; if (!pr) return;
+      const v = el.value.trim(); pr.name = v && v !== pr.title ? v : '';
+      pr.updatedAt = Date.now(); Cloud.queue(pr.id); save(); renderProjectSelect(); if (pr.id === state.currentId) renderTab();
+      toast('Proyecto renombrado.');
+    },
     'lay-to': (el) => {
       if (!el.value) return; const [tp, tg] = el.value.split('|').map(Number);
       editLayout(ph => { const src = ph[+el.dataset.p].groups[+el.dataset.g][1]; const id = src.splice(+el.dataset.i, 1)[0]; const dst = ph[tp].groups[tg][1]; if (!dst.includes(id)) dst.push(id); });

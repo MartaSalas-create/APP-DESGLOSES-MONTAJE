@@ -440,3 +440,6 @@ tr.ep-current td { background: #fff4f2; }
 .tab-grp-title { font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #c0392b; padding: 1px 10px 2px; user-select: none; cursor: default; }
 .tab-grp-row { display: flex; gap: 2px; }
 .tabs-sub-groups .tab-group-label { display: none; }
+
+.proj-item { gap: 10px; }
+.proj-cur { border-color: #ff6b5a; background: #fff8f6; }

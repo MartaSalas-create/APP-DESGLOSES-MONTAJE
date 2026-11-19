@@ -428,3 +428,7 @@ tr.row-shot td { background: #fbfaf7; }
 .est-filter:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .est-filter.on { outline: 3px solid var(--dark); outline-offset: 2px; }
 .est-filters { align-items: center; gap: 6px; }
+
+/* Series / episodios */
+#epSelect { background: #4a2d2a; color: #fff; border: 1px solid #ff6b5a; border-radius: var(--radius); padding: 7px 10px; max-width: 260px; font-weight: 700; }
+tr.ep-current td { background: #fff4f2; }

@@ -261,7 +261,113 @@
       } catch (e) { console.warn(e); }
     }
   };
-  const P = () => state.projects[state.currentId] || null;
+  /* ---------- Series: varios episodios en un mismo proyecto ----------
+     Cada secuencia lleva s.ep (id del episodio). Cuando se trabaja en un
+     episodio, P() devuelve una «vista» del proyecto que solo enseña las
+     secuencias de ese episodio (y sus actos, script doctor, páginas…); lo que
+     se escribe en la vista va al proyecto real. */
+  const RP = () => state.projects[state.currentId] || null;
+  const isSerie = p => !!p && /^Serie/i.test(p.formato || '');
+  const epList = p => (p && Array.isArray(p.episodes)) ? p.episodes : [];
+  const epLabelFull = e => e ? (e.label || 'Episodio') + (e.title ? ' · ' + e.title : '') : '';
+  function curEp(p) { const e = ((state.ui && state.ui.ep) || {})[p.id]; return e && epList(p).some(x => x.id === e) ? e : 'all'; }
+  const viewCache = new Map();
+  function viewFor(t, ep) {
+    const key = t.id + '|' + ep; const c = viewCache.get(key);
+    if (c && c.t === t) return c.v;
+    const epObj = () => epList(t).find(e => e.id === ep) || {};
+    const epIds = () => new Set(t.scenes.filter(x => x.ep === ep).map(x => x.id));
+    const v = new Proxy(t, {
+      get(tg, k) {
+        switch (k) {
+          case 'scenes': return tg.scenes.filter(x => x.ep === ep);
+          case 'montajeOrder': { const ids = epIds(); return tg.montajeOrder.filter(id => ids.has(id)); }
+          case 'acts': return ((tg.actsByEp || {})[ep]) || [];
+          case 'doctor': return (tg.doctorByEp || {})[ep];
+          case 'pages': return epObj().pages || 0;
+          case 'durationMin': return epObj().durationMin || '';
+          case 'episodio': return tg.episodio || epLabelFull(epObj());
+          case '__ep': return ep;
+          default: return tg[k];
+        }
+      },
+      set(tg, k, val) {
+        switch (k) {
+          case 'scenes': {
+            const others = tg.scenes.filter(x => x.ep !== ep);
+            const first = tg.scenes.findIndex(x => x.ep === ep);
+            const before = first < 0 ? others.length : tg.scenes.slice(0, first).filter(x => x.ep !== ep).length;
+            val.forEach(x => { x.ep = ep; });
+            tg.scenes = others.slice(0, before).concat(val, others.slice(before)); return true;
+          }
+          case 'montajeOrder': {
+            const ids = epIds(); const q = val.slice();
+            tg.montajeOrder = tg.montajeOrder.map(id => ids.has(id) ? q.shift() : id).filter(x => x !== undefined).concat(q); return true;
+          }
+          case 'acts': tg.actsByEp = tg.actsByEp || {}; tg.actsByEp[ep] = val; return true;
+          case 'doctor': tg.doctorByEp = tg.doctorByEp || {}; tg.doctorByEp[ep] = val; return true;
+          case 'pages': epObj().pages = val; return true;
+          case 'durationMin': epObj().durationMin = val; return true;
+          default: tg[k] = val; return true;
+        }
+      }
+    });
+    viewCache.set(key, { t, v });
+    return v;
+  }
+  function P() {
+    const p = RP(); if (!p) return null;
+    if (!isSerie(p) || !epList(p).length) return p;
+    const ep = curEp(p); return ep === 'all' ? p : viewFor(p, ep);
+  }
+  // nº de secuencia para mostrar: con la temporada completa a la vista, lleva delante el episodio
+  function dnum(sc) {
+    const p = RP(); if (!sc || !sc.ep || !isSerie(p) || curEp(p) !== 'all') return sc ? sc.num : '';
+    const e = epList(p).find(x => x.id === sc.ep); return (e ? e.label + '·' : '') + sc.num;
+  }
+  // si un proyecto pasa a ser serie, lo que ya hay se convierte en el episodio 1
+  function ensureEpisodes(p) {
+    if (!p || !isSerie(p) || epList(p).length || !p.scenes.length) return;
+    const e = { id: 'e' + uid(), label: 'Ep. 1', title: '', filename: p.source ? p.source.filename : '', pages: p.pages, importedAt: (p.source || {}).importedAt || new Date().toISOString(), durationMin: p.durationMin || '' };
+    p.episodes = [e]; p.scenes.forEach(x => { x.ep = e.id; });
+    p.actsByEp = { [e.id]: p.acts || [] }; if (p.doctor) p.doctorByEp = { [e.id]: p.doctor };
+  }
+  function guessEpLabel(parsed, n) {
+    const src = ((parsed.portada || {}).episodio || '') + ' ' + parsed.filename;
+    let m = src.match(/(\d{1,2})\s*[xX]\s*(\d{1,3})/); if (m) return `${+m[1]}x${String(+m[2]).padStart(2, '0')}`;
+    m = src.match(/(?:ep(?:isodio)?|cap(?:[ií]tulo)?|chapter|episode)[\s._-]*0*(\d{1,3})/i); if (m) return `Ep. ${+m[1]}`;
+    return `Ep. ${n}`;
+  }
+  function addEpisode(p, parsed) {
+    ensureEpisodes(p);
+    p.episodes = epList(p);
+    const pt = parsed.portada || {};
+    const e = { id: 'e' + uid(), label: guessEpLabel(parsed, p.episodes.length + 1), title: pt.episodio && !/^\s*(\d+\s*x\s*\d+|ep|cap)/i.test(pt.episodio) ? pt.episodio : '', filename: parsed.filename, pages: parsed.pages, version: pt.version || '', fecha: pt.fecha || '', importedAt: new Date().toISOString(), durationMin: '' };
+    const sc = parsed.scenes.map(sceneFromParsed); sc.forEach(x => { x.ep = e.id; });
+    p.episodes.push(e);
+    p.scenes = p.scenes.concat(sc);
+    p.montajeOrder = (p.montajeOrder || []).concat(sc.map(x => x.id));
+    p.pages = p.episodes.reduce((a, x) => a + (Number(x.pages) || 0), 0);
+    p.actsByEp = p.actsByEp || {}; p.actsByEp[e.id] = defaultActs({ scenes: sc });
+    ensureCharacters(p); autoUnify(p);
+    if (!p.source) p.source = { filename: parsed.filename, format: parsed.format, importedAt: e.importedAt };
+    state.ui = state.ui || {}; state.ui.ep = Object.assign({}, state.ui.ep, { [p.id]: e.id });
+    Cloud.textsDirty.add(p.id);
+    return e;
+  }
+  function deleteEpisode(p, id) {
+    const ids = new Set(p.scenes.filter(x => x.ep === id).map(x => x.id));
+    p.scenes = p.scenes.filter(x => x.ep !== id);
+    p.montajeOrder = (p.montajeOrder || []).filter(x => !ids.has(x));
+    if (p.actsByEp) delete p.actsByEp[id]; if (p.doctorByEp) delete p.doctorByEp[id];
+    p.episodes = epList(p).filter(e => e.id !== id);
+    p.pages = p.episodes.reduce((a, x) => a + (Number(x.pages) || 0), 0);
+    Cloud.textsDirty.add(p.id);
+  }
+  function regroupByEpisode(p) {
+    const order = epList(p).map(e => e.id);
+    p.scenes = order.flatMap(id => p.scenes.filter(x => x.ep === id)).concat(p.scenes.filter(x => !order.includes(x.ep)));
+  }
 
   function newProject(data) {
     const id = 'p' + uid();
@@ -567,6 +673,7 @@
   /* Render general                                                       */
   /* ------------------------------------------------------------------ */
   function render() {
+    ensureEpisodes(RP());
     renderProjectSelect();
     const p = P();
     const secs = sections();
@@ -614,6 +721,12 @@
     const ids = Object.keys(state.projects);
     sel.innerHTML = ids.length ? ids.map(id => `<option value="${id}" ${id === state.currentId ? 'selected' : ''}>${esc(state.projects[id].title)}${state.projects[id].version ? ' · ' + esc(state.projects[id].version) : ''}</option>`).join('') : '<option>— sin proyectos —</option>';
     sel.disabled = !ids.length;
+    const es = $('#epSelect'); const rp = RP();
+    if (es) {
+      const show = rp && isSerie(rp) && epList(rp).length;
+      es.hidden = !show;
+      if (show) { const cur = curEp(rp); es.innerHTML = `<option value="all" ${cur === 'all' ? 'selected' : ''}>Temporada completa (${epList(rp).length} episodios)</option>` + epList(rp).map(e => `<option value="${e.id}" ${cur === e.id ? 'selected' : ''}>${esc(epLabelFull(e))}</option>`).join(''); }
+    }
   }
 
   function welcomeHTML() {
@@ -623,7 +736,7 @@
       <div class="dropzone" id="dropzone">
         <div class="big">📄</div>
         <div><b>Arrastra aquí el guion</b> o</div>
-        <label class="btn btn-primary">⬆ Subir guion<input type="file" class="file-trigger" hidden></label>
+        <label class="btn btn-primary">⬆ Subir guion<input type="file" class="file-trigger" multiple hidden></label>
         <div class="formats">PDF (con texto, no escaneado) · Final Draft .fdx · Fountain · Word .docx · .txt</div>
       </div>
       <div class="docs-grid">
@@ -655,7 +768,7 @@
         ${field('Título', inp('p:title', 'data-rerender-select="1"'))}
         ${field('Versión del guion', inp('p:version', 'placeholder="p. ej. 3ª versión"'))}
         ${field('Fecha del guion', inp('p:fecha', 'placeholder="p. ej. 12 de octubre de 2026"'))}
-        ${field('Formato', `<select data-k="p:formato">${['Largometraje', 'Cortometraje', 'Serie (episodio)', 'TV movie', 'Documental', 'Otro'].map(o => `<option ${p.formato === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`)}
+        ${field('Formato', `<select data-k="p:formato">${['Largometraje', 'Cortometraje', 'Serie', 'TV movie', 'Documental', 'Otro'].map(o => `<option ${p.formato === o || (o === 'Serie' && isSerie(p)) ? 'selected' : ''}>${o}</option>`).join('')}</select>`, '', isSerie(p) ? 'Serie: puedes subir varios guiones (episodios) en este proyecto.' : '')}
         ${field('Páginas del guion', inp('p:pages', 'type="number" min="0"'))}
         ${field('Duración real / prevista (min)', inp('p:durationMin', 'type="number" min="0" step="0.5" placeholder="' + Math.round(estMin) + ' estimados"'), '', 'Si se deja vacío se estima 1 página ≈ 1 minuto.')}
         ${field('Género', inp('p:genero'))}
@@ -682,6 +795,7 @@
       </div>
       ${needCounts.length ? `<h3>Necesidades detectadas automáticamente</h3><div class="needs-cell">${needCounts.map(x => `<button class="chip on need-nav lbl-${x.n.lbl || DEPT_LABEL[x.n.dept]}" data-action="go-need" data-k="${x.n.k}">${esc(x.n.label)}: ${x.c}</button>`).join('')}</div><p class="muted" style="font-size:12px">Pincha una etiqueta para ver su desglose detallado. Detección por palabras clave: revísala en el <b>Desglose de montaje</b>.</p>` : ''}
     </section>
+    ${isSerie(RP()) ? episodesHTML(RP()) : ''}
     <section class="panel no-print">
       <h2>Orden de trabajo sugerido</h2>
       <ol style="line-height:1.8;margin:0">
@@ -692,6 +806,27 @@
         <li><b>Step line</b>: ajusta la curva arrastrando los puntos, marca actos y puntos de giro.</li>
         <li><b>Necesidades por departamento</b> y <b>Reunión workflow</b>: para la coordinación de postproducción.</li>
       </ol>
+    </section>`;
+  }
+
+  function episodesHTML(rp) {
+    const eps = epList(rp); const cur = curEp(rp);
+    return `<section class="panel">
+      <h2>Episodios</h2>
+      <p class="lead no-print">Proyecto de serie: cada guion es un episodio. Elige arriba (junto al proyecto) si trabajas en un episodio o en la temporada completa. Al subir un guion te preguntará si es un episodio nuevo o una versión nueva de uno existente; puedes subir varios a la vez.</p>
+      <div class="toolbar no-print"><label class="btn btn-small btn-primary">⬆ Subir episodios (uno o varios)<input type="file" class="file-trigger" multiple hidden></label></div>
+      ${eps.length ? `<div class="table-wrap"><table>
+        <thead><tr><th class="num">#</th><th>Episodio</th><th>Título</th><th>Guion (archivo)</th><th class="num">Sec.</th><th class="num">Págs.</th><th>Versión / fecha</th><th class="no-print"></th></tr></thead>
+        <tbody>${eps.map((e, i) => `<tr class="${cur === e.id ? 'ep-current' : ''}">
+          <td class="num">${i + 1}</td>
+          <td><input class="cell-input" data-k="p:episodes.${i}.label" data-rerender-select="1" value="${esc(e.label || '')}" style="min-width:80px;max-width:110px"></td>
+          <td><input class="cell-input" data-k="p:episodes.${i}.title" data-rerender-select="1" value="${esc(e.title || '')}" placeholder="Título del episodio"></td>
+          <td class="muted" style="font-size:12px">${esc(e.filename || '')}</td>
+          <td class="num">${rp.scenes.filter(x => x.ep === e.id).length}</td>
+          <td class="num">${e.pages || '—'}</td>
+          <td style="font-size:12px">${esc([e.version, e.fecha].filter(Boolean).join(' · ') || '—')}</td>
+          <td class="no-print" style="white-space:nowrap"><button class="btn btn-small" data-action="ep-view" data-id="${e.id}">Ver</button><button class="btn btn-small btn-ghost" data-action="ep-move" data-i="${i}" data-d="-1" ${i ? '' : 'disabled'}>↑</button><button class="btn btn-small btn-ghost" data-action="ep-move" data-i="${i}" data-d="1" ${i < eps.length - 1 ? '' : 'disabled'}>↓</button><button class="btn btn-small btn-ghost" data-action="ep-del" data-id="${e.id}" title="Eliminar episodio">✕</button></td>
+        </tr>`).join('')}</tbody></table></div>` : '<p class="muted">Todavía no hay episodios: sube el primer guion.</p>'}
     </section>`;
   }
 
@@ -779,7 +914,7 @@
   /* Pestaña: Desglose de montaje                                         */
   /* ------------------------------------------------------------------ */
   const DESGLOSE_COLS = (p, mpp) => [
-    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num"><b>${esc(s.num)}</b></td>` },
+    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num"><b>${esc(dnum(s))}</b></td>` },
     { k: 'head', label: 'Encabezado', td: s => `<td class="scene-head" style="min-width:200px">${esc(sceneHeading(s))}</td>` },
     { k: 'page', label: 'Pág.', cls: 'num', td: s => `<td class="num">${s.page}</td>` },
     { k: 'eighths', label: 'Octavos', cls: 'num', td: s => `<td class="num">${fmtEighths(s.eighths)}</td>` },
@@ -794,7 +929,7 @@
     { k: 'notes', label: 'Notas de montaje', td: s => `<td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>` }
   ];
   const ESCALETA_COLS = p => [
-    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num">${esc(s.num)}</td>` },
+    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num">${esc(dnum(s))}</td>` },
     { k: 'ie', label: 'INT/EXT', td: s => `<td>${esc(s.intExt)}</td>` },
     { k: 'loc', label: 'Localización', td: s => `<td>${esc(s.location)}</td>` },
     { k: 'time', label: 'Día/Noche', td: s => `<td>${esc(s.time)}</td>` },
@@ -943,7 +1078,7 @@
             ${montajeView === 'montaje' ? `<button class="btn btn-small btn-ghost" data-action="move" data-id="${s.id}" data-d="-1" title="Subir">↑</button><button class="btn btn-small btn-ghost" data-action="move" data-id="${s.id}" data-d="1" title="Bajar">↓</button>` : ''}
             <button class="btn btn-small btn-ghost" data-action="toggle-removed" data-id="${s.id}" title="${removed ? 'Recuperar' : 'Quitar del montaje'}">${removed ? '↺' : '⊘'}</button>
           </div>
-          <div class="card-title"><span>ESC. ${esc(s.num)}</span><span>${esc(sceneHeading(s))}</span><span class="dur">${fmtEighths(s.eighths)} pág · ${fmtMin(s.lengthPages * mpp)}${removed ? '' : ' · TC ≈ ' + fmtMin(start)}</span></div>
+          <div class="card-title"><span>ESC. ${esc(dnum(s))}</span><span>${esc(sceneHeading(s))}</span><span class="dur">${fmtEighths(s.eighths)} pág · ${fmtMin(s.lengthPages * mpp)}${removed ? '' : ' · TC ≈ ' + fmtMin(start)}</span></div>
           <div class="row"><b><i>Personajes:</i></b><i>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', ') || '—')}</i></div>
           <div class="row"><b>Acción:</b><textarea class="edit" rows="1" data-k="s:${s.id}:summary" data-edited="summaryEdited">${esc(s.summary)}</textarea></div>
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
@@ -1051,11 +1186,11 @@
       <h2>Presencia y evolución</h2>
       <p class="lead">Presencia de cada personaje por secuencia (color = trama de la secuencia) y evolución dramática: de dónde parte, a dónde llega y qué secuencias marcan el cambio.</p>
       <div class="table-wrap" style="padding:10px"><table class="matrix">
-        <thead><tr><th></th>${p.scenes.map(s => `<th class="vert" title="${esc(sceneHeading(s))}">${esc(s.num)}</th>`).join('')}</tr></thead>
+        <thead><tr><th></th>${p.scenes.map(s => `<th class="vert" title="${esc(sceneHeading(s))}">${esc(dnum(s))}</th>`).join('')}</tr></thead>
         <tbody>${names.map(n => `<tr><td class="name">${esc(n)} <span class="muted">(${st[n].count})</span></td>${p.scenes.map(s => {
           if (!s.characters.includes(n)) return '<td></td>';
           const t = tramaOf(p, s);
-          return `<td class="on" style="background:${t ? t.color : '#777'}" title="Esc. ${esc(s.num)} · ${esc(s.location)}"></td>`;
+          return `<td class="on" style="background:${t ? t.color : '#777'}" title="Esc. ${esc(dnum(s))} · ${esc(s.location)}"></td>`;
         }).join('')}</tr>`).join('')}</tbody>
       </table></div>
       <div class="char-cards">${names.map(n => {
@@ -1092,7 +1227,7 @@
       <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
       <button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
       <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla, o «solo» para ver únicamente esa trama.</p>`;
-    const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(s.num)} · ${esc(s.location.slice(0, 40))}</option>`).join('');
+    const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(dnum(s))} · ${esc(s.location.slice(0, 40))}</option>`).join('');
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
     return `<section class="panel">
       ${printHeader(p, 'Step line')}
@@ -1122,7 +1257,7 @@
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Trama</th><th class="num">Intensidad (0–10)</th><th class="num">Punto de giro / evento</th><th>Etiqueta (globo)</th></tr></thead>
         <tbody>${scenes.map(s => {
           const t = tramaOf(p, s);
-          return `<tr><td class="num"><b>${esc(s.num)}</b></td><td>${esc(sceneHeading(s))}<div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 120))}</div></td>
+          return `<tr><td class="num"><b>${esc(dnum(s))}</b></td><td>${esc(sceneHeading(s))}<div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 120))}</div></td>
           <td>${t ? `<span class="trama-dot" style="background:${t.color}"></span>${esc(t.letter)}` : '—'}</td>
           <td class="num"><input class="cell-input" type="number" min="0" max="10" step="0.5" style="width:70px" data-k="s:${s.id}:intensity" data-num="1" data-rerender="1" data-lazy="1" value="${esc(s.intensity)}"></td>
           <td class="num"><input type="checkbox" data-k="s:${s.id}:keyEvent" data-rerender="1" ${s.keyEvent ? 'checked' : ''}></td>
@@ -1214,7 +1349,7 @@
       ${rows.length ? `<div class="table-wrap"><table class="depts-all">
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${ds.map(d => `<th class="dept-th dept-th-${d}">${esc(DEPTS[d])}<br><span style="font-weight:400">${p.scenes.filter(s => NEEDS.some(n => n.dept === d && s.needs[n.k])).length} sec.</span></th>`).join('')}</tr></thead>
         <tbody>${rows.map(s => `<tr>
-          <td class="num"><b>${esc(s.num)}</b></td>
+          <td class="num"><b>${esc(dnum(s))}</b></td>
           <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 140))}</div></td>
           <td>${estadoSelect(s)}</td>
           <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
@@ -1239,7 +1374,7 @@
           ${field('Notas generales para ' + DEPTS[d], area('p:deptNotes.' + d, 'rows="2"'), 'wide')}
           ${rows.length ? `<div class="table-wrap" style="margin-top:10px"><table>
             <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Necesidades</th><th>Descripción</th><th>Notas ${esc(DEPTS[d])}</th></tr></thead>
-            <tbody>${rows.map(s => `<tr><td class="num"><b>${esc(s.num)}</b></td><td>${esc(sceneHeading(s))}</td><td class="num">${fmtMin(s.lengthPages * mpp)}</td>
+            <tbody>${rows.map(s => `<tr><td class="num"><b>${esc(dnum(s))}</b></td><td>${esc(sceneHeading(s))}</td><td class="num">${fmtMin(s.lengthPages * mpp)}</td>
               <td><div class="needs-cell" style="min-width:140px">${needs.filter(n => s.needs[n.k]).map(n => `<button class="chip on need-nav lbl-${n.lbl || DEPT_LABEL[d]}" data-action="go-need" data-k="${n.k}">${esc(n.label)}</button>`).join('')}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div></td>
               <td style="min-width:240px">${esc(s.summary)}</td>
               <td>${area('s:' + s.id + ':notes.' + d, 'class="cell-input" style="min-width:200px"')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Sin secuencias marcadas.</p>'}
@@ -1323,7 +1458,7 @@
       ${rows.length ? `<div class="table-wrap"><table>
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${fields.map(f => `<th>${esc(f[1])}</th>`).join('')}<th>Notas ${esc(DEPTS[n.dept])}</th></tr></thead>
         <tbody>${rows.map(s => `<tr>
-          <td class="num"><b>${esc(s.num)}</b></td>
+          <td class="num"><b>${esc(dnum(s))}</b></td>
           <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 160))}</div></td>
           <td>${estadoSelect(s)}</td>
           <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
@@ -1391,7 +1526,7 @@
       <div class="table-wrap"><table>
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Estado</th><th></th><th>Fecha de rodaje</th><th>Script (guion rayado / parte)</th><th>Notas de rodaje</th></tr></thead>
         <tbody>${rows.map(s => { const t = tramaOf(p, s); return `<tr style="${t ? `box-shadow: inset 5px 0 0 ${t.color}` : ''}" class="${isShot(s) ? 'row-shot' : ''}">
-          <td class="num"><b>${esc(s.num)}</b></td>
+          <td class="num"><b>${esc(dnum(s))}</b></td>
           <td style="min-width:220px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.characters.slice(0, 5).join(', '))}</div></td>
           <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
           <td>${estadoSelect(s)}</td>
@@ -1425,6 +1560,28 @@
   /* ------------------------------------------------------------------ */
   /* Subida de guiones                                                    */
   /* ------------------------------------------------------------------ */
+  async function handleFiles(files) {
+    files = Array.from(files || []).filter(Boolean);
+    if (!files.length) return;
+    if (files.length === 1) return handleFile(files[0]);
+    const parsedList = [];
+    for (let i = 0; i < files.length; i++) {
+      showModal(`<h3><span class="spinner"></span>Leyendo guiones… ${i + 1} de ${files.length}</h3><p>${esc(files[i].name)}</p>`);
+      try { parsedList.push(await ScriptParser.parseFile(files[i])); }
+      catch (e) { parsedList.push({ error: e.message || String(e), filename: files[i].name }); }
+    }
+    pendingMulti = parsedList.filter(x => !x.error);
+    const bad = parsedList.filter(x => x.error);
+    const cur = RP();
+    const list = `<ul>${pendingMulti.map((x, i) => `<li><b>${esc(guessEpLabel(x, (cur && isSerie(cur) ? epList(cur).length : 0) + i + 1))}</b> · ${esc(x.filename)} · ${x.scenes.length} secuencias</li>`).join('')}</ul>${bad.length ? `<p style="color:#a3501b">No se han podido leer: ${bad.map(x => esc(x.filename)).join(', ')}</p>` : ''}`;
+    if (!pendingMulti.length) { showModal(`<h3>No se ha podido leer ningún guion</h3>${list}<div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`); return; }
+    showModal(`<h3>${pendingMulti.length} guiones leídos</h3><p>Se importarán como <b>episodios</b> de una serie:</p>${list}
+      <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button>
+      ${cur && cur.scenes.length ? `<button class="btn" data-action="import-eps">Añadir a «${esc(cur.title)}»${isSerie(cur) ? '' : ' (pasa a ser serie)'}</button>` : ''}
+      <button class="btn btn-primary" data-action="import-eps-new">${cur && !cur.scenes.length ? `Importar en «${esc(cur.title)}»` : 'Proyecto de serie nuevo'}</button></div>`);
+  }
+  let pendingMulti = null;
+
   async function handleFile(file) {
     if (!file) return;
     showModal(`<h3><span class="spinner"></span>Leyendo «${esc(file.name)}»…</h3><p>Detectando secuencias, personajes y necesidades.</p>`);
@@ -1436,7 +1593,7 @@
       showModal(`<h3>No se ha podido leer el guion</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
       return;
     }
-    const cur = P();
+    const cur = RP();
     const summary = `<p><b>${parsed.scenes.length}</b> secuencias · <b>${parsed.pages}</b> páginas · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
     if (!cur || !cur.scenes.length) {
       if (cur && !cur.scenes.length) applyParsed(cur, parsed);
@@ -1447,9 +1604,19 @@
       return;
     }
     pendingParsed = parsed;
+    if (isSerie(cur)) {
+      const eps = epList(cur); const ce = curEp(cur);
+      showModal(`<h3>Guion leído: «${esc(parsed.filename)}»</h3>${summary}
+        <p>«${esc(cur.title)}» es una <b>serie</b>. ¿Qué es este guion?</p>
+        <div class="field" style="margin:10px 0"><label>Nueva versión de un episodio existente</label>
+          <div style="display:flex;gap:6px"><select id="epTarget" class="cell-input">${eps.map(e => `<option value="${e.id}" ${e.id === ce ? 'selected' : ''}>${esc(epLabelFull(e))}</option>`).join('')}</select><button class="btn" data-action="import-ep-version">Nueva versión</button></div>
+          <small>Se conservan tramas, notas, intensidad y puntos de giro de las secuencias con el mismo número.</small></div>
+        <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn" data-action="import-new">Proyecto nuevo</button><button class="btn btn-primary" data-action="import-ep">Episodio nuevo (${esc(guessEpLabel(parsed, eps.length + 1))})</button></div>`);
+      return;
+    }
     showModal(`<h3>Guion leído: «${esc(parsed.filename)}»</h3>${summary}
       <p>¿Es una <b>nueva versión</b> de «${esc(cur.title)}» o un <b>proyecto nuevo</b>? En una nueva versión se conservan tramas, notas, intensidad y puntos de giro de las secuencias con el mismo número.</p>
-      <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn" data-action="import-version">Nueva versión de «${esc(cur.title)}»</button><button class="btn btn-primary" data-action="import-new">Proyecto nuevo</button></div>`);
+      <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn" data-action="import-ep" title="Convierte «${esc(cur.title)}» en serie y añade este guion como episodio">Es una serie: episodio nuevo</button><button class="btn" data-action="import-version">Nueva versión de «${esc(cur.title)}»</button><button class="btn btn-primary" data-action="import-new">Proyecto nuevo</button></div>`);
   }
   let pendingParsed = null;
   function createFromParsed(parsed) {
@@ -1583,6 +1750,40 @@
     'reset-need': (el) => { const k = el.dataset.k; P().scenes.forEach(s => { if (s.needDetail) delete s.needDetail[k]; }); save(); renderTab(); },
     'ai-need': (el) => { if (window.AIEditor) window.AIEditor.detailNeed(el.dataset.k, NEED_FIELDS[el.dataset.k], NEEDS.find(n => n.k === el.dataset.k)); },
     'go-ia': () => { hideModal(); tab = 'ia'; window.scrollTo(0, 0); render(); },
+    'import-ep': () => {
+      const parsed = pendingParsed; pendingParsed = null; const p = RP();
+      if (!isSerie(p)) { p.formato = 'Serie'; ensureEpisodes(p); }
+      const e = addEpisode(p, parsed);
+      finishImport(`<h3>Episodio añadido: ${esc(epLabelFull(e))}</h3><p>${parsed.scenes.length} secuencias · ${parsed.pages} páginas. Estás viendo este episodio; elige arriba otro episodio o la temporada completa.</p><p class="muted">Puedes cambiar el nombre del episodio en <b>Proyecto → Episodios</b>.</p>`, true);
+    },
+    'import-ep-version': () => {
+      const parsed = pendingParsed; pendingParsed = null; const p = RP();
+      const id = ($('#epTarget') || {}).value; const e = epList(p).find(x => x.id === id); if (!e) return;
+      const kept = mergeVersion(viewFor(p, id), parsed);
+      Object.assign(e, { filename: parsed.filename, pages: parsed.pages, importedAt: new Date().toISOString(), version: (parsed.portada || {}).version || e.version, fecha: (parsed.portada || {}).fecha || e.fecha });
+      p.pages = epList(p).reduce((a, x) => a + (Number(x.pages) || 0), 0);
+      state.ui = state.ui || {}; state.ui.ep = Object.assign({}, state.ui.ep, { [p.id]: id });
+      finishImport(`<h3>Nueva versión de ${esc(epLabelFull(e))}</h3><p>${parsed.scenes.length} secuencias; se han conservado las anotaciones de ${kept}.</p>`);
+    },
+    'import-eps': () => {
+      const list = pendingMulti || []; pendingMulti = null; const p = RP();
+      if (!isSerie(p)) { p.formato = 'Serie'; ensureEpisodes(p); }
+      list.forEach(x => addEpisode(p, x));
+      finishImport(`<h3>${list.length} episodios añadidos a «${esc(p.title)}»</h3><p>Elige arriba el episodio en el que quieres trabajar, o la temporada completa.</p>`, true);
+    },
+    'import-eps-new': () => {
+      const list = pendingMulti || []; pendingMulti = null; if (!list.length) return;
+      let p = RP();
+      if (!p || p.scenes.length) p = newProject({ title: (list[0].portada || {}).title || list[0].title || 'Serie sin título', formato: 'Serie' });
+      else { p.formato = 'Serie'; if (p.title === 'Proyecto sin título' && (list[0].portada || {}).title) p.title = list[0].portada.title; }
+      list.forEach(x => addEpisode(p, x));
+      applyPortada(p, Object.assign({}, list[0].portada, { version: '', fecha: '', episodio: '' }), true);
+      finishImport(`<h3>Serie creada con ${list.length} episodios</h3><p>Elige arriba el episodio en el que quieres trabajar, o la temporada completa.</p>`, true);
+    },
+    'ep-view': (el) => { state.ui = state.ui || {}; state.ui.ep = Object.assign({}, state.ui.ep, { [state.currentId]: el.dataset.id }); save(); render(); },
+    'ep-move': (el) => { const p = RP(); const eps = epList(p); const i = +el.dataset.i, j = i + Number(el.dataset.d); if (j < 0 || j >= eps.length) return; [eps[i], eps[j]] = [eps[j], eps[i]]; regroupByEpisode(p); save(); render(); },
+    'ep-del': (el) => { const p = RP(); const e = epList(p).find(x => x.id === el.dataset.id); if (!e) return; showModal(`<h3>¿Eliminar ${esc(epLabelFull(e))}?</h3><p>Se borrarán sus ${p.scenes.filter(x => x.ep === e.id).length} secuencias y todo lo anotado en ellas. Si quieres conservarlo, guarda antes una copia .json.</p><div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="ep-del-ok" data-id="${e.id}">Eliminar</button></div>`); },
+    'ep-del-ok': (el) => { deleteEpisode(RP(), el.dataset.id); hideModal(); save(); render(); toast('Episodio eliminado.'); },
     'import-new': () => {
       const parsed = pendingParsed; createFromParsed(parsed); pendingParsed = null;
       const changed = applyPortada(P(), parsed.portada, false);
@@ -1590,13 +1791,13 @@
       finishImport('<h3>Proyecto nuevo creado</h3>' + portadaHTML(changed), true);
     },
     'import-version': () => {
-      const parsed = pendingParsed; const p = P(); const kept = mergeVersion(p, parsed); pendingParsed = null;
+      const parsed = pendingParsed; const p = RP(); const kept = mergeVersion(p, parsed); pendingParsed = null;
       const changed = applyPortada(p, parsed.portada, true);
       if (window.AIEditor) window.AIEditor.portada(p, parsed, true);
       finishImport(`<h3>Versión actualizada</h3><p>${p.scenes.length} secuencias; se han conservado las anotaciones de ${kept}.</p>${portadaHTML(changed)}<p class="muted">Comprueba la versión y la fecha en <b>Proyecto</b>.</p>`);
     },
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
-    'export-json': () => { const p = P(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
+    'export-json': () => { const p = RP(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
     'print': async () => {
       const p = P(); if (!p || !window.PdfExport) return;
@@ -1741,6 +1942,7 @@
     setPath(t.obj, t.path, v);
     if (el.dataset.edited) t.obj[el.dataset.edited] = true;
     if (el.dataset.list) ensureCharacters(P());
+    if (k === 'p:formato') { ensureEpisodes(RP()); render(); }
     save();
     if (el.dataset.rerenderSelect) renderProjectSelect();
     if (el.dataset.rerender && (isChange || !el.dataset.lazy)) {
@@ -1756,8 +1958,9 @@
   });
   document.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'fileInput' || el.classList.contains('file-trigger')) { handleFile(el.files[0]); el.value = ''; return; }
+    if (el.id === 'fileInput' || el.classList.contains('file-trigger')) { handleFiles(el.files); el.value = ''; return; }
     if (el.id === 'jsonInput') { importJSON(el.files[0]); el.value = ''; return; }
+    if (el.id === 'epSelect') { state.ui = state.ui || {}; state.ui.ep = Object.assign({}, state.ui.ep, { [state.currentId]: el.value }); expanded.clear(); save(); render(); return; }
     if (el.id === 'projectSelect') { state.currentId = el.value; expanded.clear(); save(); render(); return; }
     if (el.dataset.actionChange) { changeActions[el.dataset.actionChange](el); return; }
     if (el.dataset.k) onFieldInput(el, true);
@@ -1795,7 +1998,7 @@
     if (!isFileDrag(e)) return;
     e.preventDefault(); dragDepth = 0; $('#dropOverlay').hidden = true;
     const f = e.dataTransfer.files[0];
-    if (f && /\.json$/i.test(f.name)) importJSON(f); else handleFile(f);
+    if (f && /\.json$/i.test(f.name)) importJSON(f); else handleFiles(e.dataTransfer.files);
   });
 
   // Mover pestañas arrastrándolas en la barra (vista por fases)
@@ -1917,7 +2120,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    applyPortada, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, RP, dnum, isSerie, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

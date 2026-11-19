@@ -90,7 +90,8 @@
     { id: "cine", lab: "V2 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
     { id: "series", lab: "V1 · Series", items: pick(["Series de ficción", "Programas de TV", "Ayudante de montaje", "Script"]) },
     { id: "doc", lab: "A1 · Doc", items: pick(["Documental y reportaje", "Musical", "Publicidad", "Otros"]) },
-    { id: "wave", lab: "A2 · Aula", items: listRows(D.teaching, "Docencia").concat(listRows(D.training, "Formación")) }
+    { id: "wave", lab: "A2 · Docencia", items: listRows(D.teaching, "Docencia") },
+    { id: "train", lab: "A3 · Formación", items: listRows(D.training, "Formación") }
   ];
 
   function buildClips(items) {
@@ -136,7 +137,8 @@
     cine: "linear-gradient(135deg, #ffa41b, #c96a08)",
     series: "linear-gradient(135deg, #f64a1f, #a8192c)",
     doc: "linear-gradient(135deg, #a8192c, #4a0b14)",
-    wave: "linear-gradient(135deg, #1f5a3c, #0f1f17)"
+    wave: "linear-gradient(135deg, #1f5a3c, #0f1f17)",
+    train: "linear-gradient(135deg, #4a443c, #1a1816)"
   };
   var CAT_LABEL = { "Largometrajes y TV movies": "Largometraje", "Series de ficción": "Serie de ficción", "Documental y reportaje": "Documental",
     "Cortometrajes": "Cortometraje", "Programas de TV": "Programa de TV", "Ayudante de montaje": "Ayudante de montaje" };

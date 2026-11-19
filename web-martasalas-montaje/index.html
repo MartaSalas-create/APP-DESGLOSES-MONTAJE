@@ -18,15 +18,18 @@
 <body>
   <!-- Iconos de los controles de transporte (dibujo propio, estética de mesa de edición) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <!-- START: marca de sincronía de la cola de arranque (fotograma con círculo y cruz) -->
-    <symbol id="i-start" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
-      <rect x="2" y="3" width="16" height="14" rx="1.5"/><circle cx="10" cy="10" r="4.2"/><path d="M10 4.5v11M4.5 10h11"/>
+    <!-- START: trozo de película con perforaciones y la X de lápiz graso que marcaba el sincro en la Moviola -->
+    <symbol id="i-start" viewBox="0 0 24 20">
+      <rect x="1" y="1.5" width="22" height="17" rx="1.5" fill="currentColor"/><rect x="2.3" y="3.2" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="3.2" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="7.1" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="7.1" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="11.0" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="11.0" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="14.9" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="14.9" width="2" height="2" rx=".4" fill="#121110"/>
+      <rect x="6" y="3.2" width="12" height="13.6" rx=".8" fill="#121110"/>
+      <path d="M8.3 5.6l7.4 8.8M15.7 5.6l-7.4 8.8" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>
     </symbol>
-    <!-- PICTURE LOCK: fotograma con candado cerrado -->
-    <symbol id="i-lock" viewBox="0 0 20 20">
-      <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-      <path d="M7.6 9.2V7.6a2.4 2.4 0 0 1 4.8 0v1.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="6.4" y="9" width="7.2" height="5.4" rx="1" fill="currentColor"/>
+    <!-- PICTURE LOCK: película en verde (arranca la postproducción) con candado rojo cerrado -->
+    <symbol id="i-lock" viewBox="0 0 24 20">
+      <rect x="1" y="1.5" width="22" height="17" rx="1.5" fill="#34c47a"/><rect x="2.3" y="3.2" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="3.2" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="7.1" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="7.1" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="11.0" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="11.0" width="2" height="2" rx=".4" fill="#121110"/><rect x="2.3" y="14.9" width="2" height="2" rx=".4" fill="#121110"/><rect x="19.7" y="14.9" width="2" height="2" rx=".4" fill="#121110"/>
+      <rect x="6" y="3.2" width="12" height="13.6" rx=".8" fill="#121110"/>
+      <path d="M9.6 9.6V8a2.4 2.4 0 0 1 4.8 0v1.6" fill="none" stroke="#e2231f" stroke-width="1.6"/>
+      <rect x="8.4" y="9.4" width="7.2" height="5.2" rx="1" fill="#e2231f"/>
     </symbol>
     <symbol id="i-in" viewBox="0 0 20 20"><path d="M7 3h6v2H9v10h4v2H7z"/></symbol>
     <symbol id="i-out" viewBox="0 0 20 20"><path d="M13 3H7v2h4v10H7v2h6z"/></symbol>

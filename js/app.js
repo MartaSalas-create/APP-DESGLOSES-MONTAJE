@@ -1373,7 +1373,9 @@
     const pct = active.length ? Math.round(shot.length / active.length * 100) : 0;
     const docs = s => (s.adjuntos || []).length;
     const F = { todas: ['Todas', () => true], pendientes: ['Sin rodar', s => !isShot(s) && !getEstados(s).includes('eliminada')], rodadas: ['Rodadas', isShot], sindocs: ['Rodadas sin documentos de script', s => isShot(s) && !docs(s)], urgentes: ['Urgentes', s => getEstados(s).includes('urgente')] };
-    const rows = p.scenes.filter(F[rodajeFilter][1]);
+    const estF = rodajeFilter.startsWith('est:') ? rodajeFilter.slice(4) : null;
+    if (!estF && !F[rodajeFilter]) rodajeFilter = 'todas';
+    const rows = estF ? p.scenes.filter(s => getEstados(s).includes(estF)) : p.scenes.filter(F[rodajeFilter][1]);
     const counts = ESTADOS.filter(e => e.k !== 'sinrodar').map(e => [e, p.scenes.filter(s => getEstados(s).includes(e.k)).length]).filter(x => x[1]);
     return `<section class="panel">
       ${printHeader(p, 'Seguimiento de rodaje')}
@@ -1383,8 +1385,8 @@
         <div class="rp-bar"><i style="width:${pct}%"></i></div>
         <div class="rp-nums"><b>${shot.length}</b> de ${active.length} secuencias rodadas (${pct}%) · <b>${fmtMin(minS)}</b> de ${fmtMin(minT)} estimados · ${p.scenes.filter(s => isShot(s) && docs(s)).length} con documentos de script</div>
       </div>
-      ${counts.length ? `<div class="post-legend" style="margin:8px 0 14px">${counts.map(([e, n]) => `<span class="estado-badge lbl-bg-${e.k}">${e.label}: ${n}</span>`).join('')}</div>` : ''}
-      <div class="toolbar no-print">${Object.keys(F).map(k => `<button class="btn btn-small ${rodajeFilter === k ? 'btn-primary' : ''}" data-action="rodaje-filter" data-v="${k}">${F[k][0]} (${p.scenes.filter(F[k][1]).length})</button>`).join('')}
+      ${counts.length ? `<div class="post-legend est-filters" style="margin:8px 0 14px">${counts.map(([e, n]) => `<button class="estado-badge lbl-bg-${e.k} est-filter ${estF === e.k ? 'on' : ''}" data-action="rodaje-filter" data-v="${estF === e.k ? 'todas' : 'est:' + e.k}" title="${estF === e.k ? 'Quitar filtro' : 'Ver solo las secuencias ' + e.label}">${e.label}: ${n}</button>`).join('')}${estF ? `<span class="muted" style="font-size:12px">Mostrando solo <b>${esc(estadoOf(estF).label)}</b> · toca de nuevo para quitar el filtro</span>` : '<span class="muted" style="font-size:12px">Toca una etiqueta para ver solo esas secuencias</span>'}</div>` : ''}
+      <div class="toolbar no-print">${Object.keys(F).map(k => `<button class="btn btn-small ${!estF && rodajeFilter === k ? 'btn-primary' : ''}" data-action="rodaje-filter" data-v="${k}">${F[k][0]} (${p.scenes.filter(F[k][1]).length})</button>`).join('')}
         <span class="spacer"></span>${window.Attach ? Attach.toolbarButton() : ''}<button class="btn btn-small" data-action="print">Descargar PDF</button></div>
       <div class="table-wrap"><table>
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Estado</th><th></th><th>Fecha de rodaje</th><th>Script (guion rayado / parte)</th><th>Notas de rodaje</th></tr></thead>

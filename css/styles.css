@@ -407,3 +407,19 @@ th.col-over { box-shadow: inset 3px 0 0 #ff6b5a, inset -3px 0 0 #ff6b5a; }
 .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #d0342c, #cc6b55); }
 .rp-nums { margin-top: 8px; font-size: 13px; }
 tr.row-shot td { background: #fbfaf7; }
+
+/* Organizar pestañas */
+.nav-org { margin-right: 10px; border-radius: 6px !important; background: #4a4f57 !important; color: #fff !important; }
+.tabs-sub button.tab-dragging { opacity: .4; }
+.tab-over { box-shadow: inset 0 0 0 2px #ff6b5a !important; }
+.lay-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; max-height: 62vh; overflow: auto; margin: 10px 0; }
+.lay-phase { background: #f7f6f3; border-radius: 10px; padding: 10px; }
+.lay-phase-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.lay-phase-h input { font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.lay-group { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.lay-group-h { display: flex; gap: 4px; margin-bottom: 6px; }
+.lay-group-h input { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.lay-tab { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid #f0eee9; font-size: 13px; font-weight: 600; }
+.lay-tools { display: flex; gap: 3px; align-items: center; }
+.lay-to { width: 96px !important; min-width: 0 !important; font-size: 11px; padding: 3px 4px; }
+.lay-add { margin-top: 6px; font-size: 12px; }

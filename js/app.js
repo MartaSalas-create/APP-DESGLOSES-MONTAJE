@@ -107,6 +107,15 @@
   const EXTRA_LABELS = { rodaje: 'Seguimiento de rodaje', steplinem: 'Step line del montaje', proyecto: 'Datos del proyecto', workflow: 'Reunión de workflow' };
   const tabLabel = id => (TABS.find(t => t.id === id) || {}).label || EXTRA_LABELS[id] || 'documento';
   const navMode = () => (state.ui && state.ui.nav) || 'clasica';
+  const ALL_TAB_IDS = () => Array.from(new Set(TABS.filter(t => t.id).map(t => t.id).concat(Object.keys(EXTRA_LABELS))));
+  const labelOf = id => (id === 'proyecto' || id === 'workflow' || (EXTRA_LABELS[id] && !TABS.find(t => t.id === id))) ? EXTRA_LABELS[id] : tabLabel(id);
+  // organización por fases: la personalizada (si existe) o la propuesta original
+  function getPhases() {
+    const u = state.ui && state.ui.phases;
+    if (Array.isArray(u) && u.length) return u;
+    return JSON.parse(JSON.stringify(PHASES));
+  }
+  function setPhases(ph) { state.ui = state.ui || {}; state.ui.phases = ph; save(); if (typeof Cloud !== 'undefined') Cloud.queueSettings && Cloud.queueSettings(); }
 
   const WORKFLOW_FIELDS = [
     ['Rodaje', [
@@ -203,10 +212,12 @@
       try {
         const st = await this.col().doc('settings').get();
         if (st.exists && st.data().currentId && state.projects[st.data().currentId] && !state.currentId) state.currentId = st.data().currentId;
+        if (st.exists && st.data().ui && !(state.ui && state.ui.phases)) { try { state.ui = Object.assign({}, JSON.parse(st.data().ui), state.ui || {}); changed = true; } catch (e) { /* sin ajustes */ } }
       } catch (e) { /* sin ajustes */ }
       if (!state.currentId || !state.projects[state.currentId]) state.currentId = Object.keys(state.projects)[0] || null;
       if (changed) { render(); toast('Proyectos recuperados de tu cuenta.'); }
     },
+    queueSettings() { if (!this.db) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 1500); },
     queue(id) {
       if (!this.db) return;
       this.pending.add(id);
@@ -233,7 +244,7 @@
           }
           this.known.add(id);
         }
-        if (state.currentId) await this.col().doc('settings').set({ currentId: state.currentId });
+        if (state.currentId) await this.col().doc('settings').set({ currentId: state.currentId, ui: JSON.stringify(state.ui || {}) });
       } catch (e) {
         console.warn(e);
         if (e && e.code === 'quota_exceeded') toast('⚠ Espacio de guardado lleno: guarda una copia .json y borra proyectos antiguos.');
@@ -563,9 +574,9 @@
     const cur = secs.find(x => x.name === curSec && x.tabs.some(t => t.id === tab)) || secs.find(x => x.tabs.some(t => t.id === tab)) || secs[0];
     curSec = cur.name;
     const fases = navMode() === 'fases';
-    $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map((x, i) => `<button data-section="${esc(x.name)}" class="${x === cur ? 'active' : ''}">${fases ? `<span class="phase-n">${i + 1}</span>` : ''}${esc(x.name)}</button>`).join('')}
-        <span class="nav-switch"><span>Vista:</span><button data-action="nav-mode" data-v="fases" class="${fases ? 'on' : ''}">Por fases</button><button data-action="nav-mode" data-v="clasica" class="${fases ? '' : 'on'}">Clásica</button></span></div>
-      <div class="tabs-sub">${cur.tabs.map(t => `${t.group ? `<span class="tab-group-label">${esc(t.group)}</span>` : ''}<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}">${t.label}</button>`).join('')}</div>` : '';
+    $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map((x, i) => `<button data-section="${esc(x.name)}" ${fases ? `data-pi="${x.pi}"` : ''} class="${x === cur ? 'active' : ''}">${fases ? `<span class="phase-n">${i + 1}</span>` : ''}${esc(x.name)}</button>`).join('')}
+        <span class="nav-switch">${fases ? '<button class="nav-org" data-action="lay-open" title="Mover pestañas entre fases y grupos">⚙ Organizar</button>' : ''}<span>Vista:</span><button data-action="nav-mode" data-v="fases" class="${fases ? 'on' : ''}">Por fases</button><button data-action="nav-mode" data-v="clasica" class="${fases ? '' : 'on'}">Clásica</button></span></div>
+      <div class="tabs-sub">${cur.tabs.map(t => `${t.group ? `<span class="tab-group-label">${esc(t.group)}</span>` : ''}<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}" ${fases ? `draggable="true" data-pi="${t.pi}" data-gi="${t.gi}" data-ti="${t.ti}" title="Arrastra para mover la pestaña"` : ''}>${t.label}</button>`).join('')}</div>` : '';
     $('#tabs').hidden = !p;
     if (!p) { $('#main').innerHTML = welcomeHTML(); return; }
     renderTab();
@@ -573,7 +584,7 @@
 
   function sections() {
     if (navMode() === 'fases') {
-      return PHASES.map(ph => ({ name: ph.name, tabs: ph.groups.flatMap(([g, ids]) => ids.map((id, i) => ({ id, label: id === 'proyecto' || id === 'workflow' || EXTRA_LABELS[id] && !TABS.find(t => t.id === id) ? EXTRA_LABELS[id] : tabLabel(id), group: i === 0 ? g : '' }))) }));
+      return getPhases().map((ph, pi) => ({ name: ph.name, pi, tabs: ph.groups.flatMap(([g, ids], gi) => ids.map((id, ti) => ({ id, label: labelOf(id), group: ti === 0 ? g : '', pi, gi, ti }))) })).filter(x => x.tabs.length);
     }
     const out = [];
     TABS.forEach(t => { if (t.group) out.push({ name: t.group, tabs: [] }); else out[out.length - 1].tabs.push(t); });
@@ -1322,6 +1333,32 @@
     </section>`;
   }
 
+  /* ---------- Panel «Organizar pestañas» (vista por fases) ---------- */
+  function layoutPanel() {
+    const ph = getPhases();
+    const dest = ph.flatMap((x, pi) => x.groups.map((g, gi) => [`${pi}|${gi}`, `${x.name} › ${g[0]}`]));
+    const placed = new Set(ph.flatMap(x => x.groups.flatMap(g => g[1])));
+    const unplaced = ALL_TAB_IDS().filter(id => !placed.has(id));
+    showModal(`<h3>Organizar pestañas</h3>
+      <p>Mueve cada pestaña al grupo y la fase que te convenga, cámbiala de orden o añádela en más de un sitio. También puedes arrastrar las pestañas en la barra (con ratón).</p>
+      <div class="lay-wrap">${ph.map((x, pi) => `<div class="lay-phase">
+        <div class="lay-phase-h"><span class="phase-n">${pi + 1}</span><input class="cell-input" value="${esc(x.name)}" data-action-change="lay-rename-phase" data-p="${pi}"></div>
+        ${x.groups.map((g, gi) => `<div class="lay-group">
+          <div class="lay-group-h"><input class="cell-input" value="${esc(g[0])}" data-action-change="lay-rename-group" data-p="${pi}" data-g="${gi}">${g[1].length ? '' : `<button class="btn btn-small btn-ghost" data-action="lay-delgroup" data-p="${pi}" data-g="${gi}" title="Quitar grupo vacío">✕</button>`}</div>
+          ${g[1].map((id, ti) => `<div class="lay-tab"><span>${esc(labelOf(id))}</span><span class="lay-tools">
+            <button class="btn btn-small" data-action="lay-move" data-p="${pi}" data-g="${gi}" data-i="${ti}" data-d="-1" ${ti === 0 ? 'disabled' : ''}>↑</button><button class="btn btn-small" data-action="lay-move" data-p="${pi}" data-g="${gi}" data-i="${ti}" data-d="1" ${ti === g[1].length - 1 ? 'disabled' : ''}>↓</button>
+            <select class="cell-input lay-to" data-action-change="lay-to" data-p="${pi}" data-g="${gi}" data-i="${ti}"><option value="">Mover a…</option>${dest.filter(d => d[0] !== `${pi}|${gi}`).map(d => `<option value="${d[0]}">${esc(d[1])}</option>`).join('')}</select>
+            <button class="btn btn-small btn-ghost" data-action="lay-del" data-p="${pi}" data-g="${gi}" data-i="${ti}" title="Quitar de aquí">✕</button></span></div>`).join('')}
+          <select class="cell-input lay-add" data-action-change="lay-add" data-p="${pi}" data-g="${gi}"><option value="">＋ Añadir pestaña aquí…</option>${ALL_TAB_IDS().filter(id => !g[1].includes(id)).map(id => `<option value="${id}">${esc(labelOf(id))}${placed.has(id) ? '' : ' (sin colocar)'}</option>`).join('')}</select>
+        </div>`).join('')}
+        <button class="btn btn-small" data-action="lay-addgroup" data-p="${pi}">＋ Grupo</button>
+      </div>`).join('')}</div>
+      ${unplaced.length ? `<p class="muted" style="font-size:12px">Pestañas sin colocar (no se ven en la vista por fases): ${unplaced.map(id => esc(labelOf(id))).join(', ')}.</p>` : ''}
+      <div class="actions"><button class="btn" data-action="lay-reset">Volver a la propuesta original</button><button class="btn btn-primary" data-action="close-modal">Listo</button></div>`);
+    document.getElementById('modalBody').classList.add('modal-wide');
+  }
+  function editLayout(fn) { const ph = getPhases(); fn(ph); setPhases(ph); render(); layoutPanel(); }
+
   /* ------------------------------------------------------------------ */
   /* Pestaña: Seguimiento de rodaje                                       */
   /* ------------------------------------------------------------------ */
@@ -1509,6 +1546,12 @@
       [list[i], list[j]] = [list[j], list[i]]; setColState(p, t, list); colsPanel(t);
     },
     'col-reset': (el) => { const p = P(); const t = el.dataset.t; if (p.colOrder) delete p.colOrder[t]; if (p.colHidden) delete p.colHidden[t]; save(); renderTab(); colsPanel(t); },
+    'lay-open': () => layoutPanel(),
+    'lay-move': (el) => editLayout(ph => { const arr = ph[+el.dataset.p].groups[+el.dataset.g][1]; const i = +el.dataset.i, j = i + Number(el.dataset.d); if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; }),
+    'lay-del': (el) => editLayout(ph => { ph[+el.dataset.p].groups[+el.dataset.g][1].splice(+el.dataset.i, 1); }),
+    'lay-addgroup': (el) => editLayout(ph => { ph[+el.dataset.p].groups.push(['Nuevo grupo', []]); }),
+    'lay-delgroup': (el) => editLayout(ph => { ph[+el.dataset.p].groups.splice(+el.dataset.g, 1); }),
+    'lay-reset': () => { state.ui = state.ui || {}; delete state.ui.phases; save(); render(); layoutPanel(); toast('Organización original restaurada.'); },
     'nav-mode': (el) => { state.ui = state.ui || {}; state.ui.nav = el.dataset.v; curSec = null; save(); render(); toast(el.dataset.v === 'fases' ? 'Vista por fases: Preproducción · Producción/Rodaje · Postproducción.' : 'Vista clásica.'); },
     'rodaje-mark': (el) => { const sc = sceneById(P(), el.dataset.id); const est = getEstados(sc); if (!est.includes('rodada')) est.push('rodada'); sc.estado = 'rodada'; sc.rodaje = sc.rodaje || {}; if (!sc.rodaje.fecha) sc.rodaje.fecha = new Date().toISOString().slice(0, 10); save(); renderTab(); },
     'rodaje-filter': (el) => { rodajeFilter = el.dataset.v; renderTab(); },
@@ -1657,6 +1700,13 @@
 
   const changeActions = {
 
+    'lay-to': (el) => {
+      if (!el.value) return; const [tp, tg] = el.value.split('|').map(Number);
+      editLayout(ph => { const src = ph[+el.dataset.p].groups[+el.dataset.g][1]; const id = src.splice(+el.dataset.i, 1)[0]; const dst = ph[tp].groups[tg][1]; if (!dst.includes(id)) dst.push(id); });
+    },
+    'lay-add': (el) => { if (!el.value) return; editLayout(ph => { const g = ph[+el.dataset.p].groups[+el.dataset.g][1]; if (!g.includes(el.value)) g.push(el.value); }); },
+    'lay-rename-phase': (el) => editLayout(ph => { ph[+el.dataset.p].name = el.value.trim() || ph[+el.dataset.p].name; }),
+    'lay-rename-group': (el) => editLayout(ph => { ph[+el.dataset.p].groups[+el.dataset.g][0] = el.value.trim() || 'Grupo'; }),
     'col-toggle': (el) => {
       const p = P(); const t = el.dataset.t; const list = colsFor(p, t, COL_SETS[t](p), true);
       const c = list.find(x => x.k === el.dataset.c); if (!c) return;
@@ -1745,6 +1795,43 @@
     const f = e.dataTransfer.files[0];
     if (f && /\.json$/i.test(f.name)) importJSON(f); else handleFile(f);
   });
+
+  // Mover pestañas arrastrándolas en la barra (vista por fases)
+  let tabDrag = null;
+  document.addEventListener('dragstart', e => {
+    const b = e.target.closest && e.target.closest('.tabs-sub button[data-tab][data-pi]'); if (!b) return;
+    tabDrag = { pi: +b.dataset.pi, gi: +b.dataset.gi, ti: +b.dataset.ti }; b.classList.add('tab-dragging');
+    e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.dataset.tab);
+  });
+  document.addEventListener('dragover', e => {
+    if (!tabDrag) return;
+    const t = e.target.closest && (e.target.closest('.tabs-sub button[data-tab][data-pi]') || e.target.closest('.tabs-sections button[data-pi]'));
+    document.querySelectorAll('.tab-over').forEach(x => x.classList.remove('tab-over'));
+    if (t) { e.preventDefault(); t.classList.add('tab-over'); }
+  });
+  document.addEventListener('drop', e => {
+    if (!tabDrag) return;
+    const tb = e.target.closest && e.target.closest('.tabs-sub button[data-tab][data-pi]');
+    const sb = !tb && e.target.closest && e.target.closest('.tabs-sections button[data-pi]');
+    if (tb || sb) {
+      e.preventDefault();
+      const ph = getPhases(); const src = ph[tabDrag.pi].groups[tabDrag.gi][1]; const id = src[tabDrag.ti];
+      if (tb) {
+        const pi = +tb.dataset.pi, gi = +tb.dataset.gi; let ti = +tb.dataset.ti;
+        const after = e.clientX > tb.getBoundingClientRect().left + tb.offsetWidth / 2;
+        src.splice(tabDrag.ti, 1);
+        const dst = ph[pi].groups[gi][1];
+        if (dst === src && tabDrag.ti < ti) ti--;
+        const k = dst.indexOf(id); if (k >= 0) dst.splice(k, 1);
+        dst.splice(Math.min(dst.length, ti + (after ? 1 : 0)), 0, id);
+      } else {
+        const pi = +sb.dataset.pi; if (pi !== tabDrag.pi) { src.splice(tabDrag.ti, 1); const g = ph[pi].groups[ph[pi].groups.length - 1][1]; if (!g.includes(id)) g.push(id); toast(`«${labelOf(id)}» movida a ${ph[pi].name}.`); }
+      }
+      setPhases(ph); render();
+    }
+    tabDrag = null;
+  });
+  document.addEventListener('dragend', () => { tabDrag = null; document.querySelectorAll('.tab-dragging,.tab-over').forEach(x => x.classList.remove('tab-dragging', 'tab-over')); });
 
   // Mover columnas arrastrando la cabecera
   let colDrag = null;

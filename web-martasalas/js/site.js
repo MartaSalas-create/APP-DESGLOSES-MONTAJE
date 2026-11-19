@@ -209,9 +209,9 @@
   var reelGrid = $("#reelGrid");
   function renderReel(kind) {
     reelGrid.innerHTML = D.reels[kind].map(function (v, i) {
-      return '<button class="reel-item" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
+      return '<a class="reel-item" href="https://www.youtube.com/watch?v=' + esc(v.id) + '" target="_blank" rel="noopener" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
         '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'no-thumb\');this.remove()">' +
-        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "TV" : "CINE") + " · CLIP " + pad(i + 1) + "</span></button>";
+        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "TV" : "CINE") + " · CLIP " + pad(i + 1) + "</span></a>";
     }).join("");
   }
   renderReel("tv");
@@ -229,7 +229,12 @@
     lb.hidden = false; document.body.style.overflow = "hidden"; $("#lbClose").focus();
   }
   function closeVideo() { lb.hidden = true; lbFrame.innerHTML = ""; document.body.style.overflow = ""; if (lastFocus) lastFocus.focus(); }
-  reelGrid.addEventListener("click", function (e) { var b = e.target.closest(".reel-item"); if (b) openVideo(b.dataset.id); });
+  // Dentro de un visor que no admite vídeos incrustados, el enlace abre YouTube
+  var framed = (function () { try { return window.self !== window.top; } catch (err) { return true; } })();
+  reelGrid.addEventListener("click", function (e) {
+    var b = e.target.closest(".reel-item"); if (!b || framed) return;
+    e.preventDefault(); openVideo(b.dataset.id);
+  });
   $("#lbClose").addEventListener("click", closeVideo);
   lb.addEventListener("click", function (e) { if (e.target === lb) closeVideo(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !lb.hidden) closeVideo(); });

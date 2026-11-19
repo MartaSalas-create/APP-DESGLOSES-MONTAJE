@@ -89,8 +89,8 @@
   var listRows = function (arr, cat) { return arr.map(function (r) { var y = yearsOf(r[0]); return { a: y[0], b: y[1], t: r[1], d: r[2], cat: cat }; }); };
   var TRACKS = [
     { id: "cine", lab: "V3 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
-    { id: "series", lab: "V2 · Series y TV", items: pick(["Series de ficción", "Programas de TV"]) },
-    { id: "doc", lab: "V1 · Doc y otros", items: pick(["Documental y reportaje", "Musical", "Publicidad", "Otros"]) },
+    { id: "series", lab: "V2 · Series", items: pick(["Series de ficción"]) },
+    { id: "doc", lab: "V1 · Doc y programas", items: pick(["Documental y reportaje", "Programas de TV", "Musical", "Publicidad", "Otros"]) },
     { id: "wave", lab: "A1 · Docencia", items: listRows(D.teaching, "Docencia") },
     { id: "train", lab: "A2 · Formación", items: listRows(D.training, "Formación") }
   ];

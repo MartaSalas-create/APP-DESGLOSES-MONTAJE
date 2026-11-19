@@ -760,6 +760,7 @@
     { k: 'chars', label: 'Personajes', td: s => `<td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td>` },
     { k: 'summary', label: 'Resumen', td: s => `<td>${esc(s.summary)}</td>` },
     { k: 'conflict', label: 'Conflicto / objetivo', hidden: true, td: s => `<td>${esc(s.conflict || '')}</td>` },
+    { k: 'needs', label: 'Necesidades', td: s => `<td class="esc-needs">${needsDropdown(s)}</td>` },
     { k: 'dur', label: 'Dur. est.', cls: 'num', hidden: true, td: s => `<td class="num">${fmtMin(s.lengthPages * minutesPerPage(p))}</td>` },
     { k: 'estado', label: 'Estado', td: s => `<td>${estadoBadge(s)}</td>` }
   ];
@@ -904,6 +905,7 @@
           <div class="row"><b><i>Personajes:</i></b><i>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', ') || '—')}</i></div>
           <div class="row"><b>Acción:</b><textarea class="edit" rows="1" data-k="s:${s.id}:summary" data-edited="summaryEdited">${esc(s.summary)}</textarea></div>
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
+          <div class="row needs-row"><b>Necesidades:</b>${needsDropdown(s)}</div>
           ${window.Attach ? Attach.cardRow(s) : ''}
           <div class="tag"><span class="no-print">${estadoSelect(s)}</span><span class="print-only">${estadoBadge(s)}</span> [ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
         </div>`;

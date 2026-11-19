@@ -384,3 +384,8 @@ th.col-over { box-shadow: inset 3px 0 0 #ff6b5a, inset -3px 0 0 #ff6b5a; }
 .cols-item.off { opacity: .5; }
 .cols-item label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
 .cols-item span { display: flex; gap: 4px; }
+
+.esc-needs .needs-dd { min-width: 170px; }
+.needs-row { align-items: center !important; }
+.card .needs-dd { color: var(--ink); max-width: 520px; }
+.card .needs-dd summary { background: rgba(255,255,255,.85); }

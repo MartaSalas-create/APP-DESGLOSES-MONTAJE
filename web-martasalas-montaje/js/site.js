@@ -88,8 +88,9 @@
   };
   var listRows = function (arr, cat) { return arr.map(function (r) { var y = yearsOf(r[0]); return { a: y[0], b: y[1], t: r[1], d: r[2], cat: cat }; }); };
   var TRACKS = [
+    { id: "assist", lab: "V4 · Ayudantía y script", items: pick(["Ayudante de montaje", "Script"]) },
     { id: "cine", lab: "V3 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
-    { id: "series", lab: "V2 · Series y TV", items: pick(["Series de ficción", "Programas de TV", "Ayudante de montaje", "Script"]) },
+    { id: "series", lab: "V2 · Series y TV", items: pick(["Series de ficción", "Programas de TV"]) },
     { id: "doc", lab: "V1 · Doc y otros", items: pick(["Documental y reportaje", "Musical", "Publicidad", "Otros"]) },
     { id: "wave", lab: "A1 · Docencia", items: listRows(D.teaching, "Docencia") },
     { id: "train", lab: "A2 · Formación", items: listRows(D.training, "Formación") }
@@ -142,7 +143,8 @@
     series: "linear-gradient(135deg, #f64a1f, #a8192c)",
     doc: "linear-gradient(135deg, #a8192c, #4a0b14)",
     wave: "linear-gradient(135deg, #1f5a3c, #0f1f17)",
-    train: "linear-gradient(135deg, #4a443c, #1a1816)"
+    train: "linear-gradient(135deg, #1b6f80, #0d2a31)",
+    assist: "linear-gradient(135deg, #5b5650, #1f1d1b)"
   };
   var CAT_LABEL = { "Largometrajes y TV movies": "Largometraje", "Series de ficción": "Serie de ficción", "Documental y reportaje": "Documental",
     "Cortometrajes": "Cortometraje", "Programas de TV": "Programa de TV", "Ayudante de montaje": "Ayudante de montaje" };

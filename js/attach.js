@@ -96,7 +96,7 @@
   // Versión compacta para la tabla del Desglose de montaje
   function cell(s) {
     const items = list(s);
-    return `<div class="att-cell">${items.map((a, i) => `<button class="att-chip att-mini" data-action="att-open" data-id="${s.id}" data-i="${i}" title="${esc(a.tipo)} · ${esc(a.name)} · ${fmtSize(a.size || 0)}">${icon(a.type)} <span class="att-tipo">${esc(a.tipo)}</span></button>`).join('')}
+    return `<div class="att-cell">${items.map((a, i) => `<button class="att-chip att-mini" data-action="att-open" data-id="${s.id}" data-i="${i}" title="${esc(a.tipo)} · ${esc(a.name)} · ${fmtSize(a.size || 0)}">${icon(a.type)} <span class="att-name att-name-mini">${esc(a.name)}</span></button>`).join('')}
       <label class="att-add no-print" title="Adjuntar guion rayado, parte de script…">＋<input type="file" class="att-input" data-id="${s.id}" multiple accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.txt" hidden></label></div>`;
   }
   function toolbarButton() {

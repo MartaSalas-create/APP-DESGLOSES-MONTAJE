@@ -175,8 +175,13 @@
     // dentro de cada rango, lo que empieza ese año primero
     active.sort(function (a, b) { return rank(a) - rank(b) || (b.a === yr) - (a.a === yr) || b.a - a.a; });
     var roleOf = function (it) { return it.cat === "Docencia" ? "docencia" : it.cat === "Formación" ? "formación" : it.cat === "Script" ? "script" : it.cat === "Ayudante de montaje" ? "ayte. montaje" : ""; };
-    var shown = active.slice(0, 3).map(function (it) { var r = roleOf(it); return "<b>" + esc(it.t) + "</b>" + (r ? " <i>(" + r + ")</i>" : ""); });
-    nowEl.innerHTML = shown.length ? shown.join(" · ") + (active.length > 3 ? " <i>+" + (active.length - 3) + " más</i>" : "") : "<i>—</i>";
+    var label = function (it) { var r = roleOf(it); return "<b>" + esc(it.t) + "</b>" + (r ? " <i>(" + r + ")</i>" : ""); };
+    nowEl.classList.remove("is-open");
+    if (!active.length) nowEl.innerHTML = "<i>—</i>";
+    else if (active.length <= 3) nowEl.innerHTML = active.map(label).join(" · ");
+    else nowEl.innerHTML = '<span class="now-short">' + active.slice(0, 3).map(label).join(" · ") +
+      ' <button type="button" class="now-more" aria-expanded="false">+' + (active.length - 3) + " más</button></span>" +
+      '<span class="now-full">' + active.map(label).join(" · ") + ' <button type="button" class="now-more" aria-expanded="true">ver menos</button></span>';
     $$(".cclip", tracksEl).forEach(function (el) {
       var t = TRACKS.filter(function (x) { return x.id === el.dataset.t; })[0], c = t.clips[+el.dataset.i];
       el.classList.toggle("on", isOn(t.id) && c.a <= yr && c.b > yr);
@@ -234,6 +239,12 @@
     showTip(el);
   });
   stage.addEventListener("pointerleave", function () { tip.hidden = true; });
+
+  // «+N más» despliega todos los trabajos del año
+  nowEl.addEventListener("click", function (e) {
+    if (!e.target.closest(".now-more")) return;
+    nowEl.classList.toggle("is-open"); clearTimeout(idleTimer); showFrame(true); idleSoon(12000);
+  });
 
   var yearFromX = function (x) { var r = stage.getBoundingClientRect(); return Y1 - ((x - r.left) / r.width) * span; };
   var dragging = false, auto = null;

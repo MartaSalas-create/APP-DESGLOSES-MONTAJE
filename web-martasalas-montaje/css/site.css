@@ -161,6 +161,12 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .career-year { font-size: 22px; font-weight: 600; color: var(--tc); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .career-now { color: var(--muted); font-size: 14px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .career-now b { color: var(--text); font-weight: 600; }
+.career-now .now-full { display: none; }
+.career-now.is-open { white-space: normal; overflow: visible; }
+.career-now.is-open .now-short { display: none; }
+.career-now.is-open .now-full { display: inline; }
+.now-more { background: none; border: 1px solid var(--line-2); border-radius: 99px; color: var(--tc); font: 600 12px var(--sans); padding: 2px 9px; margin-left: 4px; cursor: pointer; vertical-align: 1px; }
+.now-more:hover { border-color: var(--tc); }
 .career-now i { color: var(--dim); font-style: normal; }
 .career-grid { display: grid; grid-template-columns: 136px 1fr; gap: 10px; }
 .career-labels { display: grid; grid-template-rows: 20px repeat(5, 26px); gap: 5px; color: var(--dim); font-size: 10px; letter-spacing: .08em; }

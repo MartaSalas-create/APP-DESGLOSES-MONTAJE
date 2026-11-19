@@ -88,11 +88,11 @@
   };
   var listRows = function (arr, cat) { return arr.map(function (r) { var y = yearsOf(r[0]); return { a: y[0], b: y[1], t: r[1], d: r[2], cat: cat }; }); };
   var TRACKS = [
-    { id: "cine", lab: "V2 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
-    { id: "series", lab: "V1 · Series", items: pick(["Series de ficción", "Programas de TV", "Ayudante de montaje", "Script"]) },
-    { id: "doc", lab: "A1 · Doc", items: pick(["Documental y reportaje", "Musical", "Publicidad", "Otros"]) },
-    { id: "wave", lab: "A2 · Docencia", items: listRows(D.teaching, "Docencia") },
-    { id: "train", lab: "A3 · Formación", items: listRows(D.training, "Formación") }
+    { id: "cine", lab: "V3 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
+    { id: "series", lab: "V2 · Series y TV", items: pick(["Series de ficción", "Programas de TV", "Ayudante de montaje", "Script"]) },
+    { id: "doc", lab: "V1 · Doc y otros", items: pick(["Documental y reportaje", "Musical", "Publicidad", "Otros"]) },
+    { id: "wave", lab: "A1 · Docencia", items: listRows(D.teaching, "Docencia") },
+    { id: "train", lab: "A2 · Formación", items: listRows(D.training, "Formación") }
   ];
 
   function buildClips(items) {
@@ -109,7 +109,11 @@
   }
 
   var tracksEl = $("#careerTracks"), labelsEl = $("#careerLabels"), ruler = $("#careerRuler");
-  labelsEl.innerHTML = "<span></span>" + TRACKS.map(function (t) { var p = t.lab.split(" · "); return "<span><b>" + p[0] + "</b><em>&nbsp;· " + p[1] + "</em></span>"; }).join("");
+  labelsEl.innerHTML = "<span></span>" + TRACKS.map(function (t) {
+    var p = t.lab.split(" · ");
+    return '<button type="button" class="trk-btn t-' + t.id + '" data-t="' + t.id + '" aria-pressed="true" title="Activar o desactivar la pista ' + p[1] + '">' +
+      '<i class="trk-sw" aria-hidden="true"></i><b>' + p[0] + "</b><em>&nbsp;· " + p[1] + "</em></button>";
+  }).join("");
   var rul = "";
   for (var y = Y0; y <= Y1; y++) {
     var big = y % 5 === 0;
@@ -121,7 +125,7 @@
     t.clips = buildClips(t.items);
     return '<div class="ctrack t-' + t.id + '">' + t.clips.map(function (c, i) {
       var title = c.items[0].t.split(" · ")[0] + (c.items.length > 1 ? " +" + (c.items.length - 1) : "");
-      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" style="left:' + pct(c.b) + "%;width:" + (pct(c.a) - pct(c.b)) + '%" title="' + esc(c.a + " · " + c.items.map(function (x) { return x.t; }).join(", ")) + '">' + esc(title) + "</div>";
+      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" style="left:' + pct(c.b) + "%;width:" + (pct(c.a) - pct(c.b)) + '%">' + esc(title) + "</div>";
     }).join("") + "</div>";
   }).join("");
 
@@ -142,7 +146,9 @@
   };
   var CAT_LABEL = { "Largometrajes y TV movies": "Largometraje", "Series de ficción": "Serie de ficción", "Documental y reportaje": "Documental",
     "Cortometrajes": "Cortometraje", "Programas de TV": "Programa de TV", "Ayudante de montaje": "Ayudante de montaje" };
-  var curYear = null, idleTimer = null;
+  var curYear = null, idleTimer = null, lastYv = Y1 - 0.5;
+  var trackOff = {};                       // pistas desactivadas con su selector
+  var isOn = function (id) { return !trackOff[id]; };
 
   // El monitor muestra la frase (en reposo) o el «fotograma» del trabajo bajo el cabezal
   function showFrame(on) {
@@ -155,6 +161,7 @@
 
   function setYear(yv) {
     yv = Math.max(Y0, Math.min(Y1 - 1, yv));
+    lastYv = yv;
     var yr = Math.floor(yv);
     chead.style.left = pct(Math.min(yv, Y1 - 0.0001)) + "%";
     mon.tc.textContent = framesToTc(TC_START + ((yv - Y0) / span) * (TC_END - TC_START));
@@ -163,7 +170,7 @@
     chead.setAttribute("aria-valuenow", yr);
     yearEl.textContent = yr;
     var active = [];
-    TRACKS.forEach(function (t) { t.items.forEach(function (it) { if (it.a <= yr && it.b >= yr) active.push(it); }); });
+    TRACKS.forEach(function (t) { if (isOn(t.id)) t.items.forEach(function (it) { if (it.a <= yr && it.b >= yr) active.push(it); }); });
     var rank = function (it) { return it.cat === "Docencia" || it.cat === "Formación" ? 2 : it.cat === "Ayudante de montaje" || it.cat === "Script" ? 1 : 0; };
     // dentro de cada rango, lo que empieza ese año primero
     active.sort(function (a, b) { return rank(a) - rank(b) || (b.a === yr) - (a.a === yr) || b.a - a.a; });
@@ -172,7 +179,7 @@
     nowEl.innerHTML = shown.length ? shown.join(" · ") + (active.length > 3 ? " <i>+" + (active.length - 3) + " más</i>" : "") : "<i>—</i>";
     $$(".cclip", tracksEl).forEach(function (el) {
       var t = TRACKS.filter(function (x) { return x.id === el.dataset.t; })[0], c = t.clips[+el.dataset.i];
-      el.classList.toggle("on", c.a <= yr && c.b > yr);
+      el.classList.toggle("on", isOn(t.id) && c.a <= yr && c.b > yr);
     });
     // fotograma en el monitor
     var it = active[0];
@@ -188,14 +195,61 @@
     }
   }
 
+  /* ---------- Pistas interactivas ----------
+     · Selector de pista (V3, V2…): la activa o desactiva, como en una mesa de edición.
+     · Clic en un clip: el cabezal salta a ese trabajo y el monitor lo muestra.
+     · Al pasar el ratón por un clip: etiqueta con año y títulos. */
+  function refresh() { curYear = null; setYear(lastYv); }
+  labelsEl.addEventListener("click", function (e) {
+    var b = e.target.closest(".trk-btn"); if (!b) return;
+    var id = b.dataset.t, off = !trackOff[id];
+    if (off && TRACKS.filter(function (t) { return isOn(t.id); }).length === 1) return; // siempre queda una pista activa
+    trackOff[id] = off;
+    b.setAttribute("aria-pressed", String(!off)); b.classList.toggle("is-off", off);
+    tracksEl.querySelector(".t-" + id).classList.toggle("is-off", off);
+    showFrame(true); refresh(); idleSoon(8000);
+  });
+  var tip = document.createElement("div"); tip.className = "clip-tip"; tip.hidden = true; tip.setAttribute("role", "tooltip");
+  stage.appendChild(tip);
+  function clipOf(el) { var t = TRACKS.filter(function (x) { return x.id === el.dataset.t; })[0]; return t.clips[+el.dataset.i]; }
+  function showTip(el) {
+    if (!el || !isOn(el.dataset.t)) { tip.hidden = true; return; }
+    var c = clipOf(el), last = c.b - 1;
+    var yrs = last > c.a ? c.a + "–" + last : String(c.a);
+    var names = c.items.map(function (x) { return x.t; });
+    tip.innerHTML = '<span class="mono">' + yrs + "</span>" + names.slice(0, 3).map(function (n) { return "<b>" + esc(n) + "</b>"; }).join("") +
+      (names.length > 3 ? "<i>+" + (names.length - 3) + " más</i>" : "");
+    tip.hidden = false;
+    var sr = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+    var x = Math.max(0, Math.min(sr.width - tip.offsetWidth, r.left - sr.left + r.width / 2 - tip.offsetWidth / 2));
+    tip.style.left = x + "px"; tip.style.top = (r.top - sr.top - tip.offsetHeight - 8) + "px";
+  }
+  stage.addEventListener("pointermove", function (e) {
+    if (dragging || e.pointerType !== "mouse") return;
+    var el = e.target.closest(".cclip");
+    if (!el) { // el cabezal puede tapar el clip: busca debajo
+      var under = document.elementsFromPoint(e.clientX, e.clientY);
+      for (var i = 0; i < under.length && !el; i++) if (under[i].classList && under[i].classList.contains("cclip")) el = under[i];
+    }
+    showTip(el);
+  });
+  stage.addEventListener("pointerleave", function () { tip.hidden = true; });
+
   var yearFromX = function (x) { var r = stage.getBoundingClientRect(); return Y1 - ((x - r.left) / r.width) * span; };
   var dragging = false, auto = null;
+  var downX = 0, downClip = null;
   stage.addEventListener("pointerdown", function (e) {
-    dragging = true; stopPlay(); clearTimeout(idleTimer); showFrame(true);
+    dragging = true; stopPlay(); clearTimeout(idleTimer); showFrame(true); tip.hidden = true;
+    downX = e.clientX; downClip = e.target.closest(".cclip");
+    if (downClip && !isOn(downClip.dataset.t)) downClip = null;
     stage.setPointerCapture(e.pointerId); setYear(yearFromX(e.clientX));
   });
   stage.addEventListener("pointermove", function (e) { if (dragging) setYear(yearFromX(e.clientX)); });
-  stage.addEventListener("pointerup", function () { dragging = false; idleSoon(6000); });
+  stage.addEventListener("pointerup", function (e) {
+    dragging = false;
+    if (downClip && Math.abs(e.clientX - downX) < 5) setYear(clipOf(downClip).a + 0.5); // clic en un clip
+    downClip = null; idleSoon(6000);
+  });
   stage.addEventListener("pointercancel", function () { dragging = false; idleSoon(6000); });
 
   /* ---------- Controles de transporte (estilo Avid) ----------
@@ -225,12 +279,14 @@
   var tPlay = transportEl.querySelector('[data-act="play"]');
 
   // Cortes: inicios de clip de todas las pistas
-  var CUTS = [];
-  TRACKS.forEach(function (t) { t.clips.forEach(function (c) { if (CUTS.indexOf(c.a) < 0) CUTS.push(c.a); }); });
-  CUTS.sort(function (a, b) { return a - b; });
+  function cuts() {
+    var out = [];
+    TRACKS.forEach(function (t) { if (isOn(t.id)) t.clips.forEach(function (c) { if (out.indexOf(c.a) < 0) out.push(c.a); }); });
+    return out.sort(function (a, b) { return a - b; });
+  }
   function goTo(y) { stopPlay(); showFrame(true); setYear(y + 0.5); idleSoon(8000); }
   function jump(dir) { // dir > 0: más reciente (izquierda) · dir < 0: más antiguo (derecha)
-    var y = curYear == null ? 2026 : curYear, target = null;
+    var y = curYear == null ? 2026 : curYear, target = null, CUTS = cuts();
     if (dir > 0) { for (var i = 0; i < CUTS.length; i++) if (CUTS[i] > y) { target = CUTS[i]; break; } }
     else { for (var j = CUTS.length - 1; j >= 0; j--) if (CUTS[j] < y) { target = CUTS[j]; break; } }
     goTo(target != null ? target : y);

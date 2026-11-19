@@ -30,9 +30,9 @@
      ========================================================= */
   var track = $("#nleTrack"), head = $("#nleHead"), tcEl = $("#tc"), label = $("#nleLabel");
   var navClips = $$("a", track);
-  var names = ["Inicio", "Trabajos en pantalla", "Reel", "Trayectoria", "Docencia", "Formación", "Picture lock · Contacto"];
+  var names = ["Start", "Trabajos en pantalla", "Reel", "Trayectoria", "Docencia", "Formación", "Contacto"];
   var sections = navClips.map(function (a) { return $(a.getAttribute("href")); });
-  navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 ? "00" : i === 6 ? "FIN" : "0" + i); });
+  navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 || i === 6 ? "" : String(i)); });
   var TC_START = tcToFrames("00:59:50:00"), TC_END = tcToFrames("02:00:00:00");
   var bounds = [];
 
@@ -66,7 +66,7 @@
     head.style.left = (a.offsetLeft + within * a.offsetWidth) + "px";
     tcEl.textContent = framesToTc(TC_START + p * (TC_END - TC_START));
     navClips.forEach(function (c, j) { c.classList.toggle("is-current", j === idx); });
-    label.textContent = (idx === 0 ? "Secuencia · martasalas.com" : idx === 6 ? "Fin · " + names[idx] : "Bobina 0" + idx + " · " + names[idx]);
+    label.textContent = (idx === 0 ? "Start · martasalas.com" : idx === 6 ? "Picture lock · " + names[idx] : "Bobina " + idx + " · " + names[idx]);
   }
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });

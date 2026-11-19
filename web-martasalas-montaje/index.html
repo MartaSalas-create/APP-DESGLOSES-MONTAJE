@@ -18,6 +18,16 @@
 <body>
   <!-- Iconos de los controles de transporte (dibujo propio, estética de mesa de edición) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <!-- START: marca de sincronía de la cola de arranque (fotograma con círculo y cruz) -->
+    <symbol id="i-start" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+      <rect x="2" y="3" width="16" height="14" rx="1.5"/><circle cx="10" cy="10" r="4.2"/><path d="M10 4.5v11M4.5 10h11"/>
+    </symbol>
+    <!-- PICTURE LOCK: fotograma con candado cerrado -->
+    <symbol id="i-lock" viewBox="0 0 20 20">
+      <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M7.6 9.2V7.6a2.4 2.4 0 0 1 4.8 0v1.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="6.4" y="9" width="7.2" height="5.4" rx="1" fill="currentColor"/>
+    </symbol>
     <symbol id="i-in" viewBox="0 0 20 20"><path d="M7 3h6v2H9v10h4v2H7z"/></symbol>
     <symbol id="i-out" viewBox="0 0 20 20"><path d="M13 3H7v2h4v10H7v2h6z"/></symbol>
     <symbol id="i-prev-edit" viewBox="0 0 20 20"><path d="M4 3h2v14H4z"/><path d="M16 4v12L7 10z"/><path d="M2 16h6v1.6H2z"/></symbol>
@@ -37,13 +47,13 @@
       <span class="tc-wrap"><span class="rec" aria-hidden="true"></span><span class="tc mono" id="tc">00:59:50:00</span></span>
     </div>
     <nav class="nle-track" id="nleTrack" aria-label="Secciones">
-      <a href="#inicio" data-c="0">Inicio</a>
-      <a href="#trabajos" data-c="1">01 · Trabajos</a>
-      <a href="#reel" data-c="2">02 · Reel</a>
-      <a href="#trayectoria" data-c="3">03 · Trayectoria</a>
-      <a href="#docencia" data-c="4">04 · Docencia</a>
-      <a href="#formacion" data-c="5">05 · Formación</a>
-      <a href="#contacto" data-c="6">Fin · Contacto</a>
+      <a href="#inicio" data-c="0" class="nle-mark nle-start" aria-label="Start"><svg aria-hidden="true"><use href="#i-start"/></svg><span>START</span></a>
+      <a href="#trabajos" data-c="1">1 · Trabajos</a>
+      <a href="#reel" data-c="2">2 · Reel</a>
+      <a href="#trayectoria" data-c="3">3 · Trayectoria</a>
+      <a href="#docencia" data-c="4">4 · Docencia</a>
+      <a href="#formacion" data-c="5">5 · Formación</a>
+      <a href="#contacto" data-c="6" class="nle-mark nle-lock" aria-label="Picture lock: contacto"><svg aria-hidden="true"><use href="#i-lock"/></svg><span>PICTURE LOCK</span></a>
       <span class="nle-head" id="nleHead" aria-hidden="true"></span>
     </nav>
   </header>
@@ -138,7 +148,7 @@
       <div class="wrap">
         <header class="block-head">
           <div>
-            <p class="kicker hot">Bobina 01 · Filmografía</p>
+            <p class="kicker hot">Bobina 1 · Filmografía</p>
             <h2><b>Trabajos</b> <em>en pantalla</em></h2>
             <p class="block-sub">Cine y televisión, de las plataformas a la gran pantalla. Pulsa un cartel para ver los detalles. La lista completa de créditos está en <a href="#trayectoria">Trayectoria</a>.</p>
           </div>
@@ -154,7 +164,7 @@
       <div class="wrap">
         <header class="block-head">
           <div>
-            <p class="kicker hot">Bobina 02 · Visionado</p>
+            <p class="kicker hot">Bobina 2 · Visionado</p>
             <h2><b>Reel</b> <em>de montaje</em></h2>
             <p class="block-sub">Fragmentos de montaje para televisión y para cine.</p>
           </div>
@@ -172,7 +182,7 @@
       <div class="wrap">
         <header class="block-head">
           <div>
-            <p class="kicker hot">Bobina 03 · Filmografía</p>
+            <p class="kicker hot">Bobina 3 · Filmografía</p>
             <h2><b>Trayectoria</b> <em>completa</em></h2>
             <p class="block-sub"><span id="totalCredits">110</span> créditos como montadora, ayudante de montaje y script.</p>
           </div>
@@ -195,7 +205,7 @@
         <div>
           <header class="block-head">
             <div>
-              <p class="kicker hot">Bobina 04 · Docencia</p>
+              <p class="kicker hot">Bobina 4 · Docencia</p>
               <h2><b>Docencia</b></h2>
             </div>
           </header>
@@ -215,7 +225,7 @@
       <div class="wrap">
         <header class="block-head">
           <div>
-            <p class="kicker hot">Bobina 05 · Formación</p>
+            <p class="kicker hot">Bobina 5 · Formación</p>
             <h2><b>Formación</b> <em>continua</em></h2>
             <p class="block-sub">Diplomada en Montaje por la ECAM, con formación de Nueva York a Los Ángeles.</p>
           </div>

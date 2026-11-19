@@ -683,7 +683,7 @@
     const fases = navMode() === 'fases';
     $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map((x, i) => `<button data-section="${esc(x.name)}" ${fases ? `data-pi="${x.pi}"` : ''} class="${x === cur ? 'active' : ''}">${fases ? `<span class="phase-n">${i + 1}</span>` : ''}${esc(x.name)}</button>`).join('')}
         <span class="nav-switch">${fases ? '<button class="nav-org" data-action="lay-open" title="Mover pestañas entre fases y grupos">⚙ Organizar</button>' : ''}<span>Vista:</span><button data-action="nav-mode" data-v="fases" class="${fases ? 'on' : ''}">Por fases</button><button data-action="nav-mode" data-v="clasica" class="${fases ? '' : 'on'}">Clásica</button></span></div>
-      <div class="tabs-sub">${cur.tabs.map(t => `${t.group ? `<span class="tab-group-label">${esc(t.group)}</span>` : ''}<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}" ${fases ? `draggable="true" data-pi="${t.pi}" data-gi="${t.gi}" data-ti="${t.ti}" title="Arrastra para mover la pestaña"` : ''}>${t.label}</button>`).join('')}</div>` : '';
+      <div class="tabs-sub ${fases ? 'tabs-sub-groups' : ''}">${navSub(cur, fases)}</div>` : '';
     $('#tabs').hidden = !p;
     if (!p) { $('#main').innerHTML = welcomeHTML(); return; }
     renderTab();
@@ -698,6 +698,14 @@
     return out;
   }
   let curSec = null;
+  // Fila de pestañas: en la vista por fases, cada grupo en su caja con el título encima (no interactivo)
+  function navSub(cur, fases) {
+    const btn = t => `<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}" ${fases ? `draggable="true" data-pi="${t.pi}" data-gi="${t.gi}" data-ti="${t.ti}" title="Arrastra para mover la pestaña"` : ''}>${t.label}</button>`;
+    if (!fases) return cur.tabs.map(btn).join('');
+    const groups = [];
+    cur.tabs.forEach(t => { if (!groups.length || t.group) groups.push({ label: t.group || '', tabs: [] }); groups[groups.length - 1].tabs.push(t); });
+    return groups.map(g => `<div class="tab-grp${g.tabs.some(t => t.id === tab) ? ' has-active' : ''}"><span class="tab-grp-title">${esc(g.label)}</span><div class="tab-grp-row">${g.tabs.map(btn).join('')}</div></div>`).join('');
+  }
   const lastTabOf = {};
   // Al entrar en el Step line desde Guion se ve en orden de guion; «Step line del montaje», en orden de montaje
   function prepTab() { if (tab === 'steplinem') steplineOrder = 'montaje'; else if (tab === 'stepline' && navMode() === 'fases') steplineOrder = 'guion'; }

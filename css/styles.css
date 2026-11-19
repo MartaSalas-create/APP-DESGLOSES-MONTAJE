@@ -432,3 +432,11 @@ tr.row-shot td { background: #fbfaf7; }
 /* Series / episodios */
 #epSelect { background: #4a2d2a; color: #fff; border: 1px solid #ff6b5a; border-radius: var(--radius); padding: 7px 10px; max-width: 260px; font-weight: 700; }
 tr.ep-current td { background: #fff4f2; }
+
+/* Vista por fases: grupos en cajas (propuesta B) */
+.tabs-sub.tabs-sub-groups { align-items: stretch; gap: 10px; padding: 8px 20px 10px; }
+.tab-grp { background: #fff; border: 1px solid #e3e0da; border-radius: 10px; padding: 3px 4px 4px; display: flex; flex-direction: column; flex-shrink: 0; }
+.tab-grp.has-active { border-color: #d9c9c4; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.tab-grp-title { font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #c0392b; padding: 1px 10px 2px; user-select: none; cursor: default; }
+.tab-grp-row { display: flex; gap: 2px; }
+.tabs-sub-groups .tab-group-label { display: none; }

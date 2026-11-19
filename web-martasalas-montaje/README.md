@@ -21,3 +21,9 @@ Los CV están en `assets/`. Para actualizarlos, sustituye los PDF manteniendo el
 El editor MyWebsite de IONOS no permite subir HTML propio. Hay dos opciones:
 1. **Hosting web de IONOS** (o cualquier hosting): sube el contenido de esta carpeta por FTP/SFTP a la raíz del dominio.
 2. **Netlify, Vercel, Cloudflare Pages o GitHub Pages** (gratis): publica esta carpeta y apunta el dominio `martasalas.com` desde el panel DNS de IONOS.
+
+## Filmografía (galería de carteles)
+- **Datos:** `src/data/proyectos.json` (20 obras). Rellena a mano `rol` y `videoUrl` (enlace de YouTube o Vimeo). Si vuelves a ejecutar el script, esos campos se conservan.
+- **Carteles:** `public/posters/<id>.jpg` (y `.webp`). Las obras sin cartel usan `public/posters/placeholder-poster.svg`. Para añadir uno a mano, guárdalo como `public/posters/<id>.jpg` y vuelve a ejecutar el script (o cambia la ruta `poster` en el JSON).
+- **Script:** `python3 scripts/descargar-carteles.py` busca cada obra en TMDB (en español), elige el resultado en el que Marta Salas figura en los créditos, descarga el cartel en máxima resolución, lo redimensiona a 900 px de ancho, crea la copia `.webp` (calidad 85) y regenera el JSON. Necesita `TMDB_API_KEY` (clave v3 o token de acceso de lectura) y Pillow (`pip install Pillow`).
+- **Ver en local:** la galería lee el JSON con `fetch`, así que hace falta un servidor: `python3 -m http.server` dentro de esta carpeta y abre http://localhost:8000/#trabajos

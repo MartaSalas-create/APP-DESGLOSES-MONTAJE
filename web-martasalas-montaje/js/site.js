@@ -30,7 +30,7 @@
      ========================================================= */
   var track = $("#nleTrack"), head = $("#nleHead"), tcEl = $("#tc"), label = $("#nleLabel");
   var navClips = $$("a", track);
-  var names = ["Inicio", "Trabajos destacados", "Reel", "Trayectoria", "Docencia", "Formación", "Picture lock · Contacto"];
+  var names = ["Inicio", "Trabajos en pantalla", "Reel", "Trayectoria", "Docencia", "Formación", "Picture lock · Contacto"];
   var sections = navClips.map(function (a) { return $(a.getAttribute("href")); });
   navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 ? "00" : i === 6 ? "FIN" : "0" + i); });
   var TC_START = tcToFrames("00:59:50:00"), TC_END = tcToFrames("02:00:00:00");
@@ -248,7 +248,8 @@
      3. TRABAJOS DESTACADOS como clips de colores
      ========================================================= */
   var k = 0;
-  $("#works").innerHTML = D.featured.map(function (w, i) {
+  var worksEl = $("#works");
+  if (worksEl) worksEl.innerHTML = D.featured.map(function (w, i) {
     var n = pad(i + 1);
     var body = '<span class="clip-meta">' + esc(w.years) + " · " + esc(w.kind) + "</span>" +
       "<h3>" + esc(w.title) + "</h3><p>" + esc(w.info) + "</p>" + (w.tag ? '<span class="tag">' + esc(w.tag) + "</span>" : "");

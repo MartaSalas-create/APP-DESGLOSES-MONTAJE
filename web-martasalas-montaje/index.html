@@ -126,12 +126,13 @@
       <div class="wrap">
         <header class="block-head">
           <div>
-            <p class="kicker hot">Bobina 01 · Selección</p>
-            <h2><b>Trabajos</b> <em>destacados</em></h2>
-            <p class="block-sub">De las plataformas a la gran pantalla. La filmografía completa está en <a href="#trayectoria">Trayectoria</a>.</p>
+            <p class="kicker hot">Bobina 01 · Filmografía</p>
+            <h2><b>Trabajos</b> <em>en pantalla</em></h2>
+            <p class="block-sub">Cine y televisión, de las plataformas a la gran pantalla. Pulsa un cartel para ver los detalles. La lista completa de créditos está en <a href="#trayectoria">Trayectoria</a>.</p>
           </div>
         </header>
-        <div class="clips" id="works"></div>
+        <div class="filmo-filters" id="filmoFilters" role="group" aria-label="Filtrar trabajos por categoría"></div>
+        <ul class="filmo-grid" id="filmoGrid" aria-live="polite"></ul>
         <div class="awards" id="awards"></div>
       </div>
     </section>
@@ -230,9 +231,25 @@
       <footer class="foot">
         <span><b>Marta Salas</b> · Montadora de cine y TV · AMMAC · AACCE</span>
         <span><span class="mono">TRT 02:00:00:00</span> · © <span id="year">2026</span></span>
+        <span class="tmdb">Carteles y sinopsis: <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>. Este sitio usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.</span>
       </footer>
     </section>
   </main>
+
+  <!-- Modal de detalle de la filmografía -->
+  <div class="filmo-modal" id="filmoModal" role="dialog" aria-modal="true" aria-labelledby="fmTitle" hidden>
+    <div class="fm-box">
+      <button type="button" class="fm-close" aria-label="Cerrar">×</button>
+      <div class="fm-poster-wrap"></div>
+      <div class="fm-info">
+        <p class="fm-meta mono"></p>
+        <h3 class="fm-title" id="fmTitle"></h3>
+        <p class="fm-rol"><b>Mi rol</b> <span></span></p>
+        <p class="fm-sinopsis"></p>
+        <div class="fm-video"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="lightbox" id="lightbox" hidden>
     <button class="lightbox-close" id="lbClose" aria-label="Cerrar vídeo">×</button>
@@ -241,5 +258,6 @@
 
   <script src="js/data.js"></script>
   <script src="js/site.js"></script>
+  <script src="js/filmografia.js"></script>
 </body>
 </html>

@@ -79,7 +79,7 @@
   function renderReel(kind) {
     reelGrid.innerHTML = D.reels[kind].map(function (v, i) {
       return '<button class="reel-item reveal is-in" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
-        '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy">' +
+        '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'no-thumb\');this.remove()">' +
         '<span class="play">▶</span>' +
         '<span class="mono reel-n">' + (kind === "tv" ? "TV" : "CINE") + " · " + String(i + 1).padStart(2, "0") + "</span></button>";
     }).join("");

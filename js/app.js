@@ -87,6 +87,27 @@
     { id: 'workflow', label: 'Reunión workflow' }
   ];
 
+  // Organización por fases (propuesta): fase → grupos → pestañas. Una pestaña puede estar en dos fases.
+  const PHASES = [
+    { name: 'Preproducción', groups: [
+      ['Proyecto', ['proyecto', 'ia']],
+      ['Guion', ['analisis', 'tramas', 'arcos', 'mapa', 'stepline', 'doctor']],
+      ['Montaje', ['desglose', 'escaleta']],
+      ['Workflow', ['workflow', 'departamentos']]
+    ] },
+    { name: 'Producción / Rodaje', groups: [
+      ['Seguimiento', ['rodaje']],
+      ['Montaje', ['montaje']]
+    ] },
+    { name: 'Postproducción', groups: [
+      ['Montaje', ['montaje', 'steplinem']],
+      ['Departamentos', ['departamentos', 'necesidad', 'sonido']]
+    ] }
+  ];
+  const EXTRA_LABELS = { rodaje: 'Seguimiento de rodaje', steplinem: 'Step line del montaje', proyecto: 'Datos del proyecto', workflow: 'Reunión de workflow' };
+  const tabLabel = id => (TABS.find(t => t.id === id) || {}).label || EXTRA_LABELS[id] || 'documento';
+  const navMode = () => (state.ui && state.ui.nav) || 'clasica';
+
   const WORKFLOW_FIELDS = [
     ['Rodaje', [
       ['camara', 'Cámara(s) / formato de grabación'], ['resolucion', 'Resolución y aspecto (rodaje / entrega)'],
@@ -538,31 +559,41 @@
     renderProjectSelect();
     const p = P();
     const secs = sections();
-    const cur = secs.find(x => x.tabs.some(t => t.id === tab)) || secs[0];
-    $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map(x => `<button data-section="${esc(x.name)}" class="${x === cur ? 'active' : ''}">${esc(x.name)}</button>`).join('')}</div>
-      <div class="tabs-sub">${cur.tabs.map(t => `<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}">${t.label}</button>`).join('')}</div>` : '';
+    if (!secs.some(x => x.tabs.some(t => t.id === tab))) tab = secs[0].tabs[0].id;
+    const cur = secs.find(x => x.name === curSec && x.tabs.some(t => t.id === tab)) || secs.find(x => x.tabs.some(t => t.id === tab)) || secs[0];
+    curSec = cur.name;
+    const fases = navMode() === 'fases';
+    $('#tabs').innerHTML = p ? `<div class="tabs-sections">${secs.map((x, i) => `<button data-section="${esc(x.name)}" class="${x === cur ? 'active' : ''}">${fases ? `<span class="phase-n">${i + 1}</span>` : ''}${esc(x.name)}</button>`).join('')}
+        <span class="nav-switch"><span>Vista:</span><button data-action="nav-mode" data-v="fases" class="${fases ? 'on' : ''}">Por fases</button><button data-action="nav-mode" data-v="clasica" class="${fases ? '' : 'on'}">Clásica</button></span></div>
+      <div class="tabs-sub">${cur.tabs.map(t => `${t.group ? `<span class="tab-group-label">${esc(t.group)}</span>` : ''}<button data-tab="${t.id}" class="${t.id === tab ? 'active' : ''}">${t.label}</button>`).join('')}</div>` : '';
     $('#tabs').hidden = !p;
     if (!p) { $('#main').innerHTML = welcomeHTML(); return; }
     renderTab();
   }
 
   function sections() {
+    if (navMode() === 'fases') {
+      return PHASES.map(ph => ({ name: ph.name, tabs: ph.groups.flatMap(([g, ids]) => ids.map((id, i) => ({ id, label: id === 'proyecto' || id === 'workflow' || EXTRA_LABELS[id] && !TABS.find(t => t.id === id) ? EXTRA_LABELS[id] : tabLabel(id), group: i === 0 ? g : '' }))) }));
+    }
     const out = [];
     TABS.forEach(t => { if (t.group) out.push({ name: t.group, tabs: [] }); else out[out.length - 1].tabs.push(t); });
     return out;
   }
+  let curSec = null;
   const lastTabOf = {};
+  // Al entrar en el Step line desde Guion se ve en orden de guion; «Step line del montaje», en orden de montaje
+  function prepTab() { if (tab === 'steplinem') steplineOrder = 'montaje'; else if (tab === 'stepline' && navMode() === 'fases') steplineOrder = 'guion'; }
 
   function renderTab() {
     const p = P();
     const fn = {
       proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
-      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, mapa: p => window.MapaTramas.tab(p), doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
+      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, steplinem: tabStepline, rodaje: tabRodaje, mapa: p => window.MapaTramas.tab(p), doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
     $('#main').innerHTML = fn(p);
     window.scrollTo(0, y);
-    if (tab === 'stepline') attachSteplineDrag();
+    if (tab === 'stepline' || tab === 'steplinem') attachSteplineDrag();
     if (tab === 'montaje') attachCardDrag();
     autoGrow();
   }
@@ -1054,7 +1085,7 @@
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
     return `<section class="panel">
       ${printHeader(p, 'Step line')}
-      <h2 class="no-print">Step line · curva de intensidad dramática</h2>
+      <h2 class="no-print">${tab === 'steplinem' ? 'Step line del montaje · curva según el orden de montaje' : 'Step line · curva de intensidad dramática'}</h2>
       <p class="lead no-print">Según la metodología del step line de Marimón (<i>El montaje cinematográfico. Del guion a la pantalla</i>). <b>Arrastra los puntos de la curva</b> hacia arriba o abajo para fijar la intensidad de cada secuencia. Marca los puntos de giro en la tabla inferior: aparecerán como globos con el color de su trama.</p>
       <div class="note no-print" style="margin-bottom:14px">Los valores de intensidad dramática son una <b>interpretación editorial</b> a partir de la lectura del guion — no vienen de un análisis objetivo ni de una medición externa. Son un punto de partida para debatir y corregir en clase: ¿algún pico o valle debería estar más arriba, más abajo o directamente en otro sitio de la curva?</div>
       <div class="toolbar no-print">
@@ -1292,6 +1323,48 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Pestaña: Seguimiento de rodaje                                       */
+  /* ------------------------------------------------------------------ */
+  const RODADA_SET = ['rodada', 'ingesta', 'preparada', 'pendiente', 'montada', 'sono', 'vfx', 'color', 'musica'];
+  const isShot = s => getEstados(s).some(e => RODADA_SET.includes(e));
+  let rodajeFilter = 'todas';
+  function tabRodaje(p) {
+    const mpp = minutesPerPage(p);
+    const active = p.scenes.filter(s => !getEstados(s).includes('eliminada'));
+    const shot = active.filter(isShot);
+    const minT = active.reduce((a, s) => a + s.lengthPages * mpp, 0), minS = shot.reduce((a, s) => a + s.lengthPages * mpp, 0);
+    const pct = active.length ? Math.round(shot.length / active.length * 100) : 0;
+    const docs = s => (s.adjuntos || []).length;
+    const F = { todas: ['Todas', () => true], pendientes: ['Sin rodar', s => !isShot(s) && !getEstados(s).includes('eliminada')], rodadas: ['Rodadas', isShot], sindocs: ['Rodadas sin documentos de script', s => isShot(s) && !docs(s)], urgentes: ['Urgentes', s => getEstados(s).includes('urgente')] };
+    const rows = p.scenes.filter(F[rodajeFilter][1]);
+    const counts = ESTADOS.filter(e => e.k !== 'sinrodar').map(e => [e, p.scenes.filter(s => getEstados(s).includes(e.k)).length]).filter(x => x[1]);
+    return `<section class="panel">
+      ${printHeader(p, 'Seguimiento de rodaje')}
+      <h2>Seguimiento de rodaje</h2>
+      <p class="lead no-print">Control diario del material que llega del rodaje: estado de cada secuencia, documentos de la script (guion rayado y parte) y notas de rodaje. «✓ Rodada» la marca como rodada con la fecha de hoy.</p>
+      <div class="rodaje-progress">
+        <div class="rp-bar"><i style="width:${pct}%"></i></div>
+        <div class="rp-nums"><b>${shot.length}</b> de ${active.length} secuencias rodadas (${pct}%) · <b>${fmtMin(minS)}</b> de ${fmtMin(minT)} estimados · ${p.scenes.filter(s => isShot(s) && docs(s)).length} con documentos de script</div>
+      </div>
+      ${counts.length ? `<div class="post-legend" style="margin:8px 0 14px">${counts.map(([e, n]) => `<span class="estado-badge lbl-bg-${e.k}">${e.label}: ${n}</span>`).join('')}</div>` : ''}
+      <div class="toolbar no-print">${Object.keys(F).map(k => `<button class="btn btn-small ${rodajeFilter === k ? 'btn-primary' : ''}" data-action="rodaje-filter" data-v="${k}">${F[k][0]} (${p.scenes.filter(F[k][1]).length})</button>`).join('')}
+        <span class="spacer"></span>${window.Attach ? Attach.toolbarButton() : ''}<button class="btn btn-small" data-action="print">Descargar PDF</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Dur. est.</th><th>Estado</th><th></th><th>Fecha de rodaje</th><th>Script (guion rayado / parte)</th><th>Notas de rodaje</th></tr></thead>
+        <tbody>${rows.map(s => { const t = tramaOf(p, s); return `<tr style="${t ? `box-shadow: inset 5px 0 0 ${t.color}` : ''}" class="${isShot(s) ? 'row-shot' : ''}">
+          <td class="num"><b>${esc(s.num)}</b></td>
+          <td style="min-width:220px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.characters.slice(0, 5).join(', '))}</div></td>
+          <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
+          <td>${estadoSelect(s)}</td>
+          <td class="no-print">${isShot(s) ? '<span class="muted">✓</span>' : `<button class="btn btn-small" data-action="rodaje-mark" data-id="${s.id}">✓ Rodada</button>`}</td>
+          <td>${inp('s:' + s.id + ':rodaje.fecha', 'type="date" class="cell-input" style="min-width:140px"')}</td>
+          <td>${window.Attach ? Attach.cell(s) : ''}</td>
+          <td>${area('s:' + s.id + ':rodaje.notas', 'class="cell-input" style="min-width:240px" placeholder="Cambios respecto al guion, tomas buenas, problemas…"')}</td>
+        </tr>`; }).join('') || `<tr><td colspan="8" class="muted" style="padding:16px">No hay secuencias en este filtro.</td></tr>`}</tbody></table></div>
+    </section>`;
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Pestaña: Reunión workflow                                            */
   /* ------------------------------------------------------------------ */
   function tabWorkflow(p) {
@@ -1386,11 +1459,11 @@
     renderTab();
     let css = '';
     Array.from(document.styleSheets).forEach(sh => { try { css += Array.from(sh.cssRules).map(r => r.cssText).join('\n'); } catch (e) { /* hoja externa */ } });
-    const tabLabel = (TABS.find(t => t.id === tab) || {}).label || 'documento';
-    const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(p.title + ' — ' + tabLabel) +
+    const tabLabelTxt = tabLabel(tab);
+    const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(p.title + ' — ' + tabLabelTxt) +
       '</title><style>' + css + '\n.no-print,.toolbar,.card-tools,.handle,.btn{display:none!important}.print-header{display:block}main{max-width:none;padding:12px}.panel{border:0}</style></head><body><main>' +
       $('#main').innerHTML + '</main><script>setTimeout(function(){try{window.print()}catch(e){}},400)<\/script></body></html>';
-    download(fileBase(p) + '_' + tabLabel.replace(/[^\wÀ-ÿ]+/g, '_') + '.html', html, 'text/html');
+    download(fileBase(p) + '_' + tabLabelTxt.replace(/[^\wÀ-ÿ]+/g, '_') + '.html', html, 'text/html');
   }
 
   function steplineSVGString() {
@@ -1436,6 +1509,9 @@
       [list[i], list[j]] = [list[j], list[i]]; setColState(p, t, list); colsPanel(t);
     },
     'col-reset': (el) => { const p = P(); const t = el.dataset.t; if (p.colOrder) delete p.colOrder[t]; if (p.colHidden) delete p.colHidden[t]; save(); renderTab(); colsPanel(t); },
+    'nav-mode': (el) => { state.ui = state.ui || {}; state.ui.nav = el.dataset.v; curSec = null; save(); render(); toast(el.dataset.v === 'fases' ? 'Vista por fases: Preproducción · Producción/Rodaje · Postproducción.' : 'Vista clásica.'); },
+    'rodaje-mark': (el) => { const sc = sceneById(P(), el.dataset.id); const est = getEstados(sc); if (!est.includes('rodada')) est.push('rodada'); sc.estado = 'rodada'; sc.rodaje = sc.rodaje || {}; if (!sc.rodaje.fecha) sc.rodaje.fecha = new Date().toISOString().slice(0, 10); save(); renderTab(); },
+    'rodaje-filter': (el) => { rodajeFilter = el.dataset.v; renderTab(); },
     'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
     'toggle-trama-vis': (el) => {
       const p = P(); const set = new Set(p.steplineHidden || []); const id = el.dataset.id;
@@ -1479,13 +1555,13 @@
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
     'print': async () => {
       const p = P(); if (!p || !window.PdfExport) return;
-      const tabLabel = (TABS.find(t => t.id === tab) || {}).label || 'documento';
+      const tabLabelTxt = tabLabel(tab);
       renderTab();
-      showModal(`<h3><span class="spinner"></span>Generando PDF…</h3><p id="pdfProg">Preparando «${esc(tabLabel)}».</p>`);
+      showModal(`<h3><span class="spinner"></span>Generando PDF…</h3><p id="pdfProg">Preparando «${esc(tabLabelTxt)}».</p>`);
       try {
-        const blob = await PdfExport.exportPDF(`${p.title} — ${tabLabel}`, '', (i, n) => { const el = document.getElementById('pdfProg'); if (el) el.textContent = `Página ${i} de ${n}…`; });
+        const blob = await PdfExport.exportPDF(`${p.title} — ${tabLabelTxt}`, '', (i, n) => { const el = document.getElementById('pdfProg'); if (el) el.textContent = `Página ${i} de ${n}…`; });
         hideModal();
-        await download(fileBase(p) + '_' + tabLabel.replace(/[^\wÀ-ÿ]+/g, '_') + '.pdf', blob, 'application/pdf');
+        await download(fileBase(p) + '_' + tabLabelTxt.replace(/[^\wÀ-ÿ]+/g, '_') + '.pdf', blob, 'application/pdf');
       } catch (e) {
         console.error(e);
         showModal(`<h3>No se ha podido generar el PDF</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
@@ -1645,11 +1721,11 @@
     const secBtn = e.target.closest('[data-section]');
     if (secBtn) {
       const sec = sections().find(x => x.name === secBtn.dataset.section);
-      if (sec) { tab = lastTabOf[sec.name] && sec.tabs.some(t => t.id === lastTabOf[sec.name]) ? lastTabOf[sec.name] : sec.tabs[0].id; window.scrollTo(0, 0); render(); }
+      if (sec) { curSec = sec.name; tab = lastTabOf[sec.name] && sec.tabs.some(t => t.id === lastTabOf[sec.name]) ? lastTabOf[sec.name] : sec.tabs[0].id; prepTab(); window.scrollTo(0, 0); render(); }
       return;
     }
     const tabBtn = e.target.closest('[data-tab]');
-    if (tabBtn) { tab = tabBtn.dataset.tab; const sc = sections().find(x => x.tabs.some(t => t.id === tab)); if (sc) lastTabOf[sc.name] = tab; window.scrollTo(0, 0); render(); return; }
+    if (tabBtn) { tab = tabBtn.dataset.tab; prepTab(); const sc = sections().find(x => x.name === curSec && x.tabs.some(t => t.id === tab)) || sections().find(x => x.tabs.some(t => t.id === tab)); if (sc) { curSec = sc.name; lastTabOf[sc.name] = tab; } window.scrollTo(0, 0); render(); return; }
     const a = e.target.closest('[data-action]');
     if (a) { document.querySelector('.menu').classList.remove('open'); if (actions[a.dataset.action]) actions[a.dataset.action](a); return; }
     if (e.target.closest('#menuBtn')) { document.querySelector('.menu').classList.toggle('open'); return; }

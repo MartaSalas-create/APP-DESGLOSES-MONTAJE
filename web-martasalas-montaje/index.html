@@ -16,6 +16,17 @@
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
+  <!-- Iconos de los controles de transporte (dibujo propio, estética de mesa de edición) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-in" viewBox="0 0 20 20"><path d="M7 3h6v2H9v10h4v2H7z"/></symbol>
+    <symbol id="i-out" viewBox="0 0 20 20"><path d="M13 3H7v2h4v10H7v2h6z"/></symbol>
+    <symbol id="i-prev-edit" viewBox="0 0 20 20"><path d="M4 3h2v14H4z"/><path d="M16 4v12L7 10z"/><path d="M2 16h6v1.6H2z"/></symbol>
+    <symbol id="i-step-back" viewBox="0 0 20 20"><path d="M13 4v12L5 10z"/><path d="M14.5 4h2v12h-2z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 20 20"><path d="M6 3.5v13L16.5 10z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 20 20"><path d="M5.5 4h3v12h-3zM11.5 4h3v12h-3z"/></symbol>
+    <symbol id="i-step-fwd" viewBox="0 0 20 20"><path d="M7 4v12l8-6z"/><path d="M3.5 4h2v12h-2z"/></symbol>
+    <symbol id="i-next-edit" viewBox="0 0 20 20"><path d="M14 3h2v14h-2z"/><path d="M4 4v12l9-6z"/><path d="M12 16h6v1.6h-6z"/></symbol>
+  </svg>
   <a class="skip" href="#trabajos">Saltar al contenido</a>
 
   <!-- Cabecera: la web es una secuencia; cada sección es un clip y el cabezal sigue el scroll -->
@@ -53,7 +64,7 @@
             </div>
           </div>
 
-          <figure class="monitor" aria-label="Monitor de programa">
+          <figure class="monitor" aria-label="Monitor de programa" data-transport="esencial">
             <div class="monitor-bar mono"><span><i class="rec"></i> Programa</span><span id="monTc">01:00:00:00</span></div>
             <div class="monitor-screen" id="monScreen">
               <div class="safe" aria-hidden="true"></div>
@@ -67,10 +78,8 @@
                 <span class="mon-more" id="monMore"></span>
               </div>
             </div>
-            <div class="transport">
-              <button class="tbtn" id="tPrev" aria-label="Corte anterior" title="Corte anterior">⏮</button>
-              <button class="tbtn tplay" id="tPlay" aria-label="Reproducir la carrera" title="Reproducir">▶</button>
-              <button class="tbtn" id="tNext" aria-label="Corte siguiente" title="Corte siguiente">⏭</button>
+            <div class="transport" id="transport">
+              <div class="avid-bar" role="group" aria-label="Controles de reproducción"></div>
               <span class="transport-hint">Reproduce o arrastra el cabezal</span>
             </div>
           </figure>

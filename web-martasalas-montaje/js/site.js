@@ -132,7 +132,6 @@
 
   var stage = $("#careerStage"), chead = $("#careerHead"), yearEl = $("#careerYear"), nowEl = $("#careerNow");
   var mon = { quote: $("#monQuote"), frame: $("#monFrame"), meta: $("#monMeta"), title: $("#monTitle"), detail: $("#monDetail"), more: $("#monMore"), tc: $("#monTc") };
-  var tPlay = $("#tPlay"), tPrev = $("#tPrev"), tNext = $("#tNext");
   var TRACK_OF = {}; TRACKS.forEach(function (t) { t.items.forEach(function (it) { TRACK_OF[it.cat] = t.id; }); });
   var FRAME_BG = {
     cine: "linear-gradient(135deg, #ffa41b, #c96a08)",
@@ -199,48 +198,122 @@
   stage.addEventListener("pointerup", function () { dragging = false; idleSoon(6000); });
   stage.addEventListener("pointercancel", function () { dragging = false; idleSoon(6000); });
 
+  /* ---------- Controles de transporte (estilo Avid) ----------
+     data-transport="esencial": corte anterior · reproducir · corte siguiente
+     data-transport="completa": entrada · salida | corte anterior · un año · reproducir · un año · corte siguiente
+     La línea de tiempo va de lo más actual (izquierda) a lo más antiguo (derecha):
+     los botones que apuntan a la izquierda llevan a trabajos más recientes. */
+  var transportEl = $("#transport");
+  var MODE = (transportEl.closest("[data-transport]") || transportEl).getAttribute("data-transport") || "esencial";
+  var BTN = {
+    "in":   { icon: "i-in",        label: "Marcar entrada (I)" },
+    "out":  { icon: "i-out",       label: "Marcar salida (O)" },
+    "prev": { icon: "i-prev-edit", label: "Ir al corte anterior · más reciente" },
+    "back": { icon: "i-step-back", label: "Un año más reciente" },
+    "play": { icon: "i-play",      label: "Reproducir la carrera (espacio)" },
+    "fwd":  { icon: "i-step-fwd",  label: "Un año más antiguo" },
+    "next": { icon: "i-next-edit", label: "Ir al corte siguiente · más antiguo" }
+  };
+  var ORDER = MODE === "completa" ? ["in", "out", "|", "prev", "back", "play", "fwd", "next"] : ["prev", "play", "next"];
+  var svgUse = function (id) { return '<svg aria-hidden="true" focusable="false"><use href="#' + id + '"/></svg>'; };
+  transportEl.querySelector(".avid-bar").innerHTML = ORDER.map(function (k, i) {
+    if (k === "|") return "";
+    var sep = ORDER[i - 1] === "|" ? " sep" : "";
+    return '<button type="button" class="avid-btn' + sep + '" data-act="' + k + '" aria-label="' + BTN[k].label + '" title="' + BTN[k].label + '">' + svgUse(BTN[k].icon) + "</button>";
+  }).join("");
+  transportEl.classList.toggle("is-completa", MODE === "completa");
+  var tPlay = transportEl.querySelector('[data-act="play"]');
+
   // Cortes: inicios de clip de todas las pistas
   var CUTS = [];
   TRACKS.forEach(function (t) { t.clips.forEach(function (c) { if (CUTS.indexOf(c.a) < 0) CUTS.push(c.a); }); });
   CUTS.sort(function (a, b) { return a - b; });
-  function jump(dir) {
-    stopPlay(); showFrame(true);
+  function goTo(y) { stopPlay(); showFrame(true); setYear(y + 0.5); idleSoon(8000); }
+  function jump(dir) { // dir > 0: más reciente (izquierda) · dir < 0: más antiguo (derecha)
     var y = curYear == null ? 2026 : curYear, target = null;
     if (dir > 0) { for (var i = 0; i < CUTS.length; i++) if (CUTS[i] > y) { target = CUTS[i]; break; } }
     else { for (var j = CUTS.length - 1; j >= 0; j--) if (CUTS[j] < y) { target = CUTS[j]; break; } }
-    if (target != null) setYear(target + 0.5);
-    idleSoon(8000);
+    goTo(target != null ? target : y);
   }
-  tPrev.addEventListener("click", function () { jump(1); });   // ⏮ hacia la izquierda: más actual
-  tNext.addEventListener("click", function () { jump(-1); });  // ⏭ hacia la derecha: más antiguo
-  chead.addEventListener("keydown", function (e) {
-    var d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1, PageUp: 5, PageDown: -5 }[e.key];
-    if (e.key === "Home") { stopPlay(); showFrame(true); setYear(Y1 - 0.5); idleSoon(8000); e.preventDefault(); }
-    else if (e.key === "End") { stopPlay(); showFrame(true); setYear(Y0 + 0.5); idleSoon(8000); e.preventDefault(); }
-    else if (d) { stopPlay(); showFrame(true); setYear((curYear || 2026) + d + 0.5); idleSoon(8000); e.preventDefault(); }
-  });
 
-  // Reproducir: el cabezal recorre la carrera y el monitor va mostrando los trabajos
+  // Marcas de entrada y salida: delimitan el tramo que reproduce ▶
+  var mark = { "in": null, "out": null };
+  var rangeEl = document.createElement("div"); rangeEl.className = "career-range"; rangeEl.hidden = true;
+  stage.insertBefore(rangeEl, chead);
+  var markEls = {};
+  ["in", "out"].forEach(function (k) {
+    var el = document.createElement("span"); el.className = "career-mark mark-" + k; el.hidden = true; el.setAttribute("aria-hidden", "true");
+    stage.insertBefore(el, chead); markEls[k] = el;
+  });
+  function range() { // [más reciente, más antiguo] en años completos, o null
+    if (mark["in"] == null && mark.out == null) return null;
+    var a = mark["in"] != null ? mark["in"] : Y1 - 1, b = mark.out != null ? mark.out : Y0;
+    return [Math.max(a, b), Math.min(a, b)];
+  }
+  function paintMarks() {
+    ["in", "out"].forEach(function (k) {
+      var el = markEls[k]; el.hidden = mark[k] == null;
+      if (mark[k] != null) el.style.left = pct(mark[k] + 0.5) + "%";
+      var b = transportEl.querySelector('[data-act="' + k + '"]'); if (b) b.classList.toggle("on", mark[k] != null);
+    });
+    var r = range(); rangeEl.hidden = !r;
+    if (r) { rangeEl.style.left = pct(r[0] + 1) + "%"; rangeEl.style.width = (pct(r[1]) - pct(r[0] + 1)) + "%"; }
+    if (mon.more && r) mon.more.textContent = "Tramo marcado: " + r[0] + " → " + r[1];
+  }
+  function toggleMark(k) {
+    var y = curYear == null ? 2026 : curYear;
+    mark[k] = mark[k] === y ? null : y; // pulsar otra vez en el mismo año la quita
+    showFrame(true); paintMarks(); idleSoon(8000);
+  }
+
+  // Reproducir: de izquierda a derecha (de lo más actual a lo más antiguo), dentro del tramo si lo hay
   function stopPlay() {
     if (auto) { cancelAnimationFrame(auto); auto = null; }
-    tPlay.textContent = "▶"; tPlay.setAttribute("aria-label", "Reproducir la carrera");
+    tPlay.innerHTML = svgUse("i-play"); tPlay.classList.remove("on"); tPlay.setAttribute("aria-label", BTN.play.label);
   }
   function play(delay) {
     stopPlay(); clearTimeout(idleTimer);
-    var START = Y1 - 0.5, END = Y0;
-    var from = curYear == null || curYear <= Y0 ? START : curYear + 0.5;
-    var DUR = 9000 * (from - END) / (START - END), t0 = null;
+    var r = range();
+    var START = r ? r[0] + 0.5 : Y1 - 0.5, END = r ? r[1] : Y0;
+    var inside = curYear != null && curYear < START - 0.5 && curYear > END;
+    var from = inside ? curYear + 0.5 : START;
+    var DUR = Math.max(600, 9000 * (from - END) / (Y1 - 0.5 - Y0)), t0 = null;
     setYear(from); showFrame(true);
-    tPlay.textContent = "❚❚"; tPlay.setAttribute("aria-label", "Pausa");
+    tPlay.innerHTML = svgUse("i-pause"); tPlay.classList.add("on"); tPlay.setAttribute("aria-label", "Pausa (espacio)");
     auto = requestAnimationFrame(function step(ts) {
       if (t0 === null) t0 = ts + (delay || 0);
       var k = Math.max(0, Math.min(1, (ts - t0) / DUR));
       setYear(from + k * (END - from));
       if (k < 1) auto = requestAnimationFrame(step);
-      else { stopPlay(); idleSoon(1800, true); }  // al terminar vuelve al presente
+      else { stopPlay(); if (r) idleSoon(6000); else idleSoon(1800, true); } // sin tramo, vuelve al presente
     });
   }
-  tPlay.addEventListener("click", function () { if (auto) { stopPlay(); idleSoon(8000); } else play(0); });
+  function togglePlay() { if (auto) { stopPlay(); idleSoon(8000); } else play(0); }
+
+  transportEl.addEventListener("click", function (e) {
+    var b = e.target.closest(".avid-btn"); if (!b) return;
+    var act = b.dataset.act;
+    if (act === "play") togglePlay();
+    else if (act === "prev") jump(1);
+    else if (act === "next") jump(-1);
+    else if (act === "back") goTo(Math.min(Y1 - 1, (curYear == null ? 2026 : curYear) + 1));
+    else if (act === "fwd") goTo(Math.max(Y0, (curYear == null ? 2026 : curYear) - 1));
+    else toggleMark(act);
+  });
+  // Teclado sobre el cabezal: flechas, Inicio/Fin, espacio, y en la opción completa I/O como en Avid
+  function onKeys(e) {
+    var d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1, PageUp: 5, PageDown: -5 }[e.key];
+    var y = curYear == null ? 2026 : curYear;
+    var enBoton = e.currentTarget === transportEl; // en un botón, espacio e Intro pulsan ese botón
+    if (e.key === "Home") { goTo(Y1 - 1); e.preventDefault(); }
+    else if (e.key === "End") { goTo(Y0); e.preventDefault(); }
+    else if (e.key === " " && !enBoton) { togglePlay(); e.preventDefault(); }
+    else if (MODE === "completa" && (e.key === "i" || e.key === "I")) { toggleMark("in"); e.preventDefault(); }
+    else if (MODE === "completa" && (e.key === "o" || e.key === "O")) { toggleMark("out"); e.preventDefault(); }
+    else if (d) { goTo(Math.max(Y0, Math.min(Y1 - 1, y + d))); e.preventDefault(); }
+  }
+  chead.addEventListener("keydown", onKeys);
+  transportEl.addEventListener("keydown", onKeys);
 
   // Al cargar, la secuencia se reproduce una vez
   if (reduceMotion) { setYear(2026.5); showFrame(false); }

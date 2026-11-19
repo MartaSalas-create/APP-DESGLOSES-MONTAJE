@@ -204,7 +204,7 @@
      La línea de tiempo va de lo más actual (izquierda) a lo más antiguo (derecha):
      los botones que apuntan a la izquierda llevan a trabajos más recientes. */
   var transportEl = $("#transport");
-  var MODE = (transportEl.closest("[data-transport]") || transportEl).getAttribute("data-transport") || "esencial";
+  var MODE = (transportEl.closest("[data-transport]") || transportEl).getAttribute("data-transport") || "completa";
   var BTN = {
     "in":   { icon: "i-in",        label: "Marcar entrada (I)" },
     "out":  { icon: "i-out",       label: "Marcar salida (O)" },

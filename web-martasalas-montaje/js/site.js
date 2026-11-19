@@ -23,6 +23,32 @@
     return [Number(m[0]), Number(m[m.length - 1])];
   };
 
+
+  /* =========================================================
+     0. START: el nombre se escribe letra a letra con el cursor naranja
+     ========================================================= */
+  (function typeName() {
+    var el = $(".hero-name"); if (!el) return;
+    var text = el.textContent.trim();
+    el.setAttribute("aria-label", text);
+    if (reduceMotion) return;
+    var cursor = el.querySelector(".cursor");
+    // cada letra ocupa su sitio desde el principio (sin saltos de maquetación) y se va mostrando
+    el.innerHTML = text.split("").map(function (ch) {
+      return '<span class="tw" aria-hidden="true">' + (ch === " " ? " " : esc(ch)) + "</span>";
+    }).join("");
+    var chars = $$(".tw", el);
+    el.insertBefore(cursor, chars[0]);
+    var i = 0;
+    setTimeout(function step() {
+      if (i >= chars.length) return;
+      chars[i].classList.add("on");
+      el.insertBefore(cursor, chars[i].nextSibling);
+      i++;
+      setTimeout(step, chars[i - 1].textContent === " " ? 160 : 95);
+    }, 450);
+  })();
+
   /* =========================================================
      1. CABECERA: la web como secuencia
      Cada sección es un clip con ancho proporcional a su duración (altura),
@@ -164,7 +190,8 @@
     lastYv = yv;
     var yr = Math.floor(yv);
     chead.style.left = pct(Math.min(yv, Y1 - 0.0001)) + "%";
-    mon.tc.textContent = framesToTc(TC_START + ((yv - Y0) / span) * (TC_END - TC_START));
+    // avanza al reproducir (de 2026 a la izquierda hacia lo más antiguo a la derecha)
+    mon.tc.textContent = framesToTc(TC_START + ((Y1 - 0.5 - yv) / (span - 0.5)) * (TC_END - TC_START));
     if (yr === curYear) return;
     curYear = yr;
     chead.setAttribute("aria-valuenow", yr);

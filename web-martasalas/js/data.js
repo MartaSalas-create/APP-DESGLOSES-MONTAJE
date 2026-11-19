@@ -3,7 +3,7 @@
 
 window.SITE = {
   featured: [
-    { title: "Machos Alfa", kind: "Serie · Temporadas 1–6", years: "2022–2026", info: "Netflix · Contubernio Films", tag: "Netflix" },
+    { title: "Machos Alfa", wide: true, kind: "Serie · Temporadas 1–6", years: "2022–2026", info: "Netflix · Contubernio Films", tag: "Netflix" },
     { title: "Un plan perfecto", kind: "Largometraje y serie", years: "2025–2026", info: "Dir. María Pulido · Dynamo para Sony y Amazon", tag: "Próximamente en cines", poster: "assets/un-plan-perfecto.jpg" },
     { title: "AVA", kind: "Documental", years: "2022", info: "Dir. Mabel Lozano · Mafalda", tag: "Goya 2024 · Mejor cortometraje documental" },
     { title: "El lodo", kind: "Largometraje", years: "2021", info: "Dir. Iñaki Sánchez Arrieta · Sunrise Picture, Vértice 360", tag: "Nominada a mejor montaje · Premis Berlanga" },
@@ -166,6 +166,7 @@ window.SITE = {
   ],
 
   teaching: [
+    ["2026", "Metodología del Montaje I", "2º Diplomatura de Montaje · ECAM, Escuela de Cine de la Comunidad de Madrid"],
     ["2026", "Montaje de ficción para directores/as · 2ª edición", "ECAM · Escuela de Oficios (60 h)"],
     ["2025", "Montaje de ficción para directores/as", "ECAM · Escuela de Oficios (60 h)"],
     ["2024", "Montaje · Máster de Dirección de Cine y Series", "TAI Arts"],

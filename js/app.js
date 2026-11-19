@@ -77,6 +77,7 @@
     { id: 'escaleta', label: 'Escaleta de script' },
     { id: 'montaje', label: 'Escaleta de montaje' },
     { id: 'arcos', label: 'Arco de personajes' },
+    { id: 'mapa', label: 'Mapa de tramas' },
     { id: 'stepline', label: 'Step line' },
     { id: 'doctor', label: 'Script doctor' },
     { group: 'Postproducción' },
@@ -556,7 +557,7 @@
     const p = P();
     const fn = {
       proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
-      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
+      montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, mapa: p => window.MapaTramas.tab(p), doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
     $('#main').innerHTML = fn(p);
@@ -1520,6 +1521,7 @@
 
   const changeActions = {
 
+    'map-opt': (el) => window.MapaTramas.setOpt(el.dataset.o, el.checked),
     'stepline-order': (el) => { steplineOrder = el.value; renderTab(); },
     'set-act': (el) => {
       const p = P(); const name = el.dataset.act;

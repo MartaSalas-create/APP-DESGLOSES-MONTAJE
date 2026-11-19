@@ -736,8 +736,66 @@
   /* ------------------------------------------------------------------ */
   /* Pestaña: Desglose de montaje                                         */
   /* ------------------------------------------------------------------ */
+  const DESGLOSE_COLS = (p, mpp) => [
+    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num"><b>${esc(s.num)}</b></td>` },
+    { k: 'head', label: 'Encabezado', td: s => `<td class="scene-head" style="min-width:200px">${esc(sceneHeading(s))}</td>` },
+    { k: 'page', label: 'Pág.', cls: 'num', td: s => `<td class="num">${s.page}</td>` },
+    { k: 'eighths', label: 'Octavos', cls: 'num', td: s => `<td class="num">${fmtEighths(s.eighths)}</td>` },
+    { k: 'dur', label: 'Dur. est.', cls: 'num', td: s => `<td class="num">${fmtMin(s.lengthPages * mpp)}</td>` },
+    { k: 'estado', label: 'Estado', td: s => `<td>${estadoSelect(s)}</td>` },
+    { k: 'trama', label: 'Trama', td: s => `<td>${tramaSelect('s:' + s.id + ':tramaId')}</td>` },
+    { k: 'chars', label: 'Personajes', td: s => `<td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>` },
+    { k: 'summary', label: 'Acción / resumen', td: s => `<td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>` },
+    { k: 'conflict', label: 'Conflicto / objetivo', td: s => `<td>${area('s:' + s.id + ':conflict', 'class="cell-input" placeholder="¿Qué cambia? ¿Qué quiere cada personaje?"')}</td>` },
+    { k: 'needs', label: 'Necesidades', td: s => `<td>${needsDropdown(s)}</td>` },
+    { k: 'script', label: 'Script', td: s => `<td>${window.Attach ? Attach.cell(s) : ''}</td>` },
+    { k: 'notes', label: 'Notas de montaje', td: s => `<td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>` }
+  ];
+  const ESCALETA_COLS = p => [
+    { k: 'num', label: 'Nº', cls: 'num', td: s => `<td class="num">${esc(s.num)}</td>` },
+    { k: 'ie', label: 'INT/EXT', td: s => `<td>${esc(s.intExt)}</td>` },
+    { k: 'loc', label: 'Localización', td: s => `<td>${esc(s.location)}</td>` },
+    { k: 'time', label: 'Día/Noche', td: s => `<td>${esc(s.time)}</td>` },
+    { k: 'trama', label: 'Trama', td: s => { const t = tramaOf(p, s); return `<td>${t ? esc(t.name.toUpperCase()) : ''}</td>`; } },
+    { k: 'chars', label: 'Personajes', td: s => `<td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td>` },
+    { k: 'summary', label: 'Resumen', td: s => `<td>${esc(s.summary)}</td>` },
+    { k: 'conflict', label: 'Conflicto / objetivo', hidden: true, td: s => `<td>${esc(s.conflict || '')}</td>` },
+    { k: 'dur', label: 'Dur. est.', cls: 'num', hidden: true, td: s => `<td class="num">${fmtMin(s.lengthPages * minutesPerPage(p))}</td>` },
+    { k: 'estado', label: 'Estado', td: s => `<td>${estadoBadge(s)}</td>` }
+  ];
+
+  /* ---------- Columnas: orden y visibilidad por tabla (se guardan en el proyecto) ---------- */
+  function colsFor(p, table, cols, all) {
+    const order = ((p.colOrder || {})[table]) || [];
+    const hid = (p.colHidden || {})[table];
+    const hidden = new Set(hid || cols.filter(c => c.hidden).map(c => c.k));
+    const by = Object.fromEntries(cols.map(c => [c.k, c]));
+    const keys = order.filter(k => by[k]).concat(cols.map(c => c.k).filter(k => !order.includes(k)));
+    const list = keys.map(k => Object.assign({}, by[k], { off: hidden.has(k) }));
+    return all ? list : list.filter(c => !c.off);
+  }
+  const colTh = (table, c) => `<th class="${c.cls || ''} col-drag" draggable="true" data-col="${c.k}" data-table="${table}" title="Arrastra para mover la columna">${esc(c.label)}</th>`;
+  const colsButton = table => `<button class="btn btn-small" data-action="cols-panel" data-t="${table}">⇄ Columnas</button>`;
+  const COL_SETS = { desglose: p => DESGLOSE_COLS(p, minutesPerPage(p)), escaleta: p => ESCALETA_COLS(p) };
+  function setColState(p, table, list) {
+    p.colOrder = p.colOrder || {}; p.colHidden = p.colHidden || {};
+    p.colOrder[table] = list.map(c => c.k); p.colHidden[table] = list.filter(c => c.off).map(c => c.k);
+    save(); renderTab();
+  }
+  function colsPanel(table) {
+    const p = P(); const list = colsFor(p, table, COL_SETS[table](p), true);
+    showModal(`<h3>Columnas · ${table === 'desglose' ? 'Desglose de montaje' : 'Escaleta de script'}</h3>
+      <p>Ordena las columnas como te convenga en cada fase y oculta las que no necesites. También puedes arrastrar las cabeceras de la tabla.</p>
+      <div class="cols-list">${list.map((c, i) => `<div class="cols-item ${c.off ? 'off' : ''}">
+        <label><input type="checkbox" data-action-change="col-toggle" data-t="${table}" data-c="${c.k}" ${c.off ? '' : 'checked'}> ${esc(c.label)}</label>
+        <span><button class="btn btn-small" data-action="col-move" data-t="${table}" data-c="${c.k}" data-d="-1" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn btn-small" data-action="col-move" data-t="${table}" data-c="${c.k}" data-d="1" ${i === list.length - 1 ? 'disabled' : ''}>↓</button></span>
+      </div>`).join('')}</div>
+      <div class="actions"><button class="btn" data-action="col-reset" data-t="${table}">Orden original</button><button class="btn btn-primary" data-action="close-modal">Listo</button></div>`);
+  }
+
   function tabDesglose(p) {
     const mpp = minutesPerPage(p);
+    const dCols = colsFor(p, 'desglose', DESGLOSE_COLS(p, mpp));
     return `<section class="panel">
       ${printHeader(p, 'Desglose de montaje')}
       <h2>Desglose de montaje</h2>
@@ -745,32 +803,21 @@
       <div class="toolbar">
         <button class="btn btn-small" data-action="expand-all">Abrir todas</button>
         <button class="btn btn-small" data-action="collapse-all">Cerrar todas</button>
+        ${colsButton('desglose')}
         <span class="spacer"></span>
         ${postLegendHTML()}
         <span class="legend-inline">${p.tramas.map(t => `<span><span class="trama-dot" style="background:${t.color}"></span>${esc(t.letter)} ${esc(t.name)}</span>`).join('')}</span>
       </div>
-      <div class="table-wrap"><table>
-        <thead><tr><th></th><th class="num">Nº</th><th>Encabezado</th><th class="num">Pág.</th><th class="num">Octavos</th><th class="num">Dur. est.</th><th>Estado</th><th>Trama</th><th>Personajes</th><th>Acción / resumen</th><th>Conflicto / objetivo</th><th>Necesidades</th><th>Script</th><th>Notas de montaje</th></tr></thead>
+      <div class="table-wrap"><table class="cols-table">
+        <thead><tr><th></th>${dCols.map(c => colTh('desglose', c)).join('')}</tr></thead>
         <tbody>${p.scenes.map(s => {
           const t = tramaOf(p, s);
           const open = expanded.has(s.id);
           return `<tr style="${t ? `box-shadow: inset 5px 0 0 ${t.color}` : ''}">
             <td><button class="btn btn-small btn-ghost" data-action="toggle-row" data-id="${s.id}">${open ? '▾' : '▸'}</button></td>
-            <td class="num"><b>${esc(s.num)}</b></td>
-            <td class="scene-head" style="min-width:200px">${esc(sceneHeading(s))}</td>
-            <td class="num">${s.page}</td>
-            <td class="num">${fmtEighths(s.eighths)}</td>
-            <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
-            <td>${estadoSelect(s)}</td>
-            <td>${tramaSelect('s:' + s.id + ':tramaId')}</td>
-            <td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>
-            <td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>
-            <td>${area('s:' + s.id + ':conflict', 'class="cell-input" placeholder="¿Qué cambia? ¿Qué quiere cada personaje?"')}</td>
-            <td>${needsDropdown(s)}</td>
-            <td>${window.Attach ? Attach.cell(s) : ''}</td>
-            <td>${area('s:' + s.id + ':notes.montaje', 'class="cell-input" style="min-width:180px"')}</td>
+            ${dCols.map(c => c.td(s)).join('')}
           </tr>
-          ${open ? `<tr class="row-detail"><td></td><td colspan="13">
+          ${open ? `<tr class="row-detail"><td></td><td colspan="${dCols.length}">
             <div class="detail-grid">
               <div><div class="field"><label>Texto de la secuencia</label><div class="script-text">${esc(s.heading)}\n\n${esc(s.text)}</div></div></div>
               <div class="form-grid" style="grid-template-columns:1fr">
@@ -799,20 +846,19 @@
   }
 
   function tabEscaleta(p) {
+    const eCols = colsFor(p, 'escaleta', ESCALETA_COLS(p));
     return `<section class="panel">
       ${printHeader(p, 'Escaleta coloreada por tramas')}
       <h2>${esc(p.title)} — Escaleta coloreada por tramas</h2>
       <p class="lead no-print">Documento de lectura en el orden del guion. Los datos se editan en el <b>Desglose de montaje</b>. Exporta a .csv para abrirlo en Numbers / Excel / Google Sheets.</p>
-      <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Descargar PDF</button></div>
+      <div class="toolbar no-print"><button class="btn btn-small" data-action="export-csv">Exportar .csv</button><button class="btn btn-small" data-action="print">Descargar PDF</button>${colsButton('escaleta')}</div>
       ${legendHTML(p)}
       ${escFilterBar(p, p.scenes)}
-      <div class="table-wrap"><table class="escaleta">
-        <thead><tr><th class="num">Nº</th><th>INT/EXT</th><th>Localización</th><th>Día/Noche</th><th>Trama</th><th>Personajes</th><th>Resumen</th><th>Estado</th></tr></thead>
+      <div class="table-wrap"><table class="escaleta cols-table">
+        <thead><tr>${eCols.map(c => colTh('escaleta', c)).join('')}</tr></thead>
         <tbody>${p.scenes.filter(s => escVisible(p, s)).map(s => {
           const t = tramaOf(p, s);
-          return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">
-            <td class="num">${esc(s.num)}</td><td>${esc(s.intExt)}</td><td>${esc(s.location)}</td><td>${esc(s.time)}</td>
-            <td>${t ? esc(t.name.toUpperCase()) : ''}</td><td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td><td>${esc(s.summary)}</td><td>${estadoBadge(s)}</td></tr>`;
+          return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">${eCols.map(c => c.td(s)).join('')}</tr>`;
         }).join('')}</tbody></table></div>
     </section>`;
   }
@@ -1380,6 +1426,14 @@
       const d = autoUnify(P()); save(); renderTab();
       toast(d.length ? `${d.length} nombres repetidos unificados. Revisa la lista de arriba.` : 'No se han encontrado nombres repetidos.');
     },
+    'cols-panel': (el) => colsPanel(el.dataset.t),
+    'col-move': (el) => {
+      const p = P(); const t = el.dataset.t; const list = colsFor(p, t, COL_SETS[t](p), true);
+      const i = list.findIndex(c => c.k === el.dataset.c), j = i + Number(el.dataset.d);
+      if (i < 0 || j < 0 || j >= list.length) return;
+      [list[i], list[j]] = [list[j], list[i]]; setColState(p, t, list); colsPanel(t);
+    },
+    'col-reset': (el) => { const p = P(); const t = el.dataset.t; if (p.colOrder) delete p.colOrder[t]; if (p.colHidden) delete p.colHidden[t]; save(); renderTab(); colsPanel(t); },
     'go-sound': () => { tab = 'sonido'; window.scrollTo(0, 0); render(); },
     'toggle-trama-vis': (el) => {
       const p = P(); const set = new Set(p.steplineHidden || []); const id = el.dataset.id;
@@ -1525,6 +1579,13 @@
 
   const changeActions = {
 
+    'col-toggle': (el) => {
+      const p = P(); const t = el.dataset.t; const list = colsFor(p, t, COL_SETS[t](p), true);
+      const c = list.find(x => x.k === el.dataset.c); if (!c) return;
+      c.off = !el.checked;
+      if (list.every(x => x.off)) { c.off = false; toast('Tiene que quedar al menos una columna.'); }
+      setColState(p, t, list); colsPanel(t);
+    },
     'map-opt': (el) => window.MapaTramas.setOpt(el.dataset.o, el.checked),
     'stepline-order': (el) => { steplineOrder = el.value; renderTab(); },
     'set-act': (el) => {
@@ -1606,6 +1667,33 @@
     const f = e.dataTransfer.files[0];
     if (f && /\.json$/i.test(f.name)) importJSON(f); else handleFile(f);
   });
+
+  // Mover columnas arrastrando la cabecera
+  let colDrag = null;
+  document.addEventListener('dragstart', e => {
+    const th = e.target.closest && e.target.closest('th.col-drag'); if (!th) return;
+    colDrag = { t: th.dataset.table, k: th.dataset.col }; th.classList.add('col-dragging');
+    e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', th.dataset.col);
+  });
+  document.addEventListener('dragover', e => {
+    if (!colDrag) return; const th = e.target.closest && e.target.closest('th.col-drag');
+    document.querySelectorAll('th.col-over').forEach(x => x.classList.remove('col-over'));
+    if (th && th.dataset.table === colDrag.t) { e.preventDefault(); th.classList.add('col-over'); }
+  });
+  document.addEventListener('drop', e => {
+    if (!colDrag) return; const th = e.target.closest && e.target.closest('th.col-drag');
+    if (th && th.dataset.table === colDrag.t && th.dataset.col !== colDrag.k) {
+      e.preventDefault();
+      const p = P(); const list = colsFor(p, colDrag.t, COL_SETS[colDrag.t](p), true);
+      const from = list.findIndex(c => c.k === colDrag.k); const moved = list.splice(from, 1)[0];
+      const to = list.findIndex(c => c.k === th.dataset.col);
+      const rect = th.getBoundingClientRect(); const after = e.clientX > rect.left + rect.width / 2;
+      list.splice(to + (after ? 1 : 0), 0, moved);
+      setColState(p, colDrag.t, list);
+    }
+    colDrag = null;
+  });
+  document.addEventListener('dragend', () => { colDrag = null; document.querySelectorAll('.col-dragging,.col-over').forEach(x => x.classList.remove('col-dragging', 'col-over')); });
 
   // Reordenar fichas de escaleta de montaje
   function attachCardDrag() {

@@ -373,3 +373,14 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 .att-cell .att-add { padding: 1px 8px; }
 
 .att-name-mini { color: #2f3338; max-width: 170px; }
+
+/* Columnas movibles */
+th.col-drag { cursor: grab; }
+th.col-drag:hover { background: #4a4e55; }
+th.col-dragging { opacity: .4; }
+th.col-over { box-shadow: inset 3px 0 0 #ff6b5a, inset -3px 0 0 #ff6b5a; }
+.cols-list { display: flex; flex-direction: column; gap: 4px; max-height: 55vh; overflow: auto; margin: 8px 0; }
+.cols-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.cols-item.off { opacity: .5; }
+.cols-item label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.cols-item span { display: flex; gap: 4px; }

@@ -832,11 +832,13 @@
         <button class="btn btn-small ${montajeView === 'montaje' ? 'btn-primary' : ''}" data-action="montaje-view" data-v="montaje">Orden de montaje</button>
         <button class="btn btn-small ${montajeView === 'guion' ? 'btn-primary' : ''}" data-action="montaje-view" data-v="guion">Orden de guion</button>
         <button class="btn btn-small" data-action="reset-order">Restablecer orden de guion</button>
+        ${window.Attach ? Attach.toolbarButton() : ''}
         <span class="spacer"></span>
         ${postLegendHTML()}
         <span class="muted">Duración estimada: <b>${fmtMin(totalActive)}</b> · ${list.filter(s => !isRemoved(p, s)).length} secuencias</span>
         <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
+      ${window.Attach ? `<p class="muted no-print" style="font-size:12px;margin:-4px 0 10px">📎 En cada ficha, «＋ Adjuntar» para el guion rayado y el parte de script. ${Attach.note()}</p>` : ''}
       ${escFilterBar(p, list)}
       ${list.some(s => !escVisible(p, s)) ? `<p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Duración de lo visible: <b>${fmtMin(list.filter(s => escVisible(p, s) && !isRemoved(p, s)).reduce((a, s) => a + s.lengthPages * mpp, 0))}</b>. El TC de cada ficha sigue siendo el del montaje completo.</p>` : ''}
       <div class="cards" id="cards">${list.map((s, i) => {
@@ -855,6 +857,7 @@
           <div class="row"><b><i>Personajes:</i></b><i>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', ') || '—')}</i></div>
           <div class="row"><b>Acción:</b><textarea class="edit" rows="1" data-k="s:${s.id}:summary" data-edited="summaryEdited">${esc(s.summary)}</textarea></div>
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
+          ${window.Attach ? Attach.cardRow(s) : ''}
           <div class="tag"><span class="no-print">${estadoSelect(s)}</span><span class="print-only">${estadoBadge(s)}</span> [ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
         </div>`;
       }).join('')}</div>
@@ -1647,7 +1650,7 @@
   /* UI auxiliares                                                        */
   /* ------------------------------------------------------------------ */
   function showModal(html) { $('#modalBody').innerHTML = html; $('#modal').hidden = false; }
-  function hideModal() { $('#modal').hidden = true; }
+  function hideModal() { $('#modal').hidden = true; $('#modalBody').classList.remove('modal-wide'); }
   let toastTimer;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3500); }
   function grow(el) { if (!el.classList.contains('edit')) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }

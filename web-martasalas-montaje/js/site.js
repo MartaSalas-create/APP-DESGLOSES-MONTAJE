@@ -90,7 +90,7 @@
   var TRACKS = [
     { id: "cine", lab: "V3 · Cine", items: pick(["Largometrajes y TV movies", "Cortometrajes"]) },
     { id: "series", lab: "V2 · Series", items: pick(["Series de ficción"]) },
-    { id: "doc", lab: "V1 · Doc y programas", items: pick(["Documental y reportaje", "Programas de TV", "Musical", "Publicidad", "Otros"]) },
+    { id: "doc", lab: "V1 · Doc y varios", items: pick(["Documental y reportaje", "Programas de TV", "Musical", "Publicidad", "Otros"]) },
     { id: "wave", lab: "A1 · Docencia", items: listRows(D.teaching, "Docencia") },
     { id: "train", lab: "A2 · Formación", items: listRows(D.training, "Formación") }
   ];

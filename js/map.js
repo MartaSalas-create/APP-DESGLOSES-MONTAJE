@@ -15,7 +15,7 @@
   let sel = null;            // nodo o enlace seleccionado: 't:<id>', 'c:<nombre>', 'e:<a>|<b>'
   let showChars = true, showCo = false, allChars = false, showGiros = true, zoom = 1;
 
-  const st = p => { p.mapa = p.mapa || { pos: {}, notes: {}, hidden: [] }; p.mapa.pos = p.mapa.pos || {}; p.mapa.notes = p.mapa.notes || {}; p.mapa.hidden = p.mapa.hidden || []; return p.mapa; };
+  const st = p => { p.mapa = p.mapa || { pos: {}, notes: {}, hidden: [] }; p.mapa.mode = p.mapa.mode || 'libre'; p.mapa.pos = p.mapa.pos || {}; p.mapa.notes = p.mapa.notes || {}; p.mapa.hidden = p.mapa.hidden || []; return p.mapa; };
   const textColor = hex => { // tono oscuro de la trama para textos
     const n = parseInt((hex || '#888888').slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     const max = Math.max(r, g, b), min = Math.min(r, g, b); let h = 0;
@@ -78,8 +78,16 @@
     return { nodes, edges };
   }
 
+  const MODES = { libre: 'Libre (relaciones)', tiempo: 'Por tiempo', actos: 'Por actos' };
+  const store = m => m.mode === 'tiempo' ? (m.posT = m.posT || {}) : m.mode === 'actos' ? (m.posA = m.posA || {}) : m.pos;
+
   /* ---------------- Colocación automática (fuerzas) ---------------- */
-  function layout(p, g, reset) {
+  function layout(p, g) {
+    const m = st(p);
+    if (m.mode === 'tiempo' || m.mode === 'actos') return layoutGrid(p, g, m.mode);
+    return { pos: layoutFree(p, g), bg: '' };
+  }
+  function layoutFree(p, g, reset) {
     const m = st(p); const pos = {};
     const T = g.nodes.filter(n => n.kind === 't');
     T.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / Math.max(1, T.length); pos[n.id] = { x: CX + Math.cos(a) * (T.length > 1 ? 230 : 0), y: CY + Math.sin(a) * (T.length > 1 ? 200 : 0) }; });
@@ -91,8 +99,9 @@
       const home = n.tr && pos['t:' + n.tr.id] || { x: CX, y: CY };
       const a = i * 2.39996 + 1.2; pos[n.id] = { x: home.x + Math.cos(a) * 130, y: home.y + Math.sin(a) * 130 };
     });
-    const fixed = id => !reset && m.pos[id];
-    g.nodes.forEach(n => { if (fixed(n.id)) pos[n.id] = { x: m.pos[n.id].x, y: m.pos[n.id].y }; });
+    const P0 = store(m);
+    const fixed = id => !reset && P0[id];
+    g.nodes.forEach(n => { if (fixed(n.id)) pos[n.id] = { x: P0[n.id].x, y: P0[n.id].y }; });
     const free = g.nodes.filter(n => !fixed(n.id));
     if (free.length) {
       for (let it = 0; it < 260; it++) {
@@ -129,6 +138,106 @@
     return pos;
   }
 
+  /* ---------------- Modos «por tiempo» y «por actos» ----------------
+     Cada trama ocupa una franja horizontal (fila). En «por tiempo» el eje X es
+     el avance de la película (páginas); en «por actos», columnas por acto.
+     Puntos de giro y personajes se colocan en su franja y en su momento /
+     acto, y luego se separan un poco para que no se monten. */
+  function actsOf(p) {
+    const idx = new Map(p.scenes.map((s, i) => [s.id, i]));
+    const acts = (p.acts || []).map(a => ({ name: a.name, i: idx.get(a.start) })).filter(a => a.i != null).sort((a, b) => a.i - b.i);
+    if (!acts.length) acts.push({ name: 'Película', i: 0 });
+    const of = new Map();
+    p.scenes.forEach((s, i) => { let k = 0; acts.forEach((a, j) => { if (i >= a.i) k = j; }); of.set(s.id, k); });
+    return { acts, of };
+  }
+  function layoutGrid(p, g, mode) {
+    const m = st(p); const P0 = store(m);
+    const T = g.nodes.filter(n => n.kind === 't');
+    const top = 64, bottom = VH - 52, L0 = 175, R0 = VW - 24;
+    const laneH = (bottom - top) / Math.max(1, T.length);
+    const laneY = {}; T.forEach((n, i) => { laneY[n.id] = top + laneH * (i + 0.5); });
+    T.forEach(n => { n.r = Math.min(n.r, laneH * 0.36, 46); });
+    g.nodes.filter(n => n.kind === 'c').forEach(n => { n.r = Math.min(n.r, Math.max(8, laneH * 0.16)); });
+    g.nodes.filter(n => n.kind === 'g').forEach(n => { n.r = Math.min(n.r, Math.max(8, laneH * 0.12)); });
+    const homeY = n => laneY['t:' + (n.tr ? n.tr.id : '')] != null ? laneY['t:' + n.tr.id] : (top + bottom) / 2;
+    const bg = [];
+    // franjas de las tramas
+    T.forEach((n, i) => {
+      bg.push(`<rect x="0" y="${top + laneH * i}" width="${VW}" height="${laneH}" fill="${n.color}" fill-opacity="${i % 2 ? 0.10 : 0.16}"/>`);
+    });
+    const target = {};
+    T.forEach(n => { target[n.id] = { x: 88, y: laneY[n.id] }; });
+    const { acts, of } = actsOf(p);
+    if (mode === 'tiempo') {
+      const total = Math.max(1, ...p.scenes.map(s => (s.pos || 0) + (s.lengthPages || 0)));
+      const X = pg => L0 + Math.max(0, Math.min(1, pg / total)) * (R0 - L0);
+      const mid = s => (s.pos || 0) + (s.lengthPages || 0) / 2;
+      // eje de páginas y actos
+      const step = total > 150 ? 20 : total > 60 ? 10 : total > 20 ? 5 : 1;
+      for (let pg = 0; pg <= total; pg += step) bg.push(`<line x1="${X(pg)}" x2="${X(pg)}" y1="${top}" y2="${bottom}" stroke="#000" stroke-opacity="0.06"/><text x="${X(pg)}" y="${bottom + 16}" text-anchor="middle" font-size="10" fill="#2a4f8f">${Math.round(pg)}</text>`);
+      bg.push(`<text x="${R0}" y="${bottom + 30}" text-anchor="end" font-size="10" fill="#999">páginas del guion →</text>`);
+      acts.forEach((a, j) => {
+        const s0 = p.scenes[a.i]; const x = X(s0 ? s0.pos || 0 : 0);
+        if (j) bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="3"/>`);
+        const next = acts[j + 1] ? p.scenes[acts[j + 1].i] : null; const x2 = next ? X(next.pos || 0) : R0;
+        bg.push(`<text x="${(x + x2) / 2}" y="${top - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${esc(a.name.toUpperCase())}</text>`);
+      });
+      g.nodes.forEach(n => {
+        if (n.kind === 'g') target[n.id] = { x: X(mid(n.s)), y: homeY(n) - laneH * 0.2, lockX: true };
+        if (n.kind === 'c') {
+          const sc = p.scenes.filter(s => s.characters.includes(n.name));
+          const avg = sc.length ? sc.reduce((a, s) => a + mid(s), 0) / sc.length : total / 2;
+          target[n.id] = { x: X(avg), y: homeY(n) + laneH * 0.2 };
+        }
+      });
+    } else {
+      const colW = (R0 - L0) / acts.length; const colX = j => L0 + colW * (j + 0.5);
+      // peso de cada trama en cada acto (nº de secuencias)
+      const cnt = {}; p.scenes.forEach(s => { if (!s.tramaId) return; const k = 't:' + s.tramaId; cnt[k] = cnt[k] || acts.map(() => 0); cnt[k][of.get(s.id)]++; });
+      const max = Math.max(1, ...Object.values(cnt).flat());
+      acts.forEach((a, j) => {
+        const x = L0 + colW * j;
+        bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="${j ? 3 : 1}" stroke-opacity="${j ? 1 : 0.3}"/>`);
+        bg.push(`<text x="${x + colW / 2}" y="${top - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${esc(a.name.toUpperCase())}</text>`);
+      });
+      T.forEach(n => {
+        const c = cnt[n.id] || acts.map(() => 0); const best = c.indexOf(Math.max(...c));
+        c.forEach((v, j) => {
+          const x = L0 + colW * j, y = laneY[n.id] - laneH / 2;
+          if (v) bg.push(`<rect x="${x + 3}" y="${y + 3}" width="${colW - 6}" height="${laneH - 6}" rx="8" fill="${n.color}" fill-opacity="${0.12 + 0.5 * v / max}" ${j === best ? `stroke="${textColor(n.color)}" stroke-width="3"` : ''}/>`);
+          bg.push(`<text x="${x + colW - 10}" y="${y + 16}" text-anchor="end" font-size="10" font-weight="700" fill="${textColor(n.color)}">${v ? v + ' sec.' + (j === best ? ' · más peso' : '') : ''}</text>`);
+        });
+      });
+      g.nodes.forEach(n => {
+        if (n.kind === 'g') target[n.id] = { x: colX(of.get(n.s.id) || 0), y: homeY(n) - laneH * 0.18 };
+        if (n.kind === 'c') {
+          const c = acts.map(() => 0); p.scenes.forEach(s => { if (s.characters.includes(n.name)) c[of.get(s.id)]++; });
+          target[n.id] = { x: colX(c.indexOf(Math.max(...c))), y: homeY(n) + laneH * 0.2 };
+        }
+      });
+    }
+    // posiciones: guardadas (si se han arrastrado) o calculadas
+    const pos = {}; g.nodes.forEach((n, i) => { const t = target[n.id] || { x: CX, y: CY }; pos[n.id] = P0[n.id] ? { x: P0[n.id].x, y: P0[n.id].y } : { x: t.x + ((i % 5) - 2) * 2, y: t.y + ((i % 3) - 1) * 2 }; });
+    const free = g.nodes.filter(n => n.kind !== 't' && !P0[n.id]);
+    for (let it = 0; it < 160; it++) {
+      const f = {}; free.forEach(n => { const t = target[n.id]; f[n.id] = { x: (t.x - pos[n.id].x) * 0.12, y: (t.y - pos[n.id].y) * 0.12 }; });
+      for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
+        const a = free[i], b = free[j], pa = pos[a.id], pb = pos[b.id];
+        let dx = pa.x - pb.x, dy = pa.y - pb.y; const d = Math.hypot(dx, dy) || 0.1; const min = a.r + b.r + 18;
+        if (d < min * 1.6) { const push = (min * 1.6 - d) * 0.25; dx /= d; dy /= d; f[a.id].x += dx * push; f[a.id].y += dy * push; f[b.id].x -= dx * push; f[b.id].y -= dy * push; }
+      }
+      free.forEach(n => {
+        const t = target[n.id]; const q = pos[n.id];
+        if (!t.lockX) q.x += f[n.id].x; else q.x = t.x;
+        q.y += f[n.id].y;
+        const band = laneH * 0.48; q.y = Math.max(t.y - band, Math.min(t.y + band, q.y));
+        q.x = Math.max(L0 - 10, Math.min(VW - n.r - 6, q.x)); q.y = Math.max(top + n.r, Math.min(bottom - n.r, q.y));
+      });
+    }
+    return { pos, bg: bg.join('') };
+  }
+
   /* ---------------- Dibujo ---------------- */
   function neighbours(g, id) {
     const set = new Set([id]);
@@ -138,10 +247,10 @@
   }
 
   function svg(p) {
-    const g = graph(p); const pos = layout(p, g, false);
+    const g = graph(p); const LY = layout(p, g); const pos = LY.pos; const mode = st(p).mode;
     const nb = sel ? neighbours(g, sel) : null;
     const dim = id => nb && !nb.has(id);
-    const o = [`<rect width="${VW}" height="${VH}" fill="#fff"/>`];
+    const o = [`<rect width="${VW}" height="${VH}" fill="#fff"/>`, LY.bg];
     o.push(`<text x="16" y="24" font-size="15" font-weight="800" fill="#2a4f8f" letter-spacing="1">${esc((p.title || '').toUpperCase())} · MAPA DE TRAMAS</text>`);
     // enlaces
     g.edges.forEach(e => {
@@ -150,10 +259,13 @@
       if (e.kind === 'tt') {
         const ta = g.nodes.find(n => n.id === e.a), tb = g.nodes.find(n => n.id === e.b);
         const w = 2 + Math.min(10, e.w * 1.2);
-        o.push(`<line class="edge" data-id="${esc(e.id)}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#2a4f8f" stroke-width="${w}" stroke-opacity="${faded ? 0.08 : sel === e.id ? 0.7 : 0.28}" stroke-linecap="round"/>`);
+        const curved = mode !== 'libre';
+        const cxp = 18 - Math.abs(a.y - b.y) * 0.04, cyp = (a.y + b.y) / 2;
+        const dd = curved ? `M${a.x},${a.y} Q${cxp},${cyp} ${b.x},${b.y}` : `M${a.x},${a.y} L${b.x},${b.y}`;
+        o.push(`<path class="edge" data-id="${esc(e.id)}" d="${dd}" fill="none" stroke="#2a4f8f" stroke-width="${w}" stroke-opacity="${faded ? 0.08 : sel === e.id ? 0.7 : 0.28}" stroke-linecap="round"/>`);
         // zona amplia para tocar el enlace
-        o.push(`<line class="edge-hit" data-id="${esc(e.id)}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width="22"/>`);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        o.push(`<path class="edge-hit" data-id="${esc(e.id)}" d="${dd}" fill="none" stroke="transparent" stroke-width="22"/>`);
+        const mx = curved ? (a.x + b.x) / 4 + cxp / 2 : (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         const note = st(p).notes[e.key];
         if (!faded) o.push(`<g class="edge-hit" data-id="${esc(e.id)}"><rect x="${mx - 15}" y="${my - 11}" width="30" height="22" rx="11" fill="#fff" stroke="#2a4f8f"/><text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${e.w}${note ? '✎' : ''}</text><title>${esc(ta.label)} ↔ ${esc(tb.label)}: ${e.w} personajes compartidos${e.shared && e.shared.length ? ' (' + esc(e.shared.join(', ')) + ')' : ''}</title></g>`);
       } else if (e.kind === 'ct') {
@@ -198,7 +310,7 @@
     });
     o.push(`<text x="16" y="${VH - 28}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ◆★ punto de giro</text>`);
     o.push(`<text x="16" y="${VH - 14}" font-size="10" fill="#888">━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
-    return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="0 0 ${VW} ${VH}" width="${Math.round(VW * zoom)}" height="${Math.round(VH * zoom)}" font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="0 0 ${VW} ${VH}" ${zoom === 1 ? `width="100%" style="max-width:${VW}px"` : `width="${Math.round(VW * zoom)}" height="${Math.round(VH * zoom)}"`} font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
   }
 
   /* ---------------- Ficha del elemento seleccionado ---------------- */
@@ -277,6 +389,8 @@
       <h2>Mapa de tramas</h2>
       <p class="lead no-print">Mapa conceptual de las tramas, sus personajes y sus puntos de giro (◆★). <b>Arrastra</b> los nodos para ordenarlo a tu manera (se recuerda), <b>toca</b> una trama o un personaje para ver sus conexiones y su ficha, y toca la <b>cifra</b> de un enlace entre tramas para anotar cómo se cruzan.</p>
       <div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(chip).join('')}<button class="btn btn-small btn-ghost" data-action="map-vis-all">Todas</button></div>
+      <div class="toolbar no-print"><span class="muted">Colocación:</span>${Object.keys(MODES).map(k => `<button class="btn btn-small ${m.mode === k ? 'btn-primary' : ''}" data-action="map-mode" data-v="${k}">${MODES[k]}</button>`).join('')}
+        <span class="muted" style="font-size:12px">${{ libre: 'Se acercan las tramas que comparten personajes; cada personaje junto a su trama principal y entre las demás en que aparece.', tiempo: 'Una franja por trama; de izquierda a derecha, el avance de la película (páginas). Los ★ en su momento exacto; los personajes en el punto medio de sus apariciones.', actos: 'Una franja por trama y una columna por acto: el color más intenso marca dónde pesa más cada trama (nº de secuencias). Personajes en el acto donde más aparecen.' }[m.mode]}</span></div>
       <div class="toolbar no-print">
         <label><input type="checkbox" data-action-change="map-opt" data-o="giros" ${showGiros ? 'checked' : ''}> Puntos de giro</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="chars" ${showChars ? 'checked' : ''}> Personajes</label>
@@ -315,12 +429,12 @@
     const tr = node.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/);
     const x0 = +tr[1], y0 = +tr[2]; let moved = false;
     // fija la posición de todos los nodos en su sitio actual para que no salten
-    svgEl.querySelectorAll('.node').forEach(n => { const t = n.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/); if (t && !m.pos[n.dataset.id]) m.pos[n.dataset.id] = { x: +t[1], y: +t[2] }; });
+    svgEl.querySelectorAll('.node').forEach(n => { const t = n.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/); const P0 = store(m); if (t && !P0[n.dataset.id]) P0[n.dataset.id] = { x: +t[1], y: +t[2] }; });
     const move = ev => {
       const q = toSvg(ev); const dx = q.x - start.x, dy = q.y - start.y;
       if (!moved && Math.hypot(dx, dy) < 4) return;
       moved = true;
-      m.pos[id] = { x: Math.round(Math.max(20, Math.min(VW - 20, x0 + dx))), y: Math.round(Math.max(20, Math.min(VH - 20, y0 + dy))) };
+      store(m)[id] = { x: Math.round(Math.max(20, Math.min(VW - 20, x0 + dx))), y: Math.round(Math.max(20, Math.min(VH - 20, y0 + dy))) };
       const w = document.getElementById('mapWrap'); if (w) w.innerHTML = svg(p);
     };
     const up = () => {
@@ -338,8 +452,9 @@
   A.actions['map-vis-all'] = () => setHidden(A.P(), []);
   A.actions['map-sel'] = el => { sel = el.dataset.id; redraw(); };
   A.actions['map-zoom'] = el => { const d = Number(el.dataset.d); zoom = Math.max(0.6, Math.min(2.5, Math.round((zoom + d * 0.25) * 100) / 100)); A.renderTab(); };
-  A.actions['map-relayout'] = () => { const p = A.P(); st(p).pos = {}; A.save(); A.renderTab(); };
-  A.actions['map-svg'] = () => { const p = A.P(); A.download(A.fileBase(p) + '_mapa_tramas.svg', svg(p).replace(/ width="\d+" height="\d+"/, ` width="${VW}" height="${VH}"`), 'image/svg+xml'); };
+  A.actions['map-relayout'] = () => { const p = A.P(); const m = st(p); if (m.mode === 'tiempo') m.posT = {}; else if (m.mode === 'actos') m.posA = {}; else m.pos = {}; A.save(); A.renderTab(); };
+  A.actions['map-mode'] = el => { const p = A.P(); st(p).mode = el.dataset.v; A.save(); A.renderTab(); };
+  A.actions['map-svg'] = () => { const p = A.P(); A.download(A.fileBase(p) + '_mapa_tramas.svg', svg(p).replace(/ width="[^"]+"( height="\d+")?( style="[^"]*")?/, ` width="${VW}" height="${VH}"`), 'image/svg+xml'); };
   A.changeActions = A.changeActions || {};
   window.MapaTramas = { tab, setOpt: (o, v) => { if (o === 'chars') showChars = v; if (o === 'co') showCo = v; if (o === 'all') allChars = v; if (o === 'giros') showGiros = v; A.renderTab(); } };
 })();

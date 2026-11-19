@@ -167,8 +167,8 @@ window.SITE = {
 
   teaching: [
     ["2026", "Metodología del Montaje I", "2º Diplomatura de Montaje · ECAM, Escuela de Cine de la Comunidad de Madrid"],
-    ["2026", "Montaje de ficción para directores/as · 2ª edición", "ECAM · Escuela de Oficios (60 h)"],
-    ["2025", "Montaje de ficción para directores/as", "ECAM · Escuela de Oficios (60 h)"],
+    ["2026", "Montaje de ficción para directores (edición II)", "ECAM · Escuela de Oficios (60 h)"],
+    ["2025", "Montaje de ficción para directores (edición I)", "ECAM · Escuela de Oficios (60 h)"],
     ["2024", "Montaje · Máster de Dirección de Cine y Series", "TAI Arts"],
     ["2006", "Clases de Avid", "EIMA · Escuela Internacional de Medios Audiovisuales"],
     ["2002", "Clases de montaje", "Ondas Escolares"],

@@ -47,12 +47,12 @@ ANCHO_MAX = 900
 # tipo: "movie" (película o corto) o "tv"; consultas: títulos alternativos a probar
 OBRAS = [
     # --- Cine ---
-    {"archivo": "ava", "titulo": "AVA", "anio": 2020, "categoria": "Cine", "tipo": "movie", "consultas": ["Ava"]},
+    {"archivo": "ava", "titulo": "AVA", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["Ava"]},
     {"archivo": "hongos", "titulo": "Hongos", "anio": 1999, "categoria": "Cine", "tipo": "movie", "consultas": ["Hongos"]},
     {"archivo": "el-lodo", "titulo": "El lodo", "anio": 2021, "categoria": "Cine", "tipo": "movie", "consultas": ["El lodo"]},
     {"archivo": "el-juego-de-las-llaves", "titulo": "El juego de las llaves", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["El juego de las llaves"]},
     {"archivo": "el-ano-de-la-furia", "titulo": "El año de la furia", "anio": 2020, "categoria": "Cine", "tipo": "movie", "consultas": ["El año de la furia"]},
-    {"archivo": "luz-de-mar", "titulo": "Luz de mar", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["Luz de mar"]},
+    {"archivo": "luz-de-mar", "titulo": "Luz de mar", "anio": 2010, "categoria": "Cine", "tipo": "movie", "consultas": ["Luz de mar"]},
     {"archivo": "un-plan-perfecto", "titulo": "Un plan perfecto", "anio": 2026, "categoria": "Cine", "tipo": "movie", "consultas": ["Un plan perfecto"]},
     # --- Televisión ---
     {"archivo": "machos-alfa", "titulo": "Machos Alfa", "anio": 2022, "categoria": "Televisión", "tipo": "tv", "consultas": ["Machos Alfa"]},
@@ -64,7 +64,7 @@ OBRAS = [
     {"archivo": "la-otra-mirada-2", "titulo": "La otra mirada", "anio": 2019, "categoria": "Televisión", "tipo": "tv", "consultas": ["La otra mirada"], "temporada": 2},
     {"archivo": "brigada-costa-del-sol", "titulo": "Brigada Costa del Sol", "anio": 2019, "categoria": "Televisión", "tipo": "tv", "consultas": ["Brigada Costa del Sol"]},
     {"archivo": "los-serrano", "titulo": "Los Serrano", "anio": 2003, "categoria": "Televisión", "tipo": "tv", "consultas": ["Los Serrano"]},
-    {"archivo": "mar-de-fang", "titulo": "Mar de fondo", "anio": 2023, "categoria": "Televisión", "tipo": "tv", "consultas": ["Mar de fondo", "Mar de fang", "Knokke Off"]},
+    {"archivo": "mar-de-fang", "titulo": "Mar de fang", "anio": 2005, "categoria": "Televisión", "tipo": "movie", "consultas": ["Mar de fang", "Mar de barro"]},
     {"archivo": "una-tarda-amb", "titulo": "Una tarda amb...", "anio": 2025, "categoria": "Televisión", "tipo": "tv", "consultas": ["Una tarda amb"]},
     {"archivo": "seis-hermanas", "titulo": "Seis hermanas", "anio": 2015, "categoria": "Televisión", "tipo": "tv", "consultas": ["Seis hermanas"]},
     {"archivo": "la-victima-numero-8", "titulo": "La víctima número 8", "anio": 2018, "categoria": "Televisión", "tipo": "tv", "consultas": ["La víctima número 8"]},

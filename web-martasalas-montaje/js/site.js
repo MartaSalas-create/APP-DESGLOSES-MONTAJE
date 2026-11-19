@@ -78,7 +78,8 @@
      ========================================================= */
   var Y0 = 1991, Y1 = 2027; // de enero de 1991 a final de 2026
   var span = Y1 - Y0;
-  var pct = function (y) { return ((y - Y0) / span) * 100; };
+  // Orden de lo más actual a lo más antiguo: 2026 a la izquierda, 1991 a la derecha
+  var pct = function (y) { return ((Y1 - y) / span) * 100; };
   var byCat = {}; D.credits.forEach(function (c) { byCat[c.cat] = c.items; });
   var pick = function (cats) {
     var out = [];
@@ -113,14 +114,14 @@
   for (var y = Y0; y <= Y1; y++) {
     var big = y % 5 === 0;
     rul += '<i class="' + (big ? "big" : "") + '" style="left:' + pct(y) + '%"></i>';
-    if (big) rul += '<span style="left:' + pct(y) + '%">' + y + "</span>";
+    if (big && y < Y1) rul += '<span style="left:' + pct(y + 0.5) + '%">' + y + "</span>";
   }
   ruler.innerHTML = rul;
   tracksEl.innerHTML = TRACKS.map(function (t) {
     t.clips = buildClips(t.items);
     return '<div class="ctrack t-' + t.id + '">' + t.clips.map(function (c, i) {
       var title = c.items[0].t.split(" · ")[0] + (c.items.length > 1 ? " +" + (c.items.length - 1) : "");
-      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" style="left:' + pct(c.a) + "%;width:" + (pct(c.b) - pct(c.a)) + '%" title="' + esc(c.a + " · " + c.items.map(function (x) { return x.t; }).join(", ")) + '">' + esc(title) + "</div>";
+      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" style="left:' + pct(c.b) + "%;width:" + (pct(c.a) - pct(c.b)) + '%" title="' + esc(c.a + " · " + c.items.map(function (x) { return x.t; }).join(", ")) + '">' + esc(title) + "</div>";
     }).join("") + "</div>";
   }).join("");
 
@@ -148,9 +149,9 @@
   function showFrame(on) {
     mon.frame.hidden = !on; mon.quote.hidden = on;
   }
-  function idleSoon(ms) {
+  function idleSoon(ms, volver) {
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(function () { showFrame(false); }, ms);
+    idleTimer = setTimeout(function () { showFrame(false); if (volver) setYear(Y1 - 0.5); }, ms);
   }
 
   function setYear(yv) {
@@ -188,7 +189,7 @@
     }
   }
 
-  var yearFromX = function (x) { var r = stage.getBoundingClientRect(); return Y0 + ((x - r.left) / r.width) * span; };
+  var yearFromX = function (x) { var r = stage.getBoundingClientRect(); return Y1 - ((x - r.left) / r.width) * span; };
   var dragging = false, auto = null;
   stage.addEventListener("pointerdown", function (e) {
     dragging = true; stopPlay(); clearTimeout(idleTimer); showFrame(true);
@@ -210,12 +211,12 @@
     if (target != null) setYear(target + 0.5);
     idleSoon(8000);
   }
-  tPrev.addEventListener("click", function () { jump(-1); });
-  tNext.addEventListener("click", function () { jump(1); });
+  tPrev.addEventListener("click", function () { jump(1); });   // ⏮ hacia la izquierda: más actual
+  tNext.addEventListener("click", function () { jump(-1); });  // ⏭ hacia la derecha: más antiguo
   chead.addEventListener("keydown", function (e) {
-    var d = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -5, PageUp: 5 }[e.key];
-    if (e.key === "Home") { stopPlay(); showFrame(true); setYear(Y0); idleSoon(8000); e.preventDefault(); }
-    else if (e.key === "End") { stopPlay(); showFrame(true); setYear(Y1 - 1); idleSoon(8000); e.preventDefault(); }
+    var d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1, PageUp: 5, PageDown: -5 }[e.key];
+    if (e.key === "Home") { stopPlay(); showFrame(true); setYear(Y1 - 0.5); idleSoon(8000); e.preventDefault(); }
+    else if (e.key === "End") { stopPlay(); showFrame(true); setYear(Y0 + 0.5); idleSoon(8000); e.preventDefault(); }
     else if (d) { stopPlay(); showFrame(true); setYear((curYear || 2026) + d + 0.5); idleSoon(8000); e.preventDefault(); }
   });
 
@@ -226,8 +227,9 @@
   }
   function play(delay) {
     stopPlay(); clearTimeout(idleTimer);
-    var from = curYear == null || curYear >= 2026 ? Y0 : curYear + 0.5;
-    var END = 2026.5, DUR = 9000 * (END - from) / (END - Y0), t0 = null;
+    var START = Y1 - 0.5, END = Y0;
+    var from = curYear == null || curYear <= Y0 ? START : curYear + 0.5;
+    var DUR = 9000 * (from - END) / (START - END), t0 = null;
     setYear(from); showFrame(true);
     tPlay.textContent = "❚❚"; tPlay.setAttribute("aria-label", "Pausa");
     auto = requestAnimationFrame(function step(ts) {
@@ -235,7 +237,7 @@
       var k = Math.max(0, Math.min(1, (ts - t0) / DUR));
       setYear(from + k * (END - from));
       if (k < 1) auto = requestAnimationFrame(step);
-      else { stopPlay(); idleSoon(1800); }
+      else { stopPlay(); idleSoon(1800, true); }  // al terminar vuelve al presente
     });
   }
   tPlay.addEventListener("click", function () { if (auto) { stopPlay(); idleSoon(8000); } else play(0); });

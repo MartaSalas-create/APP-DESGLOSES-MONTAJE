@@ -76,7 +76,7 @@ window.SITE = {
       [2010, "Luz de mar", "Dir. Raúl Serrano y Luis Vázquez. Telecinco Cinema"],
       [2010, "Cruce de caminos", "Programa documental de 13 capítulos. TVE"],
       [2008, "942 Dakar, historia de una familia", "Ojocítrico Producciones"],
-      [2005, "Mar de tierra", "Documental sobre Miquel Barceló. Dir. Luis Ortas Pau. TVE"],
+      [2005, "Mar de fang (Mar de barro)", "Documental sobre el mural cerámico de Miquel Barceló en la capilla de San Pedro de la Catedral de Mallorca. Dir. Agustí Torres y Luis Ortas. TVE"],
       [2004, "Los abajo firmantes · Making of", "Largometraje de Joaquín Oristrell"],
       [2003, "Interculturalidad en las escuelas", "Dir. Pablo Montero. Common Films para el Ayuntamiento de Madrid"],
       [1994, "Documental OIT España", ""]

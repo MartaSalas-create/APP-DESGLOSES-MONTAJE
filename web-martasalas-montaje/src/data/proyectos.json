@@ -2,7 +2,7 @@
   {
     "id": "ava",
     "titulo": "AVA",
-    "anio": 2020,
+    "anio": 2022,
     "categoria": "Cine",
     "poster": "public/posters/placeholder-poster.svg",
     "posterWebp": "",
@@ -67,7 +67,7 @@
   {
     "id": "luz-de-mar",
     "titulo": "Luz de mar",
-    "anio": 2022,
+    "anio": 2010,
     "categoria": "Cine",
     "poster": "public/posters/placeholder-poster.svg",
     "posterWebp": "",
@@ -209,13 +209,13 @@
   },
   {
     "id": "mar-de-fang",
-    "titulo": "Mar de fondo",
-    "anio": 2023,
+    "titulo": "Mar de fang",
+    "anio": 2005,
     "categoria": "Televisión",
     "poster": "public/posters/placeholder-poster.svg",
     "posterWebp": "",
     "rol": "",
-    "sinopsis": "",
+    "sinopsis": "Documental sobre el proceso creativo del mural cerámico de Miquel Barceló en la capilla de San Pedro de la Catedral de Mallorca. Dirigido por Agustí Torres y Luis Ortas.",
     "videoUrl": "",
     "tmdbId": null,
     "verificado": false

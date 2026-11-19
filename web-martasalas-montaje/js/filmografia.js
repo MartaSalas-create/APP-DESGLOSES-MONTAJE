@@ -110,7 +110,10 @@
   fetch(DATA_URL)
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (data) {
-      proyectos = data;
+      // de lo más actual a lo más antiguo (a igual año, se mantiene el orden del JSON)
+      proyectos = data.map(function (p, i) { return [p, i]; })
+        .sort(function (a, b) { return (b[0].anio - a[0].anio) || (a[1] - b[1]); })
+        .map(function (x) { return x[0]; });
       pintaFiltros(); pintaGrid();
       window.dispatchEvent(new Event("resize")); // la altura cambia: recalcula la secuencia de la cabecera
     })

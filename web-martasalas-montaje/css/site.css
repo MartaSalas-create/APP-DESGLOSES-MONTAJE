@@ -155,7 +155,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .mon-title.is-long { font-size: clamp(20px, 2.3vw, 34px); }
 .mon-detail { color: rgba(255,255,255,.85); font-size: 15px; line-height: 1.35; max-width: 46ch;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.mon-more { color: rgba(255,255,255,.65); font-size: 13px; margin-top: 4px; }
+.mon-more { color: rgba(255,255,255,.7); font-size: 13px; line-height: 1.35; margin-top: 4px; max-width: 52ch;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .transport { display: flex; align-items: center; gap: 6px; padding: 8px 4px 2px; }
 /* Barra de transporte estilo mesa de edición: botones gris carbón en relieve, iconos planos */
 .avid-bar { display: inline-flex; background: #1c1c1c; border: 1px solid #000; border-radius: 4px; padding: 3px; gap: 2px; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }

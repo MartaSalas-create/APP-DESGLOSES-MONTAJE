@@ -118,6 +118,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .hero-role em { font-size: 1.12em; }
 .hero-lede { color: var(--muted); font-size: 16px; max-width: 46ch; margin: 22px 0 0; font-weight: 400; }
 .hero-lede b { color: var(--text); font-weight: 600; }
+.hero-quote { display: block; margin-bottom: 10px; font-family: var(--serif); font-style: italic; font-size: 1.45em; line-height: 1.15; color: var(--text); }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
 
 /* Monitor de programa */

@@ -560,3 +560,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .photo-about .drag-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 3px; background: rgba(0,0,0,.72); color: #fff; font-size: 11px; letter-spacing: .04em; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .photo-about.is-movable:hover .drag-badge, .photo-about.is-dragging .drag-badge { opacity: 1; }
 @media (max-width: 860px) { .photo-about.is-movable { translate: none !important; cursor: auto; touch-action: auto; } .photo-about .drag-badge { display: none; } }
+
+/* Sobre mí: párrafos justificados (con guiones para evitar huecos grandes) */
+.about-text p:not(.kicker) { text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; }
+@media (max-width: 600px) { .about-text p:not(.kicker) { text-align: left; } } /* en móvil la columna es estrecha: justificado abriría huecos grandes */

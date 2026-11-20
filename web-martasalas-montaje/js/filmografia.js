@@ -41,7 +41,7 @@
     var n = function (cat) { return proyectos.filter(function (p) { return cat === "Todos" || p.categoria === cat; }).length; };
     filtros.innerHTML = ["Todos", "Cine", "Series"].map(function (cat) {
       var on = cat === actual;
-      return '<button type="button" class="filmo-filter' + (on ? " is-active" : "") + '" data-cat="' + cat + '" aria-pressed="' + on + '">' +
+      return '<button type="button" class="filmo-filter' + (on ? " is-active" : "") + '" data-cat="' + cat + '" aria-pressed="' + on + '"><i class="ff-sw" aria-hidden="true"></i>' +
         cat + " <small>(" + n(cat) + ")</small></button>";
     }).join("");
   }

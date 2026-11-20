@@ -488,7 +488,15 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .filmo-filter { background: var(--ink-3); border: 1px solid var(--line-2); color: var(--muted); font: 600 14px var(--sans); padding: 9px 18px; border-radius: 99px; cursor: pointer; transition: all .2s; }
 .filmo-filter small { font-weight: 400; opacity: .8; }
 .filmo-filter:hover { color: var(--text); border-color: var(--muted); }
-.filmo-filter.is-active { background: var(--c2); border-color: var(--c2); color: #fff; }
+/* Filtros con los colores de las pistas del timeline */
+.filmo-filter { display: inline-flex; align-items: center; gap: 8px; }
+.filmo-filter[data-cat="Todos"] { --ff-c: #cfc8bf; --ff-ink: #121110; }
+.filmo-filter[data-cat="Cine"] { --ff-c: var(--c1); --ff-ink: #2a1600; }
+.filmo-filter[data-cat="Series"] { --ff-c: var(--c3); --ff-ink: #fff; }
+.ff-sw { width: 8px; height: 14px; border-radius: 2px; background: var(--ff-c); }
+.filmo-filter:hover { border-color: var(--ff-c); }
+.filmo-filter.is-active { background: var(--ff-c); border-color: var(--ff-c); color: var(--ff-ink); }
+.filmo-filter.is-active .ff-sw { background: currentColor; opacity: .35; }
 .filmo-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 14px; }
 @media (min-width: 640px) { .filmo-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1024px) { .filmo-grid { grid-template-columns: repeat(4, 1fr); } }

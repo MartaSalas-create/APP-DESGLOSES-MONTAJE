@@ -90,6 +90,38 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   })();
 
+  /* Sobre mí (provisional): la foto grande se arrastra libremente para elegir su sitio.
+     La posición se guarda en este navegador; doble clic la devuelve a su lugar. */
+  (function dragAboutPhoto() {
+    var fig = $(".photo-about"); if (!fig) return;
+    var KEY = "ms-foto-sobre-mi", pos = { x: 0, y: 0 };
+    try { var s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s) pos = s; } catch (e) {}
+    var badge = document.createElement("span");
+    badge.className = "drag-badge mono"; badge.setAttribute("aria-hidden", "true");
+    fig.appendChild(badge); fig.classList.add("is-movable");
+    fig.title = "Arrastra la foto para colocarla · doble clic para volver a su sitio";
+    function apply() {
+      fig.style.translate = pos.x + "px " + pos.y + "px";
+      badge.textContent = (pos.x || pos.y) ? "X " + (pos.x > 0 ? "+" : "") + pos.x + " · Y " + (pos.y > 0 ? "+" : "") + pos.y + " px" : "Arrástrame";
+      try { localStorage.setItem(KEY, JSON.stringify(pos)); } catch (e) {}
+    }
+    var start = null;
+    fig.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0 || window.innerWidth <= 860) return;
+      start = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y };
+      fig.setPointerCapture(e.pointerId); fig.classList.add("is-dragging"); e.preventDefault();
+    });
+    fig.addEventListener("pointermove", function (e) {
+      if (!start) return;
+      pos = { x: Math.round(start.x + e.clientX - start.px), y: Math.round(start.y + e.clientY - start.py) }; apply();
+    });
+    var end = function () { start = null; fig.classList.remove("is-dragging"); };
+    fig.addEventListener("pointerup", end); fig.addEventListener("pointercancel", end);
+    fig.addEventListener("dblclick", function () { pos = { x: 0, y: 0 }; apply(); });
+    fig.addEventListener("dragstart", function (e) { e.preventDefault(); });
+    apply();
+  })();
+
   /* =========================================================
      1. CABECERA: la web como secuencia
      Cada sección es un clip con ancho proporcional a su duración (altura),

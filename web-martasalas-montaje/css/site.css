@@ -553,3 +553,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 }
 .foot .tmdb { flex-basis: 100%; color: var(--dim); font-size: 12px; }
 .foot .tmdb a { color: var(--muted); }
+
+/* Sobre mí (provisional): foto grande que se puede arrastrar */
+.photo-about.is-movable { position: relative; z-index: 2; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.photo-about.is-dragging { cursor: grabbing; box-shadow: 0 18px 50px rgba(0,0,0,.55), 0 0 0 2px var(--playhead); }
+.photo-about .drag-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 3px; background: rgba(0,0,0,.72); color: #fff; font-size: 11px; letter-spacing: .04em; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.photo-about.is-movable:hover .drag-badge, .photo-about.is-dragging .drag-badge { opacity: 1; }
+@media (max-width: 860px) { .photo-about.is-movable { translate: none !important; cursor: auto; touch-action: auto; } .photo-about .drag-badge { display: none; } }

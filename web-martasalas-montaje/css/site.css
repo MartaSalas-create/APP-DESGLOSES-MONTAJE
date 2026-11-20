@@ -111,7 +111,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* ---------- Hero: sala de montaje ---------- */
 .hero { padding: calc(var(--nle-h) + clamp(28px, 5vh, 64px)) 0 40px; min-height: 100svh; display: flex; align-items: center; }
 .hero .wrap { width: 100%; }
-.hero-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.hero-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
+/* el nombre queda por encima del monitor: el monitor empieza a la altura de «Salas» */
+.hero-top > .monitor { margin-top: clamp(60px, 7vw, 110px); }
+@media (max-width: 980px) { .hero-top > .monitor { margin-top: 0; } }
 .hero-name .tw { visibility: hidden; }
 .hero-name .tw.on { visibility: visible; }
 .hero-name { font-weight: 900; font-size: clamp(52px, 7.4vw, 116px); line-height: .9; letter-spacing: -.05em; margin: 0; }

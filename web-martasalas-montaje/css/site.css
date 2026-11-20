@@ -422,6 +422,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin-links { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
 .fin-links a { text-decoration: none; padding: 10px 18px; border: 1px solid var(--line-2); border-radius: 99px; font-size: 15px; }
 .fin-links a:hover { border-color: var(--text); }
+.fin-links a.is-phone { display: inline-flex; align-items: center; gap: 8px; background: #34c759; border-color: #34c759; color: #fff; font-weight: 600; }
+.fin-links a.is-phone:hover { background: #28a745; border-color: #28a745; }
 .fin-links a.is-linkedin { background: #0a66c2; border-color: #0a66c2; color: #fff; }
 .fin-links a.is-linkedin:hover { background: #004182; border-color: #004182; }
 .fin-links a.is-imdb { background: #f5c518; border-color: #f5c518; color: #000; font-weight: 700; }

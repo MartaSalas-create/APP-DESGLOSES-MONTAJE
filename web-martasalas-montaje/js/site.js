@@ -68,6 +68,28 @@
     });
   })();
 
+  /* Sobre mí: la foto empieza bajo el título «En la sala de montaje» y termina con el texto */
+  (function fitAboutPhoto() {
+    var fig = $(".photo-about"), text = $(".about-grid > .about-text"); if (!fig || !text) return;
+    var img = fig.querySelector("img");
+    function fit() {
+      fig.style.marginTop = ""; fig.style.width = ""; fig.style.justifySelf = "";
+      if (window.innerWidth <= 860) return;               // en móvil, a todo el ancho
+      var firstP = text.querySelector("p:not(.kicker)"); if (!firstP) return;
+      var tr = text.getBoundingClientRect(), pr = firstP.getBoundingClientRect();
+      var offset = pr.top - tr.top, avail = tr.bottom - pr.top;
+      var extra = fig.getBoundingClientRect().height - img.getBoundingClientRect().height; // marco + pie de foto
+      var colW = fig.getBoundingClientRect().width;
+      var w = Math.min(colW, (avail - extra) * 4 / 5 + (colW - img.getBoundingClientRect().width));
+      fig.style.marginTop = Math.max(0, offset) + "px";
+      fig.style.width = Math.max(240, w) + "px";
+      fig.style.justifySelf = "end";
+    }
+    fit(); img.addEventListener("load", fit);   // la proporción 4:5 ya da la altura antes de cargar
+    window.addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  })();
+
   /* =========================================================
      1. CABECERA: la web como secuencia
      Cada sección es un clip con ancho proporcional a su duración (altura),

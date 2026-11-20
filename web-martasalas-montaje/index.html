@@ -119,10 +119,23 @@
     <!-- SOBRE MÍ -->
     <section class="about" id="sobre-mi">
       <div class="wrap about-grid">
+        <div class="about-media">
         <figure class="photo photo-about">
           <img src="assets/marta-salas-puesto-montaje.jpg" alt="Marta Salas en su puesto de montaje, con el teclado de edición y la pared de fotogramas del capítulo detrás" loading="lazy">
           <figcaption><span class="mono">IN/OUT</span> En la sala de montaje</figcaption>
         </figure>
+        <div class="then-now">
+          <figure class="photo photo-small">
+            <img src="assets/marta-salas-celuloide.jpg" alt="Marta Salas en el año 2000, montando en una mesa de montaje de celuloide" loading="lazy">
+            <figcaption><span class="mono">2000</span> En celuloide</figcaption>
+          </figure>
+          <span class="then-now-cut" aria-hidden="true"></span>
+          <figure class="photo photo-small">
+            <img src="assets/marta-salas-digital.jpg" alt="Marta Salas en 2019, montando en un puesto de edición digital con varios monitores" loading="lazy">
+            <figcaption><span class="mono">2019</span> En digital</figcaption>
+          </figure>
+        </div>
+        </div>
         <div class="about-text">
           <p class="kicker hot">Sobre mí</p>
           <h2><b>En la</b> <em>sala de montaje</em></h2>
@@ -131,17 +144,6 @@
           <p>He sido nominada al mejor montaje en los Premis Berlanga por <i>El lodo</i> y he montado <i>AVA</i>, Goya 2024 al mejor cortometraje documental.</p>
           <p>Me formé en Montaje en la ECAM, tras estudiar Imagen y Sonido. Soy miembro de AMMAC y de la AACCE.</p>
           <p>Trabajo desde mi propio estudio de montaje con Avid, de forma autónoma y en remoto, y compagino el montaje con la docencia en la ECAM.</p>
-          <div class="then-now">
-            <figure class="photo photo-small">
-              <img src="assets/marta-salas-celuloide.jpg" alt="Marta Salas en el año 2000, montando en una mesa de montaje de celuloide" loading="lazy">
-              <figcaption><span class="mono">2000</span> En celuloide</figcaption>
-            </figure>
-            <span class="then-now-cut" aria-hidden="true"></span>
-            <figure class="photo photo-small">
-              <img src="assets/marta-salas-digital.jpg" alt="Marta Salas en 2019, montando en un puesto de edición digital con varios monitores" loading="lazy">
-              <figcaption><span class="mono">2019</span> En digital</figcaption>
-            </figure>
-          </div>
         </div>
       </div>
     </section>
@@ -153,7 +155,7 @@
           <div>
             <p class="kicker hot">Bobina 1 · Filmografía</p>
             <h2><b>Trabajos</b> <em>en pantalla</em></h2>
-            <p class="block-sub">Cine y televisión, de las plataformas a la gran pantalla. Pulsa un cartel para ver los detalles. La lista completa de créditos está en <a href="#trayectoria">Trayectoria</a>.</p>
+            <p class="block-sub">Cine y televisión, de las plataformas a la gran pantalla.<br>Pulsa un cartel para ver los detalles. La lista completa de créditos está en <a href="#trayectoria">Trayectoria</a>.</p>
           </div>
         </header>
         <div class="filmo-filters" id="filmoFilters" role="group" aria-label="Filtrar trabajos por categoría"></div>
@@ -173,21 +175,21 @@
           </div>
         </header>
         <div class="tabs" role="tablist">
-          <button role="tab" class="tab is-active" aria-selected="true" data-reel="tv">TV</button>
-          <button role="tab" class="tab" aria-selected="false" data-reel="cine">Cine</button>
+          <button role="tab" class="tab is-active" aria-selected="true" data-reel="tv"><i class="tab-sw" aria-hidden="true"></i>Series</button>
+          <button role="tab" class="tab" aria-selected="false" data-reel="cine"><i class="tab-sw" aria-hidden="true"></i>Cine</button>
         </div>
         <div class="reel-grid" id="reelGrid"></div>
       </div>
     </section>
 
     <!-- 03 · TRAYECTORIA (crema, como un parte de script) -->
-    <section class="block light" id="trayectoria" data-tc="01:27:40:16">
+    <section class="block" id="trayectoria" data-tc="01:27:40:16">
       <div class="wrap">
         <header class="block-head">
           <div>
             <p class="kicker hot">Bobina 3 · Filmografía</p>
             <h2><b>Trayectoria</b> <em>completa</em></h2>
-            <p class="block-sub"><span id="totalCredits">110</span> créditos como montadora, ayudante de montaje y script.</p>
+            <p class="block-sub"><span id="totalCredits">110</span> créditos en cine y TV.</p>
           </div>
         </header>
         <div class="filters">
@@ -197,7 +199,7 @@
             <input type="search" id="q" placeholder="Buscar título, dirección, cadena…">
           </label>
         </div>
-        <div class="credits" id="credits"></div>
+        <div class="credits-wrap" id="credits"></div>
         <p class="empty" id="empty" hidden>No hay resultados para esa búsqueda.</p>
       </div>
     </section>
@@ -231,7 +233,7 @@
           <div>
             <p class="kicker hot">Bobina 5 · Formación</p>
             <h2><b>Formación</b> <em>continua</em></h2>
-            <p class="block-sub">Diplomada en Montaje por la ECAM, con formación de Nueva York a Los Ángeles.</p>
+            <p class="block-sub">Diplomada en Montaje por la ECAM.</p>
           </div>
         </header>
         <ol class="rows rows-cols" id="training"></ol>

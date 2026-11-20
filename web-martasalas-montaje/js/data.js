@@ -167,8 +167,8 @@ window.SITE = {
 
   teaching: [
     ["2026", "Metodología del Montaje I", "2º Diplomatura de Montaje · ECAM, Escuela de Cine de la Comunidad de Madrid"],
-    ["2026", "Montaje de ficción para directores (edición II)", "ECAM · Escuela de Oficios (60 h)"],
-    ["2025", "Montaje de ficción para directores (edición I)", "ECAM · Escuela de Oficios (60 h)"],
+    ["2026", "Montaje de ficción para directores (edición II)", "ECAM · Escuela de Oficios"],
+    ["2025", "Montaje de ficción para directores (edición I)", "ECAM · Escuela de Oficios"],
     ["2024", "Montaje · Máster de Dirección de Cine y Series", "TAI Arts"],
     ["2006", "Clases de Avid", "EIMA · Escuela Internacional de Medios Audiovisuales"],
     ["2002", "Clases de montaje", "Ondas Escolares"],
@@ -194,9 +194,9 @@ window.SITE = {
     ["1997–2000", "Diplomada en Montaje", "ECAM · Escuela de Cine de la Comunidad de Madrid. Talleres de montaje de publicidad (Rori Sainz de Rozas), documental (Nieves Martín), sonido (Teresa Font), sonido digital (José Vinader) e Illusion (Ricardo Elipa)"],
     ["1998", "Técnica de sala en Telecinco", "Postproducción no lineal Lightworks, grafismo, recepción de enlaces y control de realización"],
     ["1997", "Curso de Literatura y Cine", "UNED"],
-    ["1995", "Ayudante de producción audiovisual (400 h)", "Comunidad de Madrid"],
-    ["1994", "Imagen y sonido (960 h)", "Casa de Oficios Magerit"],
-    ["1991–1994", "Módulos III de Operaciones de Imagen y Sonido y de Mantenimiento y Operaciones Técnicas de Radio y TV (1.100 h cada uno)", "CFTP Puerta Bonita"],
+    ["1995", "Ayudante de producción audiovisual", "Comunidad de Madrid"],
+    ["1994", "Imagen y sonido", "Casa de Oficios Magerit"],
+    ["1991–1994", "Módulos III de Operaciones de Imagen y Sonido y de Mantenimiento y Operaciones Técnicas de Radio y TV", "CFTP Puerta Bonita"],
     ["1992", "Softimage en Silicon Graphics · Animación 3D", "Promovisa · Taller Ex-Tipo. Pieza «Dos», exhibida en Imagina 93"]
   ]
 };

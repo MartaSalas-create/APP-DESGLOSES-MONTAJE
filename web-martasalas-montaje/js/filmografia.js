@@ -29,7 +29,7 @@
 
   /* ---------- Cartel (WebP con JPG de respaldo) ---------- */
   function cartel(p, clase, lazy) {
-    var alt = "Cartel de " + p.titulo + " (" + p.anio + ")";
+    var alt = "Cartel de " + p.titulo + " (" + (p.anioTexto || p.anio) + ")";
     return '<picture class="' + clase + '">' +
       (p.posterWebp ? '<source srcset="' + esc(p.posterWebp) + '" type="image/webp">' : "") +
       '<img src="' + esc(p.poster) + '" alt="' + esc(alt) + '"' + (lazy ? ' loading="lazy" decoding="async"' : "") + ' width="600" height="900">' +
@@ -39,7 +39,7 @@
   /* ---------- Filtros ---------- */
   function pintaFiltros() {
     var n = function (cat) { return proyectos.filter(function (p) { return cat === "Todos" || p.categoria === cat; }).length; };
-    filtros.innerHTML = ["Todos", "Cine", "Televisión"].map(function (cat) {
+    filtros.innerHTML = ["Todos", "Cine", "Series"].map(function (cat) {
       var on = cat === actual;
       return '<button type="button" class="filmo-filter' + (on ? " is-active" : "") + '" data-cat="' + cat + '" aria-pressed="' + on + '">' +
         cat + " <small>(" + n(cat) + ")</small></button>";
@@ -56,7 +56,7 @@
     grid.innerHTML = lista.map(function (p) {
       return '<li class="filmo-item"><button type="button" class="filmo-card" data-id="' + esc(p.id) + '" aria-label="Ver detalles de ' + esc(p.titulo) + '">' +
         cartel(p, "filmo-poster", true) +
-        '<span class="filmo-cap"><strong>' + esc(p.titulo) + '</strong><span class="mono">' + esc(p.anio) + " · " + esc(p.categoria) + "</span></span>" +
+        '<span class="filmo-cap"><strong>' + esc(p.titulo) + '</strong><span class="mono">' + esc(p.anioTexto || p.anio) + " · " + esc(p.categoria) + "</span></span>" +
         "</button></li>";
     }).join("");
   }
@@ -70,7 +70,7 @@
     ultimoFoco = document.activeElement;
     var video = embedDe(p.videoUrl);
     modal.querySelector(".fm-poster-wrap").innerHTML = cartel(p, "fm-poster", false);
-    modal.querySelector(".fm-meta").textContent = p.anio + " · " + p.categoria;
+    modal.querySelector(".fm-meta").textContent = (p.anioTexto || p.anio) + " · " + p.categoria;
     modal.querySelector(".fm-title").textContent = p.titulo;
     var rol = modal.querySelector(".fm-rol");
     rol.hidden = !p.rol; rol.querySelector("span").textContent = p.rol || "";

@@ -219,6 +219,7 @@
       var yrs = it.a === it.b ? it.a : it.a + "–" + it.b;
       mon.meta.textContent = yrs + " · " + (CAT_LABEL[it.cat] || it.cat);
       mon.title.textContent = it.t;
+      mon.title.classList.toggle("is-long", it.t.length > 34);
       mon.detail.textContent = it.d || "";
       mon.more.textContent = active.length > 1 ? "+ " + (active.length - 1) + " en la línea de tiempo ese año" : "";
       mon.frame.style.setProperty("--frame-bg", FRAME_BG[TRACK_OF[it.cat]] || FRAME_BG.series);
@@ -441,7 +442,7 @@
     reelGrid.innerHTML = D.reels[kind].map(function (v, i) {
       return '<a class="reel-item" href="https://www.youtube.com/watch?v=' + esc(v.id) + '" target="_blank" rel="noopener" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
         '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'no-thumb\');this.remove()">' +
-        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "TV" : "Cine") + " · Clip " + pad(i + 1) + "</span></a>";
+        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "Series" : "Cine") + " · Clip " + pad(i + 1) + "</span></a>";
     }).join("");
   }
   renderReel("tv");
@@ -475,10 +476,24 @@
   var total = D.credits.reduce(function (n, c) { return n + c.items.length; }, 0);
   $("#totalCredits").textContent = total;
   var current = "Todo", query = "";
-  var cats = ["Todo"].concat(D.credits.map(function (c) { return c.cat; }));
-  $("#chips").innerHTML = cats.map(function (c) {
-    var n = c === "Todo" ? total : byCat[c].length;
-    return '<button class="chip' + (c === current ? " is-active" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + "<small>" + n + "</small></button>";
+  // Color de cada categoría = color de su pista en la línea de tiempo de START
+  var TRACK_COLOR = {
+    "Largometrajes y TV movies": "cine", "Cortometrajes": "cine",
+    "Series de ficción": "series",
+    "Documental y reportaje": "doc", "Programas de TV": "doc", "Musical": "doc", "Publicidad": "doc", "Otros": "doc",
+    "Ayudante de montaje": "assist", "Script": "assist"
+  };
+  var GROUPS = [
+    { id: "montaje", title: "Montaje", cats: ["Largometrajes y TV movies", "Cortometrajes", "Series de ficción", "Documental y reportaje", "Programas de TV", "Musical", "Publicidad", "Otros"].filter(function (c) { return byCat[c]; }) },
+    { id: "assist", title: "Ayudante de montaje y script", cats: ["Ayudante de montaje", "Script"] }
+  ];
+  var chipHtml = function (c, n) {
+    return '<button class="chip' + (c === current ? " is-active" : "") + '" data-cat="' + esc(c) + '" data-trk="' + (TRACK_COLOR[c] || "all") + '">' +
+      '<i class="chip-sw" aria-hidden="true"></i>' + esc(c) + "<small>" + n + "</small></button>";
+  };
+  $("#chips").innerHTML = chipHtml("Todo", total) + GROUPS.map(function (g) {
+    return '<span class="chip-group"><span class="chip-label">' + g.title + "</span>" +
+      g.cats.map(function (c) { return chipHtml(c, byCat[c].length); }).join("") + "</span>";
   }).join("");
   $("#chips").addEventListener("click", function (e) {
     var b = e.target.closest(".chip"); if (!b) return;
@@ -486,19 +501,23 @@
     $$(".chip").forEach(function (x) { x.classList.toggle("is-active", x === b); });
     renderCredits();
   });
-  var norm = function (s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); };
+  var norm = function (s) { return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); };
   $("#q").addEventListener("input", function (e) { query = norm(e.target.value.trim()); renderCredits(); });
   function renderCredits() {
     var html = "", count = 0;
-    D.credits.forEach(function (c) {
-      if (current !== "Todo" && c.cat !== current) return;
-      var items = c.items.filter(function (it) { return !query || norm(it.join(" ")).indexOf(query) !== -1; });
-      if (!items.length) return;
-      count += items.length;
-      html += '<div class="credit-group"><h3 class="credit-cat">' + esc(c.cat) + ' <span class="count">' + items.length + "</span></h3><ul>" +
-        items.map(function (it) {
-          return '<li><span class="yr">' + esc(it[0]) + '</span><span class="ct"><strong>' + esc(it[1]) + "</strong>" + (it[2] ? "<span>" + esc(it[2]) + "</span>" : "") + "</span></li>";
-        }).join("") + "</ul></div>";
+    GROUPS.forEach(function (g) {
+      var part = "";
+      g.cats.forEach(function (cat) {
+        if (current !== "Todo" && cat !== current) return;
+        var items = byCat[cat].filter(function (it) { return !query || norm(it.join(" ")).indexOf(query) !== -1; });
+        if (!items.length) return;
+        count += items.length;
+        part += '<div class="credit-group" data-trk="' + TRACK_COLOR[cat] + '"><h3 class="credit-cat">' + esc(cat) + ' <span class="count">' + items.length + "</span></h3><ul>" +
+          items.map(function (it) {
+            return '<li><span class="yr">' + esc(it[0]) + '</span><span class="ct"><strong>' + esc(it[1]) + "</strong>" + (it[2] ? "<span>" + esc(it[2]) + "</span>" : "") + "</span></li>";
+          }).join("") + "</ul></div>";
+      });
+      if (part) html += '<h3 class="credits-section">' + g.title + '</h3><div class="credits">' + part + "</div>";
     });
     $("#credits").innerHTML = html;
     $("#empty").hidden = count > 0;

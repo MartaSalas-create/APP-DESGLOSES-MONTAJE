@@ -585,3 +585,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin-links { margin-top: 16px; gap: 5px; }
 .fin-links a { padding: 5px 11px; font-size: 12px; }
 .fin-links a.is-phone svg { width: 12px; height: 12px; }
+.fin-mail { font-size: clamp(19px, 2.1vw, 29px); margin-top: 26px; letter-spacing: -.02em; }
+.fin-links { margin-top: 14px; }
+.fin-links a { padding: 4px 10px; font-size: 11.5px; }
+.fin-links a.is-phone svg { width: 11px; height: 11px; }

@@ -50,6 +50,25 @@
   })();
 
   /* =========================================================
+     0b. SOBRE MÍ: el corte entre 2000 y 2019 se arrastra (roll edit)
+     ========================================================= */
+  (function rollEdit() {
+    var box = $(".then-now"), cut = $(".then-now-cut"); if (!box || !cut) return;
+    var set = function (v) { v = Math.max(25, Math.min(75, v)); box.style.setProperty("--cut", v); cut.setAttribute("aria-valuenow", Math.round(v)); };
+    var fromX = function (x) { var r = box.getBoundingClientRect(); return (x - r.left) / r.width * 100; };
+    var drag = false;
+    cut.addEventListener("pointerdown", function (e) { drag = true; box.classList.add("is-dragging"); cut.setPointerCapture(e.pointerId); e.preventDefault(); });
+    cut.addEventListener("pointermove", function (e) { if (drag) set(fromX(e.clientX)); });
+    var end = function () { drag = false; box.classList.remove("is-dragging"); };
+    cut.addEventListener("pointerup", end); cut.addEventListener("pointercancel", end);
+    cut.addEventListener("keydown", function (e) {
+      var v = +cut.getAttribute("aria-valuenow");
+      var d = { ArrowLeft: -5, ArrowRight: 5, Home: -100, End: 100 }[e.key];
+      if (d) { set(v + d); e.preventDefault(); }
+    });
+  })();
+
+  /* =========================================================
      1. CABECERA: la web como secuencia
      Cada sección es un clip con ancho proporcional a su duración (altura),
      el cabezal sigue el scroll y el código de tiempo corre de 00:59:50:00 a 02:00:00:00.

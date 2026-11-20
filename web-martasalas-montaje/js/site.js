@@ -31,21 +31,22 @@
     var el = $(".hero-name"); if (!el) return;
     var text = el.textContent.trim();
     el.setAttribute("aria-label", text);
-    if (reduceMotion) return;
     var cursor = el.querySelector(".cursor");
-    // cada letra ocupa su sitio desde el principio (sin saltos de maquetación) y se va mostrando
-    el.innerHTML = text.split("").map(function (ch) {
-      return '<span class="tw" aria-hidden="true">' + (ch === " " ? " " : esc(ch)) + "</span>";
-    }).join("");
+    // cada palabra va en un bloque que no se parte: el cursor siempre queda pegado a la última letra
+    // (nunca salta solo a la línea de abajo). Cada letra ocupa su sitio desde el principio.
+    el.innerHTML = text.split(" ").map(function (w) {
+      return '<span class="tw-word">' + w.split("").map(function (ch) { return '<span class="tw" aria-hidden="true">' + esc(ch) + "</span>"; }).join("") + "</span>";
+    }).join(" ");
     var chars = $$(".tw", el);
-    el.insertBefore(cursor, chars[0]);
+    if (reduceMotion) { chars.forEach(function (c) { c.classList.add("on"); }); chars[chars.length - 1].after(cursor); return; }
+    chars[0].before(cursor);
     var i = 0;
     setTimeout(function step() {
       if (i >= chars.length) return;
       chars[i].classList.add("on");
-      el.insertBefore(cursor, chars[i].nextSibling);
+      chars[i].after(cursor);
       i++;
-      setTimeout(step, chars[i - 1].textContent === " " ? 160 : 95);
+      setTimeout(step, chars[i] && chars[i].parentNode !== chars[i - 1].parentNode ? 220 : 95);
     }, 450);
   })();
 
@@ -166,7 +167,26 @@
     tcEl.textContent = framesToTc(TC_START + p * (TC_END - TC_START));
     navClips.forEach(function (c, j) { c.classList.toggle("is-current", j === idx); });
     label.textContent = (idx === 0 ? "Start · martasalas.com" : idx === 6 ? "Picture lock · " + names[idx] : "Bobina " + idx + " · " + names[idx]);
+    if (onScroll.last !== undefined && onScroll.last !== idx) cueFlash();
+    onScroll.last = idx;
   }
+
+  /* Marcas de cambio de bobina (cue marks): al cambiar de sección parpadean dos veces en la esquina
+     superior derecha de la pantalla, como en la proyección (la primera avisa, la segunda marca el cambio). */
+  var cueEl = document.body.appendChild(Object.assign(document.createElement("i"), { className: "cue cue-flash" }));
+  cueEl.setAttribute("aria-hidden", "true");
+  function cueFlash() {
+    if (reduceMotion || !cueEl) return;
+    cueEl.classList.remove("is-on"); void cueEl.offsetWidth; cueEl.classList.add("is-on");
+  }
+  // cada rótulo de bobina lleva su marca delante y una marca grande en la esquina de la sección
+  $$(".kicker.hot").forEach(function (k) {
+    if (!/^Bobina/.test(k.textContent)) return;
+    k.classList.add("reel-label");
+    k.insertAdjacentHTML("afterbegin", '<i class="cue" aria-hidden="true"></i>');
+    var sec = k.closest("section");
+    if (sec) sec.insertAdjacentHTML("beforeend", '<i class="cue cue-corner" aria-hidden="true"></i>');
+  });
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });
 
@@ -224,7 +244,7 @@
     t.clips = buildClips(t.items);
     return '<div class="ctrack t-' + t.id + '">' + t.clips.map(function (c, i) {
       var title = c.items[0].t.split(" · ")[0] + (c.items.length > 1 ? " +" + (c.items.length - 1) : "");
-      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" style="left:' + pct(c.b) + "%;width:" + (pct(c.a) - pct(c.b)) + '%">' + esc(title) + "</div>";
+      return '<div class="cclip" data-t="' + t.id + '" data-i="' + i + '" aria-label="' + esc(title) + '" style="left:' + pct(c.b) + "%;width:" + (pct(c.a) - pct(c.b)) + '%"></div>'; // sin rótulo fijo: el título sale en el monitor
     }).join("") + "</div>";
   }).join("");
 

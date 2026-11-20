@@ -603,3 +603,18 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #trayectoria .credits li { border-top-color: rgba(255,255,255,.07); }
 #trayectoria .credits li:hover strong { color: var(--grp-c); }
 #trayectoria .credit-group[data-trk="doc"] .credits li:hover strong { color: #e0555f; }
+
+/* Nombre: cada palabra no se parte, así el cursor queda pegado a la «s» de Salas; se reserva el hueco de una línea debajo */
+.hero-name .tw-word { white-space: nowrap; }
+.hero-name { padding-bottom: .9em; }
+
+/* ---------- Marcas de cambio de bobina (cue marks) ---------- */
+.cue { display: inline-block; flex: none; width: var(--s, 16px); height: var(--s, 16px); border-radius: 50%;
+  background: radial-gradient(circle, #fff8ec 0 44%, #eadcc4 57%, rgba(20,15,10,.95) 64%, rgba(20,15,10,0) 78%);
+  box-shadow: 0 0 10px rgba(255,240,210,.35); }
+.kicker.reel-label { display: inline-flex; align-items: center; gap: 10px; }
+.cue-corner { position: absolute; top: 54px; right: var(--pad); --s: 30px; opacity: .92; }
+.cue-flash { position: fixed; z-index: 60; top: 104px; right: 28px; --s: 46px; opacity: 0; pointer-events: none; }
+.cue-flash.is-on { animation: cueFlash 1.1s steps(1, end); }
+@keyframes cueFlash { 0% { opacity: 1; } 18% { opacity: 0; } 46% { opacity: 1; } 64%, 100% { opacity: 0; } }
+@media (max-width: 700px) { .cue-corner { top: 50px; --s: 22px; } .cue-flash { top: 92px; right: 14px; --s: 34px; } }

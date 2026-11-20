@@ -208,19 +208,6 @@
     "verificado": false
   },
   {
-    "id": "mar-de-fang",
-    "titulo": "Mar de fang",
-    "anio": 2005,
-    "categoria": "Televisión",
-    "poster": "public/posters/placeholder-poster.svg",
-    "posterWebp": "",
-    "rol": "",
-    "sinopsis": "Documental sobre el proceso creativo del mural cerámico de Miquel Barceló en la capilla de San Pedro de la Catedral de Mallorca. Dirigido por Agustí Torres y Luis Ortas.",
-    "videoUrl": "",
-    "tmdbId": null,
-    "verificado": false
-  },
-  {
     "id": "una-tarda-amb",
     "titulo": "Una tarda amb...",
     "anio": 2025,

@@ -424,6 +424,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin-links a:hover { border-color: var(--text); }
 .fin-links a.is-linkedin { background: #0a66c2; border-color: #0a66c2; color: #fff; }
 .fin-links a.is-linkedin:hover { background: #004182; border-color: #004182; }
+.fin-links a.is-imdb { background: #f5c518; border-color: #f5c518; color: #000; font-weight: 700; }
+.fin-links a.is-imdb:hover { background: #e2b616; border-color: #e2b616; }
 .foot { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 26px var(--pad); margin-top: clamp(80px, 12vw, 150px); color: var(--dim); font-size: 13px; border-top: 1px solid var(--line); }
 .foot b { color: var(--text); font-weight: 600; }
 

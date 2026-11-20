@@ -450,9 +450,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 
 /* Sobre mí */
 .about { padding: clamp(60px, 9vw, 120px) 0 0; }
-.about-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 80px); align-items: start; }
-.about-media { display: grid; gap: 22px; }
-.about-media .then-now { margin-top: 0; max-width: none; }
+.about-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(28px, 5vw, 80px); align-items: start; }
+.about-text .then-now { margin: 0 0 34px; max-width: none; }
 .about-text { padding-top: 6px; }
 .about-text h2 b { margin-right: .22em; }
 .photo-about img { aspect-ratio: 4 / 5; object-fit: cover; }

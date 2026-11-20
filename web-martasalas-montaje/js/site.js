@@ -225,7 +225,7 @@
       mon.detail.textContent = it.d || "";
       // el monitor nombra también los demás trabajos del año (hasta 2) y cuenta el resto
       var rest = active.slice(1);
-      mon.more.textContent = rest.length ? "Ese año también: " + rest.slice(0, 2).map(function (x) { return x.t; }).join(" · ") + (rest.length > 2 ? " · +" + (rest.length - 2) + " más" : "") : "";
+      mon.more.textContent = rest.length ? "Ese año también: " + rest.slice(0, 2).map(function (x) { return x.t + ((x.cat === "Docencia" || x.cat === "Formación") && x.d ? " (" + x.d + ")" : ""); }).join(" · ") + (rest.length > 2 ? " · +" + (rest.length - 2) + " más" : "") : "";
       mon.frame.style.setProperty("--frame-bg", FRAME_BG[TRACK_OF[it.cat]] || FRAME_BG.series);
     } else {
       mon.meta.textContent = yr; mon.title.textContent = "—"; mon.detail.textContent = ""; mon.more.textContent = "";

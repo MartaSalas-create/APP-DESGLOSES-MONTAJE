@@ -178,6 +178,7 @@
 
   // El monitor muestra la frase (en reposo) o el «fotograma» del trabajo bajo el cabezal
   function showFrame(on) {
+    if (!TRACKS.some(function (t) { return isOn(t.id); })) on = false; // sin pistas activas: WORK IN PROGRESS
     mon.frame.hidden = !on; mon.quote.hidden = on;
   }
   function idleSoon(ms, volver) {
@@ -204,7 +205,8 @@
     var roleOf = function (it) { return it.cat === "Docencia" ? "docencia" : it.cat === "Formación" ? "formación" : it.cat === "Script" ? "script" : it.cat === "Ayudante de montaje" ? "ayte. montaje" : ""; };
     var label = function (it) { var r = roleOf(it); return "<b>" + esc(it.t) + "</b>" + (r ? " <i>(" + r + ")</i>" : ""); };
     nowEl.classList.remove("is-open");
-    if (!active.length) nowEl.innerHTML = "<i>—</i>";
+    if (!TRACKS.some(function (t) { return isOn(t.id); })) nowEl.innerHTML = "<i>Todas las pistas desactivadas</i>";
+    else if (!active.length) nowEl.innerHTML = "<i>—</i>";
     else if (active.length <= 3) nowEl.innerHTML = active.map(label).join(" · ");
     else nowEl.innerHTML = '<span class="now-short">' + active.slice(0, 3).map(label).join(" · ") +
       ' <button type="button" class="now-more" aria-expanded="false">+' + (active.length - 3) + " más</button></span>" +
@@ -236,7 +238,6 @@
   labelsEl.addEventListener("click", function (e) {
     var b = e.target.closest(".trk-btn"); if (!b) return;
     var id = b.dataset.t, off = !trackOff[id];
-    if (off && TRACKS.filter(function (t) { return isOn(t.id); }).length === 1) return; // siempre queda una pista activa
     trackOff[id] = off;
     b.setAttribute("aria-pressed", String(!off)); b.classList.toggle("is-off", off);
     tracksEl.querySelector(".t-" + id).classList.toggle("is-off", off);

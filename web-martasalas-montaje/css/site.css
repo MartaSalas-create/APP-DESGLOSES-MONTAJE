@@ -570,3 +570,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* Sobre mí: párrafos justificados (con guiones para evitar huecos grandes) */
 .about-text p:not(.kicker) { text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; }
 @media (max-width: 600px) { .about-text p:not(.kicker) { text-align: left; } } /* en móvil la columna es estrecha: justificado abriría huecos grandes */
+
+/* Contacto: el bloque centrado en la pantalla (vertical y horizontal), con el pie también centrado */
+.fin { min-height: calc(100vh - 82px); min-height: calc(100svh - 82px); display: flex; flex-direction: column; padding-top: 0; }
+.fin > .wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 40px; padding-bottom: 40px; }
+.fin .foot { margin-top: 0; justify-content: center; text-align: center; column-gap: 28px; }

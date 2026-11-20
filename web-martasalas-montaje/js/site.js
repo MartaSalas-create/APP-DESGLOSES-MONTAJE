@@ -172,7 +172,7 @@
   };
   var CAT_LABEL = { "Largometrajes y TV movies": "Largometraje", "Series de ficción": "Serie de ficción", "Documental y reportaje": "Documental",
     "Cortometrajes": "Cortometraje", "Programas de TV": "Programa de TV", "Ayudante de montaje": "Ayudante de montaje" };
-  var curYear = null, idleTimer = null, lastYv = Y1 - 0.5;
+  var curYear = null, idleTimer = null, lastYv = Y1;
   var trackOff = {};                       // pistas desactivadas con su selector
   var isOn = function (id) { return !trackOff[id]; };
 
@@ -182,16 +182,16 @@
   }
   function idleSoon(ms, volver) {
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(function () { showFrame(false); if (volver) setYear(Y1 - 0.5); }, ms);
+    idleTimer = setTimeout(function () { showFrame(false); if (volver) setYear(Y1); }, ms);
   }
 
   function setYear(yv) {
-    yv = Math.max(Y0, Math.min(Y1 - 1, yv));
+    yv = Math.max(Y0, Math.min(Y1, yv));      // Y1 = inicio de la línea de tiempo (borde izquierdo)
     lastYv = yv;
-    var yr = Math.floor(yv);
-    chead.style.left = pct(Math.min(yv, Y1 - 0.0001)) + "%";
+    var yr = Math.min(Math.floor(yv), Y1 - 1);
+    chead.style.left = pct(yv) + "%";
     // avanza al reproducir (de 2026 a la izquierda hacia lo más antiguo a la derecha)
-    mon.tc.textContent = framesToTc(TC_START + ((Y1 - 0.5 - yv) / (span - 0.5)) * (TC_END - TC_START));
+    mon.tc.textContent = framesToTc(TC_START + ((Y1 - yv) / span) * (TC_END - TC_START));
     if (yr === curYear) return;
     curYear = yr;
     chead.setAttribute("aria-valuenow", yr);
@@ -368,10 +368,10 @@
   function play(delay) {
     stopPlay(); clearTimeout(idleTimer);
     var r = range();
-    var START = r ? r[0] + 0.5 : Y1 - 0.5, END = r ? r[1] : Y0;
-    var inside = curYear != null && curYear < START - 0.5 && curYear > END;
-    var from = inside ? curYear + 0.5 : START;
-    var DUR = Math.max(600, 9000 * (from - END) / (Y1 - 0.5 - Y0)), t0 = null;
+    var START = r ? r[0] + 0.5 : Y1, END = r ? r[1] : Y0;
+    var inside = lastYv < START - 0.05 && lastYv > END + 0.05;   // reanuda desde donde estaba
+    var from = inside ? lastYv : START;
+    var DUR = Math.max(600, 9000 * (from - END) / span), t0 = null;
     setYear(from); showFrame(true);
     tPlay.innerHTML = svgUse("i-pause"); tPlay.classList.add("on"); tPlay.setAttribute("aria-label", "Pausa (espacio)");
     auto = requestAnimationFrame(function step(ts) {
@@ -399,7 +399,7 @@
     var d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1, PageUp: 5, PageDown: -5 }[e.key];
     var y = curYear == null ? 2026 : curYear;
     var enBoton = e.currentTarget === transportEl; // en un botón, espacio e Intro pulsan ese botón
-    if (e.key === "Home") { goTo(Y1 - 1); e.preventDefault(); }
+    if (e.key === "Home") { stopPlay(); showFrame(true); setYear(Y1); idleSoon(8000); e.preventDefault(); }
     else if (e.key === "End") { goTo(Y0); e.preventDefault(); }
     else if (e.key === " " && !enBoton) { togglePlay(); e.preventDefault(); }
     else if (MODE === "completa" && (e.key === "i" || e.key === "I")) { toggleMark("in"); e.preventDefault(); }
@@ -410,7 +410,7 @@
   transportEl.addEventListener("keydown", onKeys);
 
   // Al cargar, la secuencia se reproduce una vez
-  if (reduceMotion) { setYear(2026.5); showFrame(false); }
+  if (reduceMotion) { setYear(Y1); showFrame(false); }
   else play(700);
 
   /* =========================================================

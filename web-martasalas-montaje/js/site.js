@@ -50,11 +50,11 @@
   })();
 
   /* =========================================================
-     0b. SOBRE MÍ: el corte entre 2000 y 2019 se arrastra (roll edit)
+     0b. SOBRE MÍ: el playhead se desliza por encima de las fotos de 2000 y 2019
      ========================================================= */
-  (function rollEdit() {
+  (function scrubPhotos() {
     var box = $(".then-now"), cut = $(".then-now-cut"); if (!box || !cut) return;
-    var set = function (v) { v = Math.max(25, Math.min(75, v)); box.style.setProperty("--cut", v); cut.setAttribute("aria-valuenow", Math.round(v)); };
+    var set = function (v) { v = Math.max(0, Math.min(100, v)); box.style.setProperty("--x", v); cut.setAttribute("aria-valuenow", Math.round(v)); };
     var fromX = function (x) { var r = box.getBoundingClientRect(); return (x - r.left) / r.width * 100; };
     var drag = false;
     cut.addEventListener("pointerdown", function (e) { drag = true; box.classList.add("is-dragging"); cut.setPointerCapture(e.pointerId); e.preventDefault(); });
@@ -63,7 +63,7 @@
     cut.addEventListener("pointerup", end); cut.addEventListener("pointercancel", end);
     cut.addEventListener("keydown", function (e) {
       var v = +cut.getAttribute("aria-valuenow");
-      var d = { ArrowLeft: -5, ArrowRight: 5, Home: -100, End: 100 }[e.key];
+      var d = { ArrowLeft: -4, ArrowRight: 4, Home: -100, End: 100 }[e.key];
       if (d) { set(v + d); e.preventDefault(); }
     });
   })();

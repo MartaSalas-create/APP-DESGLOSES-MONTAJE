@@ -575,3 +575,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin { min-height: calc(100vh - 82px); min-height: calc(100svh - 82px); display: flex; flex-direction: column; padding-top: 0; }
 .fin > .wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 40px; padding-bottom: 40px; }
 .fin .foot { margin-top: 0; justify-content: center; text-align: center; column-gap: 28px; }
+/* Contacto: botones de enlace más pequeños */
+.fin-links { gap: 6px; margin-top: 20px; }
+.fin-links a { padding: 6px 13px; font-size: 13px; }
+.fin-links a.is-phone { gap: 6px; }
+.fin-links a.is-phone svg { width: 13px; height: 13px; }

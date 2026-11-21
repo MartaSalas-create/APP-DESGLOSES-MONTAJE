@@ -774,3 +774,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   .about-grid > .then-now { margin-top: 0; }
 }
 .about-grid > .photo-about { padding: 6px; border-radius: 10px; } .about-grid > .photo-about::before { left: 6px; right: 6px; top: 6px; height: 7px; } /* mismo marco que las fotos pequeñas: las tres alineadas arriba */
+/* Sobre mí: el título bajo «Sobre mí» (columna izquierda); la foto grande sigue alineada con las fotos pequeñas */
+.about-grid { grid-template-areas: "kick" "title" "tn" "photo" "text"; }
+@media (min-width: 861px) {
+  .about-grid { grid-template-areas: "kick ." "title ." "tn photo" "text photo"; row-gap: 22px; }
+  .about-grid > .about-kicker { align-self: start; margin: 0; }
+  .about-grid > .about-title { align-self: start; }
+}

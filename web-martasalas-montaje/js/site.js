@@ -77,9 +77,7 @@
     var img = fig.querySelector("img");
     function fit() {
       fig.style.marginTop = "";
-      if (window.innerWidth <= 860) return;               // en móvil, a todo el ancho
-      var firstP = text.querySelector("p:not(.kicker)"); if (!firstP) return;
-      fig.style.marginTop = Math.max(0, firstP.getBoundingClientRect().top - text.getBoundingClientRect().top) + "px";
+      // la foto va ahora bajo el título, en su propia columna: no necesita desplazamiento
     }
     fit(); img.addEventListener("load", fit);
     window.addEventListener("resize", fit);

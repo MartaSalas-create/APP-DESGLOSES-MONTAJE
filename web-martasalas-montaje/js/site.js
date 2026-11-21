@@ -153,10 +153,11 @@
     var reelIO = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
-        en.target.classList.replace("is-waiting", "is-projected");
-        reelIO.unobserve(en.target);
+        var k = en.target; reelIO.unobserve(k);
+        // arranca cuando el rótulo ya está bien dentro de la pantalla y el scroll se ha frenado un poco
+        setTimeout(function () { k.classList.replace("is-waiting", "is-projected"); }, 180);
       });
-    }, { rootMargin: "0px 0px -12% 0px" });
+    }, { rootMargin: "0px 0px -38% 0px" });
     $$(".reel-label").forEach(function (k) { k.classList.add("is-waiting"); reelIO.observe(k); });
   }
   window.addEventListener("scroll", onScroll, { passive: true });

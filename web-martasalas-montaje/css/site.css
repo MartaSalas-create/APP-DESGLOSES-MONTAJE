@@ -823,3 +823,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .mon-frame { background: radial-gradient(90% 80% at 50% 45%, rgba(120,88,56,.0), rgba(0,0,0,.55)), linear-gradient(180deg, transparent 30%, rgba(0,0,0,.45)), var(--frame-bg, linear-gradient(135deg, #3a1a14, #120f0d)); filter: sepia(.35) saturate(.8) contrast(.95); }
 .mon-frame::before { display: none; }
 
+/* Trayectoria: el número de créditos de cada bloque, como una marca de cambio de bobina (círculo de luz con borde de emulsión) */
+#trayectoria .credit-cat .count { display: inline-grid; place-items: center; width: 34px; height: 34px; min-width: 0; padding: 0; border-radius: 52% 48% 50% 46% / 47% 53% 49% 51%;
+  background: radial-gradient(circle at 48% 52%, rgba(255,250,238,.95) 0 46%, rgba(240,228,206,.8) 56%, rgba(25,18,12,.6) 64%, rgba(25,18,12,0) 76%);
+  box-shadow: 0 0 12px rgba(255,238,205,.22); color: #1a1410; font: 700 12px/1 var(--mono); letter-spacing: 0; transform: rotate(1deg); vertical-align: middle; }
+#trayectoria .credit-group[data-trk="series"] .credit-cat .count, #trayectoria .credit-group[data-trk="doc"] .credit-cat .count { color: #1a1410; }
+#trayectoria .credit-cat { align-items: center; }

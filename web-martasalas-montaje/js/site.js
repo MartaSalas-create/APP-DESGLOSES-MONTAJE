@@ -273,10 +273,9 @@
     nowEl.classList.remove("is-open");
     if (!TRACKS.some(function (t) { return isOn(t.id); })) nowEl.innerHTML = "<i>Todas las pistas desactivadas</i>";
     else if (!active.length) nowEl.innerHTML = "<i>—</i>";
-    else if (active.length <= 3) nowEl.innerHTML = active.map(label).join(" · ");
-    else nowEl.innerHTML = '<span class="now-short">' + active.slice(0, 3).map(label).join(" · ") +
-      ' <button type="button" class="now-more" aria-expanded="false">+' + (active.length - 3) + " más</button></span>" +
-      '<span class="now-full">' + active.map(label).join(" · ") + ' <button type="button" class="now-more" aria-expanded="true">ver menos</button></span>';
+    else nowEl.innerHTML = active.map(label).join(" · ");   // todos los trabajos del año a la vez
+    // la línea solo crece (nunca encoge mientras se recorre el timeline), así las pistas no dan saltos
+    var rd = nowEl.parentElement; if (rd) rd.style.minHeight = Math.max(parseFloat(rd.style.minHeight) || 0, rd.offsetHeight) + "px";
     $$(".cclip", tracksEl).forEach(function (el) {
       var t = TRACKS.filter(function (x) { return x.id === el.dataset.t; })[0], c = t.clips[+el.dataset.i];
       el.classList.toggle("on", isOn(t.id) && c.a <= yr && c.b > yr);
@@ -307,7 +306,7 @@
     while (s > 0.55 && f.scrollHeight > f.clientHeight + 1) { s -= 0.05; f.style.setProperty("--fs", s.toFixed(2)); }
     if (wasHidden) { f.hidden = true; f.style.visibility = ""; }
   }
-  window.addEventListener("resize", function () { clearTimeout(fitFrame.t); fitFrame.t = setTimeout(fitFrame, 120); });
+  window.addEventListener("resize", function () { clearTimeout(fitFrame.t); fitFrame.t = setTimeout(function () { fitFrame(); if (nowEl.parentElement) nowEl.parentElement.style.minHeight = ""; }, 120); });
 
   /* ---------- Pistas interactivas ----------
      · Selector de pista (V3, V2…): la activa o desactiva, como en una mesa de edición.

@@ -620,3 +620,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 @media (max-width: 700px) { .cue-corner { top: 50px; --s: 22px; } .cue-flash { top: 92px; right: 14px; --s: 34px; } }
 .then-now-cut { top: -22px; bottom: -18px; } /* playhead más largo: sobresale por arriba y por abajo de las fotos */
 #sobre-mi { position: relative; } #sobre-mi > .cue-corner { top: 34px; }
+.hero-name { white-space: nowrap; font-size: clamp(40px, 5.6vw, 92px); } /* «Marta Salas» y el cursor en una sola línea */

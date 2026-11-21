@@ -723,3 +723,14 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   56.7%, 100% { opacity: .72; transform: none; }
 }
 #contacto .kicker.reel-label { transform-origin: center; margin-bottom: 26px; }
+
+/* CV: fondo traslúcido, como la luz del proyector cayendo sobre la tarjeta (haz cálido desde la esquina, con polvo en el aire) */
+.cv-card { border: 1px solid transparent;
+  background: radial-gradient(110% 90% at 0% 0%, rgba(255,236,200,.15), rgba(255,236,200,.05) 45%, transparent 72%) padding-box,
+              repeating-linear-gradient(118deg, rgba(255,240,215,.018) 0 2px, transparent 2px 26px) padding-box,
+              linear-gradient(rgba(255,255,255,.035), rgba(255,255,255,.015)) padding-box,
+              linear-gradient(140deg, rgba(255,236,200,.55), rgba(255,255,255,.08) 40%, rgba(255,255,255,.04)) border-box;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  box-shadow: 0 20px 50px -24px rgba(255,226,180,.28); }
+.cv-card:hover { border-color: transparent; box-shadow: 0 24px 60px -20px rgba(255,226,180,.4); }
+.cv-card .cv-meta { color: rgba(242,236,227,.62); }

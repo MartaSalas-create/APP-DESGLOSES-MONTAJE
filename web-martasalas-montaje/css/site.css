@@ -872,3 +872,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .src-transport .btn { margin: 0; }
 @media (max-width: 980px) { .monitor-src { margin-bottom: 16px; } }
 @media print { .monitor.monitor-src { display: block !important; } .src-transport { display: none !important; } }
+/* Monitor: rótulos centrados; el año y el título empiezan siempre a la misma altura (anclados arriba, no centrados en vertical) */
+.mon-frame { justify-content: flex-start; align-items: center; text-align: center; padding-top: 17%; }
+.mon-detail, .mon-more { margin-left: auto; margin-right: auto; }
+.mon-frame { gap: 8px; } .mon-meta { font-size: 12px; } /* año y separación fijos: el título empieza siempre en el mismo sitio */
+@media (max-width: 600px) { .mon-meta { font-size: 10px; } .mon-frame { gap: 6px; } }

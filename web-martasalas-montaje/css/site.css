@@ -734,3 +734,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   box-shadow: 0 20px 50px -24px rgba(255,226,180,.28); }
 .cv-card:hover { border-color: transparent; box-shadow: 0 24px 60px -20px rgba(255,226,180,.4); }
 .cv-card .cv-meta { color: rgba(242,236,227,.62); }
+#credits > .credits:last-child { columns: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); column-gap: 20px; align-items: start; } /* Ayudante de montaje y Script, uno al lado del otro */

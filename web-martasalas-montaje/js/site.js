@@ -581,7 +581,7 @@
         var items = byCat[cat].filter(function (it) { return !query || norm(it.join(" ")).indexOf(query) !== -1; });
         if (!items.length) return;
         count += items.length;
-        part += '<div class="credit-group" data-trk="' + TRACK_COLOR[cat] + '"><h3 class="credit-cat">' + esc(cat) + ' <span class="count">' + items.length + "</span></h3><ul>" +
+        part += '<div class="credit-group" data-trk="' + TRACK_COLOR[cat] + '"><h3 class="credit-cat"><span class="cat-t">' + esc(cat) + '</span> <span class="count">' + items.length + "</span></h3><ul>" +
           items.map(function (it) {
             return '<li><span class="yr">' + esc(it[0]) + '</span><span class="ct"><strong>' + esc(it[1]) + "</strong>" + (it[2] ? "<span>" + esc(it[2]) + "</span>" : "") + "</span></li>";
           }).join("") + "</ul></div>";

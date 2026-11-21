@@ -782,7 +782,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   .about-grid > .about-title { align-self: start; }
 }
 
-/* Timeline de la carrera: clips un poco traslúcidos (72 %); el clip bajo el playhead se queda al 100 % */
-.ctrack .cclip:not(.on) { opacity: .72; }
-.ctrack.t-wave .cclip:not(.on) { opacity: .61; }
-.ctrack.t-train .cclip:not(.on) { opacity: .58; }
+/* Timeline de la carrera: clips traslúcidos (60 %); el clip bajo el playhead se queda al 100 % */
+.ctrack .cclip:not(.on) { opacity: .6; }
+.ctrack.t-wave .cclip:not(.on) { opacity: .51; }
+.ctrack.t-train .cclip:not(.on) { opacity: .48; }

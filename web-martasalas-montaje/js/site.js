@@ -183,8 +183,10 @@
   $$(".kicker.hot").forEach(function (k) {
     if (!/^(Bobina|Sobre mí)/.test(k.textContent.trim())) return;
     k.classList.add("reel-label");
-    k.insertAdjacentHTML("afterbegin", '<i class="cue" aria-hidden="true"></i>');
+    // escrito a mano con lápiz graso sobre un trozo de celuloide
+    k.innerHTML = '<i class="cue" aria-hidden="true"></i><span class="gp">' + k.innerHTML + "</span>";
   });
+  document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="grease"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 .85 1 1"/></feComponentTransfer></filter></svg>');
   // al entrar en pantalla, cada rótulo arranca como el principio de una bobina de 35 mm (una sola vez)
   if (!reduceMotion && "IntersectionObserver" in window) {
     var reelIO = new IntersectionObserver(function (entries) {

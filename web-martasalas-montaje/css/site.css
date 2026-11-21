@@ -829,3 +829,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   box-shadow: 0 0 12px rgba(255,238,205,.22); color: #1a1410; font: 700 12px/1 var(--mono); letter-spacing: 0; transform: rotate(1deg); vertical-align: middle; }
 #trayectoria .credit-group[data-trk="series"] .credit-cat .count, #trayectoria .credit-group[data-trk="doc"] .credit-cat .count { color: #1a1410; }
 #trayectoria .credit-cat { align-items: center; }
+.career-read { min-height: 46px; margin-bottom: 22px; align-items: flex-start; } .career-read .career-year { line-height: 1; padding-top: 1px; } /* hueco para dos líneas de texto y el triángulo del playhead */

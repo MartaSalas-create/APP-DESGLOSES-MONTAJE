@@ -621,3 +621,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .then-now-cut { top: -22px; bottom: -18px; } /* playhead más largo: sobresale por arriba y por abajo de las fotos */
 #sobre-mi { position: relative; } #sobre-mi > .cue-corner { top: 34px; }
 .hero-name { white-space: nowrap; font-size: clamp(40px, 5.6vw, 92px); } /* «Marta Salas» y el cursor en una sola línea */
+.hero-actions .btn { padding: 8px 16px; font-size: 13px; gap: 6px; word-spacing: .22em; } /* pastillas más pequeñas y con espacio claro entre palabras */

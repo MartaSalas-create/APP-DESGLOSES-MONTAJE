@@ -767,3 +767,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   .about-grid > .then-now { grid-area: tn; max-width: none; margin-top: 6px; }
   .about-grid > .photo-about { grid-area: photo; margin-top: 0 !important; }
 }
+/* Sobre mí: las fotos 2000/2019 justo debajo del rótulo, y el texto debajo de ellas */
+.about-grid { grid-template-areas: "kick" "tn" "title" "photo" "text"; }
+@media (min-width: 861px) {
+  .about-grid { grid-template-areas: "kick title" "tn photo" "text photo"; }
+  .about-grid > .then-now { margin-top: 0; }
+}

@@ -673,3 +673,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   56.25% { opacity: .9;  transform: scale(1.04) translate(0, 1px); }
   62.5%, 100% { opacity: .72; transform: none; }
 }
+/* Inicio: pastillas aún más pequeñas y traslúcidas */
+.hero-actions .btn { padding: 6px 13px; font-size: 12px; }
+.hero-actions .btn-hot { background: rgba(246,74,31,.62); border-color: rgba(246,74,31,.0); }
+.hero-actions .btn-hot:hover { background: rgba(246,74,31,.85); }
+.hero-actions .btn:not(.btn-hot) { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.16); color: rgba(242,236,227,.82); }
+.hero-actions .btn:not(.btn-hot):hover { border-color: rgba(255,255,255,.4); color: var(--text); }

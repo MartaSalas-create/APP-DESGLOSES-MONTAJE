@@ -179,13 +179,11 @@
     if (reduceMotion || !cueEl) return;
     cueEl.classList.remove("is-on"); void cueEl.offsetWidth; cueEl.classList.add("is-on");
   }
-  // cada rótulo de bobina lleva su marca delante y una marca grande en la esquina de la sección
+  // cada rótulo de bobina lleva su marca delante (sin marca fija en la esquina: solo parpadea al cambiar de sección)
   $$(".kicker.hot").forEach(function (k) {
     if (!/^(Bobina|Sobre mí)/.test(k.textContent.trim())) return;
     k.classList.add("reel-label");
     k.insertAdjacentHTML("afterbegin", '<i class="cue" aria-hidden="true"></i>');
-    var sec = k.closest("section");
-    if (sec) sec.insertAdjacentHTML("beforeend", '<i class="cue cue-corner" aria-hidden="true"></i>');
   });
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });

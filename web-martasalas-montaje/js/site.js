@@ -70,57 +70,20 @@
   })();
 
   /* Sobre mí: la foto empieza bajo el título «En la sala de montaje» y termina con el texto */
+  /* Sobre mí (opción A): la foto grande a la izquierda empieza a la altura del texto (bajo el título)
+     y llega hasta el final de la sección; se recorta por arriba. Posición fija, sin arrastre. */
   (function fitAboutPhoto() {
     var fig = $(".photo-about"), text = $(".about-grid > .about-text"); if (!fig || !text) return;
     var img = fig.querySelector("img");
     function fit() {
-      fig.style.marginTop = ""; fig.style.width = ""; fig.style.justifySelf = "";
+      fig.style.marginTop = "";
       if (window.innerWidth <= 860) return;               // en móvil, a todo el ancho
       var firstP = text.querySelector("p:not(.kicker)"); if (!firstP) return;
-      var tr = text.getBoundingClientRect(), pr = firstP.getBoundingClientRect();
-      var offset = pr.top - tr.top, avail = tr.bottom - pr.top;
-      var extra = fig.getBoundingClientRect().height - img.getBoundingClientRect().height; // marco + pie de foto
-      var colW = fig.getBoundingClientRect().width;
-      var w = Math.min(colW, (avail - extra) * 4 / 5 + (colW - img.getBoundingClientRect().width));
-      fig.style.marginTop = Math.max(0, offset) + "px";
-      fig.style.width = Math.max(240, w) + "px";
-      fig.style.justifySelf = "end";
+      fig.style.marginTop = Math.max(0, firstP.getBoundingClientRect().top - text.getBoundingClientRect().top) + "px";
     }
-    fit(); img.addEventListener("load", fit);   // la proporción 4:5 ya da la altura antes de cargar
+    fit(); img.addEventListener("load", fit);
     window.addEventListener("resize", fit);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
-  })();
-
-  /* Sobre mí (provisional): la foto grande se arrastra libremente para elegir su sitio.
-     La posición se guarda en este navegador; doble clic la devuelve a su lugar. */
-  (function dragAboutPhoto() {
-    var fig = $(".photo-about"); if (!fig) return;
-    var KEY = "ms-foto-sobre-mi", pos = { x: 0, y: 0 };
-    try { var s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s) pos = s; } catch (e) {}
-    var badge = document.createElement("span");
-    badge.className = "drag-badge mono"; badge.setAttribute("aria-hidden", "true");
-    fig.appendChild(badge); fig.classList.add("is-movable");
-    fig.title = "Arrastra la foto para colocarla · doble clic para volver a su sitio";
-    function apply() {
-      fig.style.translate = pos.x + "px " + pos.y + "px";
-      badge.textContent = (pos.x || pos.y) ? "X " + (pos.x > 0 ? "+" : "") + pos.x + " · Y " + (pos.y > 0 ? "+" : "") + pos.y + " px" : "Arrástrame";
-      try { localStorage.setItem(KEY, JSON.stringify(pos)); } catch (e) {}
-    }
-    var start = null;
-    fig.addEventListener("pointerdown", function (e) {
-      if (e.button !== 0 || window.innerWidth <= 860) return;
-      start = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y };
-      fig.setPointerCapture(e.pointerId); fig.classList.add("is-dragging"); e.preventDefault();
-    });
-    fig.addEventListener("pointermove", function (e) {
-      if (!start) return;
-      pos = { x: Math.round(start.x + e.clientX - start.px), y: Math.round(start.y + e.clientY - start.py) }; apply();
-    });
-    var end = function () { start = null; fig.classList.remove("is-dragging"); };
-    fig.addEventListener("pointerup", end); fig.addEventListener("pointercancel", end);
-    fig.addEventListener("dblclick", function () { pos = { x: 0, y: 0 }; apply(); });
-    fig.addEventListener("dragstart", function (e) { e.preventDefault(); });
-    apply();
   })();
 
   /* =========================================================

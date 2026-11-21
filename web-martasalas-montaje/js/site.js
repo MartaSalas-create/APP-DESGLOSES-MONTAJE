@@ -181,7 +181,7 @@
   }
   // cada rótulo de bobina lleva su marca delante (sin marca fija en la esquina: solo parpadea al cambiar de sección)
   $$(".kicker.hot").forEach(function (k) {
-    if (!/^(Bobina|Sobre mí)/.test(k.textContent.trim())) return;
+    if (!/^(Bobina|Sobre mí|Picture lock)/.test(k.textContent.trim())) return;
     k.classList.add("reel-label");
     // escrito a mano con lápiz graso sobre un trozo de celuloide
     k.innerHTML = '<i class="cue" aria-hidden="true"></i><span class="gp">' + k.innerHTML + "</span>";

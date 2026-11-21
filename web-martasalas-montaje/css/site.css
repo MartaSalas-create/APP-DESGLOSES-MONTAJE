@@ -722,3 +722,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   53.3% { opacity: .85; transform: scale(1.1) translate(0, 1px); }
   56.7%, 100% { opacity: .72; transform: none; }
 }
+#contacto .kicker.reel-label { transform-origin: center; margin-bottom: 26px; }

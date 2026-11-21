@@ -877,3 +877,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .mon-detail, .mon-more { margin-left: auto; margin-right: auto; }
 .mon-frame { gap: 8px; } .mon-meta { font-size: 12px; } /* año y separación fijos: el título empieza siempre en el mismo sitio */
 @media (max-width: 600px) { .mon-meta { font-size: 10px; } .mon-frame { gap: 6px; } }
+
+/* Botones «Ver reel» y «Descargar CV» debajo de la pantalla del Composer */
+.hero-actions-under { margin-top: 14px; }

@@ -296,7 +296,18 @@
     } else {
       mon.meta.textContent = yr; mon.title.textContent = "—"; mon.detail.textContent = ""; mon.more.textContent = "";
     }
+    fitFrame();
   }
+
+  /* Los rótulos del monitor nunca se cortan: si el texto no cabe en la ventanilla, se reduce todo junto hasta que quepa */
+  function fitFrame() {
+    var f = mon.frame; if (!f) return;
+    var wasHidden = f.hidden; if (wasHidden) { f.style.visibility = "hidden"; f.hidden = false; }
+    var s = 1; f.style.setProperty("--fs", s);
+    while (s > 0.55 && f.scrollHeight > f.clientHeight + 1) { s -= 0.05; f.style.setProperty("--fs", s.toFixed(2)); }
+    if (wasHidden) { f.hidden = true; f.style.visibility = ""; }
+  }
+  window.addEventListener("resize", function () { clearTimeout(fitFrame.t); fitFrame.t = setTimeout(fitFrame, 120); });
 
   /* ---------- Pistas interactivas ----------
      · Selector de pista (V3, V2…): la activa o desactiva, como en una mesa de edición.

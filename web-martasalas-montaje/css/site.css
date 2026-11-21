@@ -622,3 +622,24 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #sobre-mi { position: relative; } #sobre-mi > .cue-corner { top: 34px; }
 .hero-name { white-space: nowrap; font-size: clamp(40px, 5.6vw, 92px); } /* «Marta Salas» y el cursor en una sola línea */
 .hero-actions .btn { padding: 8px 16px; font-size: 13px; gap: 6px; word-spacing: .22em; } /* pastillas más pequeñas y con espacio claro entre palabras */
+
+/* Marca de cambio al pasar de sección: como en una copia de 35 mm.
+   Aparece 4 fotogramas (1/6 s a 24 fps), desaparece y vuelve otros 4 fotogramas (motor y cambio),
+   traslúcida, con el borde irregular de la marca rayada en la emulsión, parpadeo y vaivén de ventanilla. */
+.cue-flash { --s: 40px; top: 108px; right: 34px; border-radius: 52% 48% 50% 46% / 47% 53% 49% 51%;
+  background: radial-gradient(circle at 48% 52%, rgba(255,250,238,.95) 0 38%, rgba(240,228,206,.75) 50%, rgba(25,18,12,.55) 60%, rgba(25,18,12,0) 74%);
+  mix-blend-mode: screen; filter: blur(.6px) contrast(1.1); box-shadow: 0 0 14px rgba(255,238,205,.22); }
+.cue-flash.is-on { animation: cue35 1.5s steps(1, end); } /* cortes secos de fotograma, sin fundidos */
+@keyframes cue35 {
+  0%     { opacity: .58; transform: translate(0, 0) scale(1); }
+  2.78%  { opacity: .46; transform: translate(1px, -1px) scale(1.02); }
+  5.56%  { opacity: .62; transform: translate(-1px, 0) scale(.99); }
+  8.33%  { opacity: .5;  transform: translate(0, 1px) scale(1.01); }
+  11.11% { opacity: 0; }
+  66.67% { opacity: .6;  transform: translate(-1px, 1px) scale(1); }
+  69.44% { opacity: .48; transform: translate(1px, 0) scale(1.02); }
+  72.22% { opacity: .63; transform: translate(0, -1px) scale(.99); }
+  75%    { opacity: .5;  transform: translate(1px, 1px) scale(1.01); }
+  77.78%, 100% { opacity: 0; }
+}
+@media (max-width: 700px) { .cue-flash { --s: 30px; top: 94px; right: 16px; } }

@@ -181,7 +181,7 @@
   }
   // cada rótulo de bobina lleva su marca delante y una marca grande en la esquina de la sección
   $$(".kicker.hot").forEach(function (k) {
-    if (!/^Bobina/.test(k.textContent)) return;
+    if (!/^(Bobina|Sobre mí)/.test(k.textContent.trim())) return;
     k.classList.add("reel-label");
     k.insertAdjacentHTML("afterbegin", '<i class="cue" aria-hidden="true"></i>');
     var sec = k.closest("section");

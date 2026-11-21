@@ -185,6 +185,17 @@
     k.classList.add("reel-label");
     k.insertAdjacentHTML("afterbegin", '<i class="cue" aria-hidden="true"></i>');
   });
+  // al entrar en pantalla, cada rótulo arranca como el principio de una bobina de 35 mm (una sola vez)
+  if (!reduceMotion && "IntersectionObserver" in window) {
+    var reelIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.replace("is-waiting", "is-projected");
+        reelIO.unobserve(en.target);
+      });
+    }, { rootMargin: "0px 0px -12% 0px" });
+    $$(".reel-label").forEach(function (k) { k.classList.add("is-waiting"); reelIO.observe(k); });
+  }
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });
 

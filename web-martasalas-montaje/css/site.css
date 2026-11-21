@@ -643,3 +643,33 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   77.78%, 100% { opacity: 0; }
 }
 @media (max-width: 700px) { .cue-flash { --s: 30px; top: 94px; right: 16px; } }
+
+/* Rótulos de bobina y «Sobre mí»: en la línea de la proyección en 35 mm.
+   La marca es traslúcida como la de cambio; al entrar en pantalla el rótulo «arranca» como el inicio de una bobina:
+   unos fotogramas de parpadeo y vaivén de ventanilla, la marca destella 4 fotogramas y se queda encendida, suave. */
+.reel-label .cue { --s: 15px; border-radius: 52% 48% 50% 46% / 47% 53% 49% 51%;
+  background: radial-gradient(circle at 48% 52%, rgba(255,250,238,.95) 0 38%, rgba(240,228,206,.75) 50%, rgba(25,18,12,.5) 60%, rgba(25,18,12,0) 74%);
+  mix-blend-mode: screen; filter: blur(.4px); box-shadow: 0 0 10px rgba(255,238,205,.2); opacity: .72; }
+.reel-label.is-waiting { opacity: 0; }
+.reel-label.is-projected { animation: reel35 .67s steps(1, end) both; }
+.reel-label.is-projected .cue { animation: reelCue35 .67s steps(1, end) both; }
+@keyframes reel35 {          /* 16 fotogramas a 24 fps */
+  0%     { opacity: 0; }
+  6.25%  { opacity: .55; transform: translate(1px, 0); }
+  12.5%  { opacity: .25; transform: translate(0, 1px); }
+  18.75% { opacity: .8;  transform: translate(-1px, 0); }
+  25%    { opacity: .45; transform: translate(0, -1px); }
+  31.25% { opacity: .9;  transform: translate(1px, 1px); }
+  37.5%  { opacity: .7;  transform: translate(0, 0); }
+  50%    { opacity: 1;   transform: translate(-1px, 0); }
+  62.5%  { opacity: .88; transform: translate(0, 0); }
+  75%, 100% { opacity: 1; transform: none; }
+}
+@keyframes reelCue35 {
+  0%, 31.25% { opacity: 0; transform: scale(1); }
+  37.5%  { opacity: 1;   transform: scale(1.12); }
+  43.75% { opacity: .85; transform: scale(1.05) translate(1px, 0); }
+  50%    { opacity: 1;   transform: scale(1.1); }
+  56.25% { opacity: .9;  transform: scale(1.04) translate(0, 1px); }
+  62.5%, 100% { opacity: .72; transform: none; }
+}

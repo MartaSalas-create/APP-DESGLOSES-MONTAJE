@@ -947,3 +947,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 
 /* Hashtags en la última página, bajo los enlaces */
 .fin-tags { justify-content: center; margin: 22px 0 0; font-size: 13px; }
+/* Picture lock: escrito directamente sobre el celuloide, sin recuadro */
+#contacto .reel-label .gp { background: none; padding: 0; color: rgba(255,255,255,.95); text-shadow: 0 0 1px rgba(255,255,255,.5), 0 1px 3px rgba(0,0,0,.65); font-size: clamp(26px, 3.6vw, 40px); }
+#contacto .kicker.reel-label { box-shadow: none; filter: drop-shadow(0 16px 28px rgba(0,0,0,.6)); }

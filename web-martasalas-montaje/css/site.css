@@ -1028,3 +1028,13 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* «En la sala de montaje» en una sola línea y con menos espacio entre «En» y «la» */
 .about-title { white-space: nowrap; font-size: clamp(26px, 4.3vw, 60px); }
 .about-title b { word-spacing: -.32em; }
+
+/* ---------- Monitor: la textura de la imagen evoluciona con el año (35 mm → vídeo → digital) ---------- */
+.monitor-screen { --film: 1; --video: 0; }
+.monitor-screen::before { opacity: calc(.04 + var(--film) * .86); transition: opacity .4s; }
+.monitor-screen::after { border-radius: calc(3px + 11px * var(--film)); box-shadow: 0 0 0 40px #0b0a09, inset 0 0 60px 26px rgba(0,0,0, calc(.18 + .57 * var(--film))); }
+.monitor-screen > .mon-frame { filter: sepia(calc(.35 * var(--film))) saturate(calc(1.12 - .32 * var(--film))) contrast(calc(1.06 - .11 * var(--film))) blur(calc(var(--video) * .35px)) brightness(var(--flicker, 1)); }
+.mon-frame::before { display: block; content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: calc(var(--video) * .55);
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,.45) 0 1px, transparent 1px 3px); }
+.mon-frame .mon-title, .mon-frame .mon-meta { text-shadow: calc(var(--video) * 1.6px) 0 rgba(255,40,40,.55), calc(var(--video) * -1.6px) 0 rgba(0,190,255,.55); }
+.mon-fmt { margin-left: 8px; padding: 1px 6px; border: 1px solid rgba(255,255,255,.25); border-radius: 3px; font-size: .9em; letter-spacing: .08em; color: rgba(255,255,255,.75); }

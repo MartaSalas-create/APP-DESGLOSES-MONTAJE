@@ -309,6 +309,7 @@
     chead.style.left = pct(yv) + "%";
     // avanza al reproducir (de 2026 a la izquierda hacia lo más antiguo a la derecha)
     mon.tc.textContent = framesToTc(TC_START + ((Y1 - yv) / span) * (TC_END - TC_START));
+    if (window.__monEra) window.__monEra(yv);
     if (yr === curYear) return;
     curYear = yr;
     chead.setAttribute("aria-valuenow", yr);
@@ -740,10 +741,36 @@
     function size() { var r = scr.getBoundingClientRect(); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
     size(); window.addEventListener("resize", size);
     var rnd = Math.random, scratches = [], running = false, last = 0, FPS = 18;
+    /* La textura de la imagen cambia con el año del timeline: de lo digital limpio de hoy (2016 en adelante)
+       al vídeo (hacia 2000-2008, con líneas y sangrado de color) y a la copia de 35 mm de los 90 (grano, polvo, rayas, parpadeo).
+       Mientras se ve «Work in progress», el monitor conserva el aspecto de proyección. */
+    var frameEl = document.getElementById("monFrame"), fmtEl = document.getElementById("monFmt");
+    var era = { f: 1, v: 0 };
+    function eraOf(y) {
+      var f = Math.max(0, Math.min(1, (2016 - y) / 20));
+      var v = Math.max(0, 1 - Math.abs(y - 2003) / 7);
+      return { f: f, v: v };
+    }
+    function fmtOf(y) { return y < 2000 ? "35 mm" : y < 2008 ? "Vídeo SD" : y < 2016 ? "HD" : "Digital 4K"; }
+    function applyEra() {
+      var e = frameEl && !frameEl.hidden ? era : { f: 1, v: 0 };
+      scr.style.setProperty("--film", e.f.toFixed(3)); scr.style.setProperty("--video", e.v.toFixed(3));
+      return e;
+    }
+    window.__monEra = function (y) {
+      era = eraOf(y); applyEra();
+      if (fmtEl) fmtEl.textContent = fmtOf(Math.floor(y));
+    };
     function frame() {
       ctx.clearRect(0, 0, W, H);
+      var e = applyEra(), f = e.f;
+      if (fmtEl) fmtEl.hidden = !(frameEl && !frameEl.hidden);
+      scr.style.setProperty("--flicker", (1 - 0.06 * f + rnd() * 0.08 * f).toFixed(3));
+      scr.style.setProperty("--gx", Math.floor(rnd() * 160) + "px"); scr.style.setProperty("--gy", Math.floor(rnd() * 160) + "px");
+      if (f < 0.04) { scratches = []; return; }
+      ctx.globalAlpha = Math.min(1, 0.15 + f);
       // rayas verticales: nacen de vez en cuando, viven unos fotogramas y se desplazan un poco
-      if (rnd() < 0.08 && scratches.length < 3) scratches.push({ x: rnd() * W, life: 6 + rnd() * 30, w: 0.6 + rnd() * 1.1, light: rnd() < 0.6, a: 0.25 + rnd() * 0.35 });
+      if (rnd() < 0.08 * f && scratches.length < 3) scratches.push({ x: rnd() * W, life: 6 + rnd() * 30, w: 0.6 + rnd() * 1.1, light: rnd() < 0.6, a: 0.25 + rnd() * 0.35 });
       scratches = scratches.filter(function (k) { return --k.life > 0; });
       scratches.forEach(function (k) {
         k.x += (rnd() - 0.5) * 1.6;
@@ -753,22 +780,19 @@
         ctx.moveTo(k.x, y0); ctx.lineTo(k.x + (rnd() - 0.5) * 2, y1); ctx.stroke();
       });
       // polvo: puntos claros y oscuros distintos en cada fotograma
-      var n = 3 + Math.floor(rnd() * 9);
+      var n = Math.round((3 + Math.floor(rnd() * 9)) * f);
       for (var i = 0; i < n; i++) {
         var dark = rnd() < 0.7, r = 0.5 + rnd() * (rnd() < 0.1 ? 3.5 : 1.4);
         ctx.fillStyle = dark ? "rgba(8,5,2," + (0.45 + rnd() * 0.4) + ")" : "rgba(255,246,228," + (0.35 + rnd() * 0.4) + ")";
         ctx.beginPath(); ctx.ellipse(rnd() * W, rnd() * H, r, r * (0.6 + rnd() * 0.6), rnd() * 3, 0, 6.3); ctx.fill();
       }
       // pelos y fibras: de vez en cuando, una curva fina
-      if (rnd() < 0.22) {
+      if (rnd() < 0.22 * f) {
         var x = rnd() * W, y = rnd() * H, L = 14 + rnd() * 40;
         ctx.strokeStyle = "rgba(8,5,2," + (0.4 + rnd() * 0.35) + ")"; ctx.lineWidth = 0.7 + rnd() * 0.6; ctx.beginPath(); ctx.moveTo(x, y);
         ctx.bezierCurveTo(x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L, x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L, x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L); ctx.stroke();
       }
-      // parpadeo de la lámpara
-      scr.style.setProperty("--flicker", (0.94 + rnd() * 0.08).toFixed(3));
-      // el grano salta de sitio en cada fotograma
-      scr.style.setProperty("--gx", Math.floor(rnd() * 160) + "px"); scr.style.setProperty("--gy", Math.floor(rnd() * 160) + "px");
+      ctx.globalAlpha = 1;
     }
     function loop(t) { if (!running) return; if (t - last > 1000 / FPS) { last = t; frame(); } requestAnimationFrame(loop); }
     var vis = new IntersectionObserver(function (es) {

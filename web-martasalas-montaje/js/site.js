@@ -628,6 +628,26 @@
     e.preventDefault(); openVideo(b.dataset.id);
   });
   $("#lbClose").addEventListener("click", closeVideo);
+  /* Trayectoria: los títulos que tienen tráiler en el Reel (y no ficha de cartel) lo abren al pincharlos */
+  var trailerKey = function (t) { return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" · ")[0].replace(/\(.*?\)/g, "").replace(/[^a-z0-9ñ ]/g, "").replace(/\s+/g, " ").trim(); };
+  var TRAILER_BY = {}; (D.reels.trailers || []).forEach(function (v) { TRAILER_BY[trailerKey(v.t)] = v; });
+  function linkTrailers() {
+    var c = $("#credits"); if (!c) return;
+    $$(".ct > strong", c).forEach(function (st) {
+      var v = TRAILER_BY[trailerKey(st.textContent)];
+      if (!v || st.dataset.trailer) return;
+      st.dataset.trailer = v.id; st.classList.add("has-trailer"); st.setAttribute("role", "link"); st.tabIndex = 0;
+      st.setAttribute("aria-label", "Ver el tráiler de " + v.t); st.title = "Ver tráiler";
+    });
+  }
+  function playTrailer(st) {
+    if (st.dataset.ficha) return;            // con ficha de cartel, abre la ficha (que ya lleva el tráiler)
+    if (framed) window.open("https://www.youtube.com/watch?v=" + st.dataset.trailer, "_blank", "noopener");
+    else openVideo(st.dataset.trailer);
+  }
+  linkTrailers();
+  $("#credits").addEventListener("click", function (e) { var st = e.target.closest("[data-trailer]"); if (st) playTrailer(st); });
+  $("#credits").addEventListener("keydown", function (e) { var st = e.target.closest("[data-trailer]"); if (st && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); playTrailer(st); } });
   lb.addEventListener("click", function (e) { if (e.target === lb) closeVideo(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !lb.hidden) closeVideo(); });
 
@@ -698,6 +718,7 @@
       if (part) html += '<h3 class="credits-section">' + g.title + '</h3><div class="credits credits-2col"><div class="credits-col">' + cols.L + '</div><div class="credits-col">' + cols.R + "</div></div>";
     });
     $("#credits").innerHTML = html;
+    if (typeof linkTrailers === "function") linkTrailers();
     $("#empty").hidden = count > 0;
     layoutNle(); // la altura de la sección cambia: recalcula la secuencia
   }

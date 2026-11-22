@@ -1070,3 +1070,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 
 /* Reel: todos los tráileres del mismo tamaño */
 .reel-item:first-child { grid-column: auto; aspect-ratio: 16/9; }
+
+/* Trayectoria: títulos con tráiler (sin ficha de cartel) */
+#credits strong.has-trailer:not(.has-ficha) { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(232,50,43,.55); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+#credits strong.has-trailer:not(.has-ficha)::after { content: " ▶"; font-size: .7em; color: #e8322b; vertical-align: .1em; }
+#credits strong.has-trailer:not(.has-ficha):hover, #credits strong.has-trailer:not(.has-ficha):focus-visible { color: #e8322b; outline: none; }

@@ -1093,3 +1093,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 :root { --yr: #ff8a2a; }
 .career-year, #trayectoria .yr, .block:not(.light) .yr, .award .mono, .photo figcaption .mono, .fm-meta, .clip-tip .mono { color: var(--yr); }
 .career-range { background: rgba(255,138,42,.1); border-top-color: var(--yr); }
+/* Botonera: el icono del botón activo vuelve a encenderse en naranja (y en el clic) */
+.avid-btn.on, .avid-btn.on:hover { color: var(--yr); }
+.avid-btn:active { color: var(--yr); }

@@ -986,3 +986,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* Todos los títulos de sección (la parte en negrita) en la tipografía de «Marta Salas»: JetBrains Mono negrita */
 .block-head h2 b, .about-title b, .fin h2 b { font-family: var(--mono); font-weight: 800; letter-spacing: -.04em; }
 .fin h2 b { letter-spacing: -.05em; }
+.block-head h2 b, .about-title b, .fin h2 b, .hero-name { word-spacing: -.1em; } /* espacio claro entre palabras en la tipografía mono */

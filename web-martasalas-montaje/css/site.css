@@ -928,3 +928,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .hero-lede-head { margin: 12px 0 0; max-width: 60ch; }
 .hero-lede-head .hero-quote { display: block; font-size: clamp(18px, 1.7vw, 24px); }
 .monitor-src .hero-lede { font-size: clamp(15px, 1.3vw, 18px); line-height: 1.5; }
+
+/* «Más de 25 años…» bajo la frase, encima de la pantalla */
+.hero-years { margin: 8px 0 0; font-size: 16px; max-width: 60ch; }
+.monitor-src .src-screen { align-items: center; text-align: center; }
+.monitor-src .hero-tags { font-size: clamp(15px, 1.5vw, 20px); margin: 0; }

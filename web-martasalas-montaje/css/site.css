@@ -982,3 +982,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin-links a.is-mail { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: var(--tc); border-color: var(--tc); color: #1a0f05; }
 .fin-links a.is-mail:hover { background: #ffa04d; border-color: #ffa04d; }
 .fin-links a.is-mail svg { width: 16px; height: 16px; }
+#trayectoria .block-head h2 b { font-family: var(--mono); font-weight: 800; letter-spacing: -.04em; } /* «Trayectoria» en la tipografía del nombre (prueba) */

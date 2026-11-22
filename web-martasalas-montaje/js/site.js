@@ -204,7 +204,7 @@
   labelsEl.innerHTML = "<span></span>" + TRACKS.map(function (t) {
     var p = t.lab.split(" · ");
     return '<button type="button" class="trk-btn t-' + t.id + '" data-t="' + t.id + '" aria-pressed="true" title="Activar o desactivar la pista ' + p[1] + '">' +
-      '<i class="trk-sw" aria-hidden="true"></i><b>' + p[0] + "</b><em>&nbsp;· " + p[1] + "</em></button>";
+      '<svg class="trk-eye" viewBox="0 0 24 24" aria-hidden="true"><path class="eye-o" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle class="eye-o" cx="12" cy="12" r="3"/><path class="eye-x" d="M4 4l16 16"/></svg><i class="trk-sw" aria-hidden="true"></i><b>' + p[0] + "</b><em>&nbsp;· " + p[1] + "</em></button>";
   }).join("");
   var rul = "";
   for (var y = Y0; y <= Y1; y++) {

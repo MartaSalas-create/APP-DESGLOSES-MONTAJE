@@ -965,3 +965,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* Picture lock: tira pequeña, para que destaque la pregunta */
 #contacto .kicker.reel-label { width: min(320px, 78vw); margin-bottom: 30px; }
 #contacto .reel-label .gp { font-size: clamp(30px, 2.9vw, 41px); }
+
+/* Pistas: icono de ojo (como en Avid) para indicar que se pueden mostrar u ocultar */
+.trk-eye { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke .2s; }
+.trk-eye .eye-x { display: none; }
+.trk-btn:hover .trk-eye { stroke: var(--text); }
+.trk-btn.is-off .trk-eye .eye-x { display: inline; }
+.trk-btn.is-off { opacity: .45; }

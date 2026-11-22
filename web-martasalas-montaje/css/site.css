@@ -999,3 +999,15 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #contacto .kicker.reel-label { margin-top: auto; }
 #contacto .fin-links { margin-top: auto; }
 #contacto .fin-tags { margin-bottom: 0; }
+
+/* ---------- Gran cierre: tira de película a toda pantalla detrás de la pregunta y sello rojo PICTURE LOCK a la izquierda ---------- */
+#contacto { overflow: hidden; }
+#contacto .wrap { position: relative; }
+#contacto .strip-bg { position: absolute; left: 50%; top: 46%; width: 150vw; height: clamp(170px, 27vw, 380px); transform: translate(-50%, -50%) rotate(-3deg);
+  background: url(../assets/picture-lock-pelicula.png) center / auto 100% repeat-x; opacity: .5; z-index: 0; pointer-events: none; }
+#contacto .fin-title { position: relative; z-index: 1; margin-top: auto; }
+#contacto h2 { position: relative; font-size: clamp(46px, 8.4vw, 130px); text-shadow: 0 6px 30px rgba(0,0,0,.9), 0 0 60px rgba(0,0,0,.6); }
+#contacto .kicker.reel-label { position: absolute !important; z-index: 2; margin: 0 !important; width: auto !important; aspect-ratio: auto !important; background: none !important; filter: none !important; box-shadow: none !important;
+  left: calc(50% - 50vw + clamp(20px, 4.4vw, 64px)); right: auto; top: calc(-1 * clamp(50px, 8.2vw, 122px)); animation: none !important; transform: rotate(-5deg) !important; transform-origin: left center !important; opacity: 1 !important; }
+#contacto .reel-label .gp { filter: url(#grease-real); font-family: var(--mono); font-weight: 800; text-transform: uppercase; letter-spacing: .14em; font-size: clamp(13px, 1.5vw, 22px);
+  color: #e8322b !important; border: 3px solid #e8322b; border-radius: 6px; padding: .4em .8em; text-shadow: none; background: none; }

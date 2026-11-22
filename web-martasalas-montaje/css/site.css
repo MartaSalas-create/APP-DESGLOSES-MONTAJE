@@ -1075,3 +1075,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #credits strong.has-trailer:not(.has-ficha) { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(232,50,43,.55); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
 #credits strong.has-trailer:not(.has-ficha)::after { content: " ▶"; font-size: .7em; color: #e8322b; vertical-align: .1em; }
 #credits strong.has-trailer:not(.has-ficha):hover, #credits strong.has-trailer:not(.has-ficha):focus-visible { color: #e8322b; outline: none; }
+/* Revisión: en móviles muy estrechos el código de tiempo de la cabecera cabe entero */
+@media (max-width: 360px) { .tc-wrap { gap: 6px; } .tc-wrap #tc, #tc { font-size: 17px; letter-spacing: .02em; } .nle-top .brand em, .nle-top .logo em { font-size: .92em; } }
+/* Revisión: en el móvil el monitor no muestra «Ese año también», así el resto del rótulo se lee grande */
+@media (max-width: 480px) { .mon-more { display: none; } }
+/* Revisión: foco de teclado visible en los títulos enlazados de Trayectoria */
+#credits strong[data-ficha]:focus-visible, #credits strong[data-trailer]:focus-visible { outline: 2px solid #e8322b; outline-offset: 3px; border-radius: 2px; }

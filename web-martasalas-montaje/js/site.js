@@ -606,7 +606,7 @@
         '<span class="play">▶</span><span class="reel-n">' + (v.t ? "Tráiler · " + esc(v.t) : (kind === "tv" ? "Series" : "Cine") + " · Clip " + pad(i + 1)) + "</span></a>";
     }).join("");
   }
-  renderReel("tv");
+  renderReel("trailers");
   $$("[data-reel]").forEach(function (b) {
     b.addEventListener("click", function () {
       $$("[data-reel]").forEach(function (x) { var on = x === b; x.classList.toggle("is-active", on); x.setAttribute("aria-selected", on); });

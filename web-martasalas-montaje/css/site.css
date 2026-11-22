@@ -16,7 +16,7 @@
   --text-l: #141414;
   --muted-l: #6d675f;
   --c1: #ffa41b; --c2: #ff7417; --c3: #f64a1f; --c4: #e2231f; --c5: #a8192c;
-  --coral: #ee6a52;
+  --coral: #ff4b33;   /* coral vivo, más rojo (como el sello y el REC) */
   --wave: #34c47a;
   --head: #e2231f;
   --playhead: #2f8cff;   /* azul del indicador de posición de Avid Media Composer */
@@ -34,7 +34,7 @@ html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nle-h) + 8px); ov
 body {
   margin: 0; color: var(--text); font: 400 17px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: clip;
   background:
-    radial-gradient(1000px 700px at 85% 0, rgba(238,106,82,.13), transparent 70%),
+    radial-gradient(1000px 700px at 85% 0, rgba(255,75,51,.12), transparent 70%),
     radial-gradient(800px 600px at 0 760px, rgba(255,164,27,.06), transparent 70%),
     var(--ink);
   background-repeat: no-repeat; background-color: var(--ink);

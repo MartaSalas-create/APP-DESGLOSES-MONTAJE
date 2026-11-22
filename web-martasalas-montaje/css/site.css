@@ -954,3 +954,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* Picture lock: copia positiva real de 35 mm (foto), sin la marca de cambio delante */
 #contacto .kicker.reel-label { width: min(640px, 94vw); aspect-ratio: 800 / 270; background-image: url(../assets/picture-lock-pelicula.jpg); }
 #contacto .reel-label .cue { display: none; }
+#contacto .reel-label .gp { text-shadow: 0 0 2px rgba(0,0,0,.9), 0 1px 4px rgba(0,0,0,.85), 0 0 14px rgba(0,0,0,.55); } /* legible sobre fotogramas claros */

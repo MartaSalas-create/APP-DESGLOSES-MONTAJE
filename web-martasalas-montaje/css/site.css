@@ -933,3 +933,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .hero-years { margin: 8px 0 0; font-size: 16px; max-width: 60ch; }
 .monitor-src .src-screen { align-items: center; text-align: center; }
 .monitor-src .hero-tags { font-size: clamp(15px, 1.5vw, 20px); margin: 0; }
+
+/* Player: la frase en medio y centrada; los hashtags debajo */
+.src-quote { margin: 0 auto; max-width: 22ch; font-family: var(--serif); font-style: italic; font-size: clamp(24px, 2.6vw, 40px); line-height: 1.15; color: var(--text); text-wrap: balance; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
+.src-quote em { color: var(--coral); }
+.monitor-src .src-screen { gap: clamp(14px, 1.8vw, 24px); }
+.monitor-src .hero-tags { font-size: clamp(12px, 1vw, 14px); opacity: .85; }

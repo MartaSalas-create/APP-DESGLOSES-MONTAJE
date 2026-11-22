@@ -469,7 +469,7 @@
     var b = e.target.closest(".avid-btn"); if (!b) return;
     var act = b.dataset.act;
     if (act === "play") togglePlay();
-    else if (act === "prev") jump(1);
+    else if (act === "prev") { if (typeof stopShuttle === "function") stopShuttle(); stopPlay(); showFrame(true); setYear(Y1); idleSoon(8000); }   // al inicio del timeline
     else if (act === "next") jump(-1);
     else if (act === "back") goTo(Math.min(Y1 - 1, (curYear == null ? 2026 : curYear) + 1));
     else if (act === "fwd") goTo(Math.max(Y0, (curYear == null ? 2026 : curYear) - 1));
@@ -496,6 +496,7 @@
   function stopShuttle() { if (shut.raf) cancelAnimationFrame(shut.raf); shut.raf = null; shut.dir = 0; shut.rate = 1; stopPlay(); }
   function shuttle(dir) {
     if (auto) stopPlay();
+    if (dir === -1 && lastYv >= Y1 - 0.05) dir = 1;   // en el inicio del timeline, J también arranca la reproducción
     if (shut.dir === dir) shut.rate = Math.min(8, shut.rate * 2); else { shut.dir = dir; shut.rate = 1; }
     clearTimeout(idleTimer); showFrame(true);
     tPlay.innerHTML = svgUse("i-pause"); tPlay.classList.add("on");
@@ -505,7 +506,7 @@
       if (tPrev === null) tPrev = ts;
       var dt = (ts - tPrev) / 1000; tPrev = ts;
       var v = lastYv - shut.dir * shut.rate * (span / 9) * dt;
-      if (v <= Y0 || v >= Y1) { setYear(Math.max(Y0, Math.min(Y1, v))); stopShuttle(); idleSoon(8000); return; }
+      if ((shut.dir > 0 && v <= Y0) || (shut.dir < 0 && v >= Y1)) { setYear(Math.max(Y0, Math.min(Y1, v))); stopShuttle(); idleSoon(8000); return; }
       setYear(v); shut.raf = requestAnimationFrame(st);
     });
   }

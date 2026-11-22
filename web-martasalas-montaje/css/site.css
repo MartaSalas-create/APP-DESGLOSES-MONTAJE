@@ -1081,3 +1081,11 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 @media (max-width: 480px) { .mon-more { display: none; } }
 /* Revisión: foco de teclado visible en los títulos enlazados de Trayectoria */
 #credits strong[data-ficha]:focus-visible, #credits strong[data-trailer]:focus-visible { outline: 2px solid #e8322b; outline-offset: 3px; border-radius: 2px; }
+/* Regla de tiempo también entre la portada y Sobre mí, y entre Formación y el cierre (como en el resto de páginas) */
+.about, .fin { position: relative; }
+.about::before, .fin::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 16px; opacity: .22; z-index: 2; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 26px) top / 100% 7px no-repeat,
+    repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 130px) top / 100% 16px no-repeat; }
+.about { padding-top: clamp(80px, 11vw, 140px); }

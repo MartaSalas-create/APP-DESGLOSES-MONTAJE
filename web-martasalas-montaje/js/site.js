@@ -505,7 +505,7 @@
     var from = inside ? lastYv : START;
     /* Reproducción año a año: el cabezal se detiene en cada año el tiempo justo para leer el monitor
        y luego pasa rápido al siguiente, como avanzar plano a plano. */
-    var HOLD = 1500, GLIDE = 320, t0 = null;
+    var HOLD = 850, GLIDE = 250, t0 = null;
     var pts = [from], y = Math.floor(from - 0.5) + 0.5;
     if (from - y < 0.05) y -= 1;
     for (; y > END + 0.05; y -= 1) pts.push(y);

@@ -1038,3 +1038,18 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   background: repeating-linear-gradient(180deg, rgba(0,0,0,.45) 0 1px, transparent 1px 3px); }
 .mon-frame .mon-title, .mon-frame .mon-meta { text-shadow: calc(var(--video) * 1.6px) 0 rgba(255,40,40,.55), calc(var(--video) * -1.6px) 0 rgba(0,190,255,.55); }
 .mon-fmt { margin-left: 8px; padding: 1px 6px; border: 1px solid rgba(255,255,255,.25); border-radius: 3px; font-size: .9em; letter-spacing: .08em; color: rgba(255,255,255,.75); }
+/* Sello PICTURE LOCK: entra como un tampón (cae desde arriba, golpea, rebota un poco y deja la tinta) */
+#contacto .reel-label.is-waiting .gp { opacity: 0; }
+#contacto .reel-label.is-projected .gp { animation: stampIn .55s cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 50%; }
+#contacto .reel-label.is-projected { animation: none !important; }
+#contacto .reel-label .gp { position: relative; display: inline-block; }
+#contacto .reel-label.is-projected .gp::after { content: ""; position: absolute; inset: -5px; border-radius: 9px; pointer-events: none;
+  border: 2px solid rgba(232,50,43,.55); opacity: 0; animation: stampRing .6s .3s ease-out both; }
+@keyframes stampIn {
+  0%   { opacity: 0; transform: scale(2.6) rotate(8deg); filter: url(#grease-real) blur(3px); }
+  55%  { opacity: 1; transform: scale(.9) rotate(-1deg); filter: url(#grease-real) blur(0); }
+  72%  { transform: scale(1.05) rotate(.5deg); }
+  86%  { transform: scale(.98); }
+  100% { opacity: 1; transform: scale(1) rotate(0); filter: url(#grease-real); }
+}
+@keyframes stampRing { 0% { opacity: .9; transform: scale(.96); } 100% { opacity: 0; transform: scale(1.25); } }

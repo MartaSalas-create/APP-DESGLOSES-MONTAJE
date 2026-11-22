@@ -20,7 +20,7 @@
   --wave: #34c47a;
   --head: #e2231f;
   --playhead: #2f8cff;   /* azul del indicador de posición de Avid Media Composer */
-  --tc: #ff8a2a;
+  --tc: #f1ece4;   /* códigos de tiempo en blanco cálido, como el burn-in de la sala de montaje */
   --sans: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -174,7 +174,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .transport.is-completa .avid-btn { width: 34px; height: 28px; }
 .transport.is-completa .avid-btn svg { width: 18px; height: 18px; }
 /* Tramo marcado con entrada y salida */
-.career-range { position: absolute; top: 20px; bottom: 0; background: rgba(255,138,42,.1); border-top: 2px solid var(--tc); pointer-events: none; z-index: 1; }
+.career-range { position: absolute; top: 20px; bottom: 0; background: rgba(241,236,228,.08); border-top: 2px solid var(--tc); pointer-events: none; z-index: 1; }
 .career-mark { position: absolute; top: 4px; width: 10px; height: 14px; margin-left: -5px; border: 2px solid var(--tc); pointer-events: none; z-index: 2; }
 .career-mark.mark-in { border-right: 0; } .career-mark.mark-out { border-left: 0; }
 .transport-hint { margin-left: auto; color: var(--dim); font-size: 13px; }
@@ -979,7 +979,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 
 /* Contacto: sobre (correo) a la izquierda del teléfono, en lugar del email escrito */
 #contacto .fin-links { margin-top: clamp(40px, 5vw, 64px); }
-.fin-links a.is-mail { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: var(--tc); border-color: var(--tc); color: #1a0f05; }
+.fin-links a.is-mail { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: #ff8a2a; border-color: #ff8a2a; color: #1a0f05; }
 .fin-links a.is-mail:hover { background: #ffa04d; border-color: #ffa04d; }
 .fin-links a.is-mail svg { width: 16px; height: 16px; }
 #trayectoria .block-head h2 b { font-family: var(--mono); font-weight: 800; letter-spacing: -.04em; } /* «Trayectoria» en la tipografía del nombre (prueba) */

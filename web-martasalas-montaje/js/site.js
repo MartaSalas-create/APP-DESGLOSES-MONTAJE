@@ -618,7 +618,7 @@
       var part = "", cols = { L: "", R: "" };
       // columnas fijas: izquierda Largometrajes y Series; derecha Documental y Cortometrajes; el resto, donde haya menos
       var COL = { "Largometrajes y TV movies": "L", "Series de ficción": "L", "Documental y reportaje": "R", "Cortometrajes": "R",
-        "Programas de TV": "L", "Musical": "L", "Publicidad": "L", "Otros": "R", "Ayudante de montaje": "L", "Script": "R" };
+        "Programas de TV": "L", "Musical": "L", "Publicidad": "R", "Otros": "R", "Ayudante de montaje": "L", "Script": "R" };
       var ORDER_C = ["Largometrajes y TV movies", "Documental y reportaje", "Series de ficción", "Cortometrajes", "Musical", "Programas de TV", "Publicidad", "Otros", "Ayudante de montaje", "Script"];
       g.cats.slice().sort(function (a, b) { return ORDER_C.indexOf(a) - ORDER_C.indexOf(b); }).forEach(function (cat) {
         if (current !== "Todo" && cat !== current) return;

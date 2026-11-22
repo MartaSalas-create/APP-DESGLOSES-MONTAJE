@@ -110,6 +110,34 @@
     }
   });
 
+  /* ---------- Trayectoria: los títulos con cartel abren su ficha ---------- */
+  function clave(t) {
+    return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .split(" · ")[0].replace(/\s+t\d.*$/, "").replace(/[^a-z0-9ñ ]/g, "").replace(/\s+/g, " ").trim();
+  }
+  var porTitulo = {};
+  function enlazaTrayectoria() {
+    var cont = document.getElementById("credits"); if (!cont) return;
+    cont.querySelectorAll(".ct > strong").forEach(function (st) {
+      var p = porTitulo[clave(st.textContent)];
+      if (!p || st.classList.contains("has-ficha")) return;
+      st.classList.add("has-ficha"); st.dataset.ficha = p.id;
+      st.setAttribute("role", "button"); st.tabIndex = 0;
+      st.setAttribute("aria-label", "Ver cartel y ficha de " + p.titulo);
+      st.title = "Ver cartel";
+    });
+  }
+  function iniciaEnlaces() {
+    proyectos.forEach(function (p) { porTitulo[clave(p.titulo)] = p; });
+    var cont = document.getElementById("credits"); if (!cont) return;
+    enlazaTrayectoria();
+    new MutationObserver(enlazaTrayectoria).observe(cont, { childList: true });
+    cont.addEventListener("click", function (e) { var st = e.target.closest("[data-ficha]"); if (st) abre(st.dataset.ficha); });
+    cont.addEventListener("keydown", function (e) {
+      var st = e.target.closest("[data-ficha]"); if (st && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); abre(st.dataset.ficha); }
+    });
+  }
+
   /* ---------- Carga de datos ---------- */
   fetch(DATA_URL)
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -118,7 +146,7 @@
       proyectos = data.map(function (p, i) { return [p, i]; })
         .sort(function (a, b) { return (b[0].anio - a[0].anio) || (a[1] - b[1]); })
         .map(function (x) { return x[0]; });
-      pintaFiltros(); pintaGrid();
+      pintaFiltros(); pintaGrid(); iniciaEnlaces();
       window.dispatchEvent(new Event("resize")); // la altura cambia: recalcula la secuencia de la cabecera
     })
     .catch(function () {

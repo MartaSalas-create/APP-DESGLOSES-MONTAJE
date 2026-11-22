@@ -29,6 +29,13 @@ window.SITE = {
     ],
     cine: [
       { id: "3tBYR2JTeHk" }, { id: "seCTe9WUS8Y" }, { id: "n4NT0TJzEkg" }
+    ],
+    // tráileres oficiales de las obras montadas (de lo más actual a lo más antiguo)
+    trailers: [
+      { id: "6XW5F3a0wxo", t: "Un plan perfecto" }, { id: "seSA6OzeNpA", t: "Machos Alfa" }, { id: "ASd2DeS6wmw", t: "El juego de las llaves" },
+      { id: "3tBYR2JTeHk", t: "El año de la furia" }, { id: "p3FKGuK_p-k", t: "La otra mirada" }, { id: "4Apr_Ce4eag", t: "Vivir sin permiso" },
+      { id: "k2oJLX4u8Pc", t: "La víctima número 8" }, { id: "23l0iEZIpMA", t: "El Ministerio del Tiempo" }, { id: "KW8558tPoT0", t: "Seis hermanas" },
+      { id: "QFVKY2HR3aA", t: "La chica de ayer" }, { id: "Jdp_75r3xLQ", t: "Los Serrano" }
     ]
   },
 

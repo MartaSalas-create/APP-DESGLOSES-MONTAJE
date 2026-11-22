@@ -601,9 +601,9 @@
   var reelGrid = $("#reelGrid");
   function renderReel(kind) {
     reelGrid.innerHTML = D.reels[kind].map(function (v, i) {
-      return '<a class="reel-item" href="https://www.youtube.com/watch?v=' + esc(v.id) + '" target="_blank" rel="noopener" data-id="' + esc(v.id) + '" aria-label="Reproducir vídeo ' + (i + 1) + '">' +
+      return '<a class="reel-item" href="https://www.youtube.com/watch?v=' + esc(v.id) + '" target="_blank" rel="noopener" data-id="' + esc(v.id) + '" aria-label="Reproducir ' + (v.t ? "el tráiler de " + esc(v.t) : "vídeo " + (i + 1)) + '">' +
         '<img src="https://i.ytimg.com/vi/' + esc(v.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'no-thumb\');this.remove()">' +
-        '<span class="play">▶</span><span class="reel-n">' + (kind === "tv" ? "Series" : "Cine") + " · Clip " + pad(i + 1) + "</span></a>";
+        '<span class="play">▶</span><span class="reel-n">' + (v.t ? "Tráiler · " + esc(v.t) : (kind === "tv" ? "Series" : "Cine") + " · Clip " + pad(i + 1)) + "</span></a>";
     }).join("");
   }
   renderReel("tv");

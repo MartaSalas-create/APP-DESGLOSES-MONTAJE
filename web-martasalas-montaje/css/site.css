@@ -1060,3 +1060,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   font: 700 11px/1.2 var(--mono); letter-spacing: .04em; border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(4px); }
 .fm-video-link { display: inline-flex; margin-top: 12px; padding: 9px 14px; border-radius: 999px; background: #e8322b; color: #fff; font-weight: 700; text-decoration: none; }
 .fm-video-link:hover { background: #ff4a40; }
+
+/* ---------- Trayectoria: títulos con cartel, enlazados a su ficha ---------- */
+#credits strong.has-ficha { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(232,50,43,.55); text-decoration-thickness: 1.5px; text-underline-offset: 3px; transition: color .2s; }
+#credits strong.has-ficha::after { content: " ▣"; font-size: .72em; color: #e8322b; opacity: .8; vertical-align: .08em; }
+#credits strong.has-ficha:hover, #credits strong.has-ficha:focus-visible { color: #e8322b; outline: none; }
+/* Reel: pestaña de tráileres */
+.tab[data-reel="trailers"] .tab-sw { background: #e8322b; }

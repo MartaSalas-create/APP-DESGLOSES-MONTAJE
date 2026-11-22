@@ -56,7 +56,7 @@ OBRAS = [
     {"archivo": "un-plan-perfecto", "titulo": "Un plan perfecto", "anio": 2026, "categoria": "Cine", "tipo": "movie", "consultas": ["Un plan perfecto"]},
     # --- Televisión ---
     {"archivo": "machos-alfa", "titulo": "Machos Alfa T1/T6", "anio": 2022, "anioTexto": "2022/2026", "orden": 2026, "categoria": "Series", "tipo": "tv", "consultas": ["Machos Alfa"]},
-    {"archivo": "el-comisario", "titulo": "El comisario", "anio": 1999, "categoria": "Series", "tipo": "tv", "consultas": ["El comisario"]},
+    {"archivo": "el-comisario", "titulo": "El comisario", "anio": 2004, "anioTexto": "2004–2008", "orden": 2008, "categoria": "Series", "tipo": "tv", "consultas": ["El comisario"]},
     {"archivo": "upa-dance", "titulo": "Un paso adelante", "anio": 2002, "categoria": "Series", "tipo": "tv", "consultas": ["Un paso adelante", "UPA Dance"]},
     {"archivo": "el-ministerio-del-tiempo", "titulo": "El Ministerio del Tiempo", "anio": 2015, "categoria": "Series", "tipo": "tv", "consultas": ["El Ministerio del Tiempo"]},
     {"archivo": "vivir-sin-permiso", "titulo": "Vivir sin permiso", "anio": 2018, "categoria": "Series", "tipo": "tv", "consultas": ["Vivir sin permiso"]},

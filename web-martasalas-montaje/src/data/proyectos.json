@@ -14,20 +14,6 @@
     "verificado": true
   },
   {
-    "id": "hongos",
-    "titulo": "Hongos",
-    "anio": 1999,
-    "anioTexto": "",
-    "categoria": "Cine",
-    "poster": "public/posters/placeholder-poster.svg",
-    "posterWebp": "",
-    "rol": "",
-    "sinopsis": "Marisa Martínez, después de dos años de haber roto con su ex, vuelve a acostarse con él. Como consecuencia se desencadenará toda una serie de situaciones que harán que la ciudad, y su vida, se le vengan encima.",
-    "videoUrl": "",
-    "tmdbId": 878315,
-    "verificado": true
-  },
-  {
     "id": "el-lodo",
     "titulo": "El lodo",
     "anio": 2021,

@@ -48,7 +48,6 @@ ANCHO_MAX = 900
 OBRAS = [
     # --- Cine ---
     {"archivo": "ava", "titulo": "AVA", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["Ava"]},
-    {"archivo": "hongos", "titulo": "Hongos", "anio": 1999, "categoria": "Cine", "tipo": "movie", "consultas": ["Hongos"]},
     {"archivo": "el-lodo", "titulo": "El lodo", "anio": 2021, "categoria": "Cine", "tipo": "movie", "consultas": ["El lodo"]},
     {"archivo": "el-juego-de-las-llaves", "titulo": "El juego de las llaves", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["El juego de las llaves"]},
     {"archivo": "el-ano-de-la-furia", "titulo": "El año de la furia", "anio": 2020, "categoria": "Cine", "tipo": "movie", "consultas": ["El año de la furia"]},

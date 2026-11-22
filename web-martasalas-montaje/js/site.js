@@ -163,6 +163,56 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });
 
+  /* El playhead del menú de páginas se arrastra como en el timeline: al moverlo, la página corre hasta ese punto.
+     Se puede coger el cabezal o arrastrar desde cualquier punto de la pista; un clic corto sigue llevando a la sección. */
+  function xToScroll(x) {
+    var idx = 0;
+    for (var i = 0; i < navClips.length; i++) if (x >= navClips[i].offsetLeft) idx = i;
+    var a = navClips[idx];
+    var within = Math.min(1, Math.max(0, (x - a.offsetLeft) / Math.max(1, a.offsetWidth)));
+    var secStart = bounds[idx], secEnd = idx < bounds.length - 1 ? bounds[idx + 1] : document.documentElement.scrollHeight;
+    var y = secStart + within * (secEnd - secStart) - window.innerHeight * 0.35;
+    if (idx === 0 && within < 0.02) y = 0;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    if (idx === navClips.length - 1 && within > 0.9) y = max;
+    return Math.max(0, Math.min(max, y));
+  }
+  var scrub = null;
+  head.style.pointerEvents = "auto";
+  track.addEventListener("pointerdown", function (e) {
+    if (e.button !== 0) return;
+    scrub = { id: e.pointerId, x0: e.clientX, on: e.target === head };
+    if (scrub.on) { e.preventDefault(); startScrub(e); }
+  });
+  function startScrub(e) {
+    scrub.on = true; track.classList.add("is-scrubbing");
+    try { track.setPointerCapture(scrub.id); } catch (er) {}
+    document.documentElement.style.scrollBehavior = "auto";
+    moveScrub(e);
+  }
+  function moveScrub(e) {
+    var r = track.getBoundingClientRect();
+    window.scrollTo(0, xToScroll(Math.max(0, Math.min(r.width, e.clientX - r.left))));
+  }
+  track.addEventListener("pointermove", function (e) {
+    if (!scrub || e.pointerId !== scrub.id) return;
+    if (!scrub.on && Math.abs(e.clientX - scrub.x0) > 5) startScrub(e);
+    if (scrub.on) { e.preventDefault(); moveScrub(e); }
+  });
+  function endScrub(e) {
+    if (!scrub || (e && e.pointerId !== scrub.id)) return;
+    var was = scrub.on; scrub = null;
+    if (was) {
+      track.classList.remove("is-scrubbing"); track.dataset.dragged = "1";
+      setTimeout(function () { delete track.dataset.dragged; document.documentElement.style.scrollBehavior = ""; }, 60);
+    }
+  }
+  track.addEventListener("pointerup", endScrub);
+  track.addEventListener("pointercancel", endScrub);
+  // tras arrastrar no se dispara el clic del clip donde se suelta
+  track.addEventListener("click", function (e) { if (track.dataset.dragged) { e.preventDefault(); e.stopPropagation(); } }, true);
+  track.addEventListener("dragstart", function (e) { e.preventDefault(); });
+
   /* =========================================================
      2. LÍNEA DE TIEMPO DE LA CARRERA (hero)
      Cuatro pistas: V2 cine, V1 series y TV, A1 documental/música/publicidad, A2 docencia y formación.

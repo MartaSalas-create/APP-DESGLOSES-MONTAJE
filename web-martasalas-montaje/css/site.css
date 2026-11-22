@@ -1011,3 +1011,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   left: calc(50% - 50vw + clamp(20px, 4.4vw, 64px)); right: auto; top: calc(-1 * clamp(50px, 8.2vw, 122px)); animation: none !important; transform: rotate(-5deg) !important; transform-origin: left center !important; opacity: 1 !important; }
 #contacto .reel-label .gp { filter: url(#grease-real); font-family: var(--mono); font-weight: 800; text-transform: uppercase; letter-spacing: .14em; font-size: clamp(13px, 1.5vw, 22px);
   color: #e8322b !important; border: 3px solid #e8322b; border-radius: 6px; padding: .4em .8em; text-shadow: none; background: none; }
+
+/* ---------- Menú de páginas: playhead arrastrable ---------- */
+.nle-track { touch-action: pan-y; }
+.nle-head { pointer-events: auto; cursor: ew-resize; z-index: 3; }
+.nle-head::after { content: ""; position: absolute; top: -10px; bottom: -4px; left: -10px; right: -10px; }
+.nle-track.is-scrubbing, .nle-track.is-scrubbing * { cursor: ew-resize !important; user-select: none; }
+.nle-track.is-scrubbing .nle-head { box-shadow: 0 0 10px 1px rgba(47,140,255,.7); }

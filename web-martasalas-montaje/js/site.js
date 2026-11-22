@@ -503,15 +503,26 @@
     var START = r ? r[0] + 0.5 : Y1, END = r ? r[1] : Y0;
     var inside = lastYv < START - 0.05 && lastYv > END + 0.05;   // reanuda desde donde estaba
     var from = inside ? lastYv : START;
-    var DUR = Math.max(600, 9000 * (from - END) / span), t0 = null;
+    /* Reproducción año a año: el cabezal se detiene en cada año el tiempo justo para leer el monitor
+       y luego pasa rápido al siguiente, como avanzar plano a plano. */
+    var HOLD = 1500, GLIDE = 320, t0 = null;
+    var pts = [from], y = Math.floor(from - 0.5) + 0.5;
+    if (from - y < 0.05) y -= 1;
+    for (; y > END + 0.05; y -= 1) pts.push(y);
+    pts.push(END);
+    var seg = HOLD + GLIDE, total = (pts.length - 1) * seg;
+    var ease = function (x) { return x * x * (3 - 2 * x); };
     setYear(from); showFrame(true);
     tPlay.innerHTML = svgUse("i-pause"); tPlay.classList.add("on"); tPlay.setAttribute("aria-label", "Pausa (espacio)");
     auto = requestAnimationFrame(function step(ts) {
       if (t0 === null) t0 = ts + (delay || 0);
-      var k = Math.max(0, Math.min(1, (ts - t0) / DUR));
-      setYear(from + k * (END - from));
-      if (k < 1) auto = requestAnimationFrame(step);
-      else { stopPlay(); if (r) idleSoon(6000); else idleSoon(1800, true); } // sin tramo, vuelve al presente
+      var t = Math.max(0, ts - t0);
+      // el primer tramo arranca sin espera (ya se ve el año inicial al empezar)
+      var tt = t + HOLD, i = Math.min(pts.length - 2, Math.floor(tt / seg)), f = tt - i * seg;
+      var g = f <= HOLD ? 0 : ease(Math.min(1, (f - HOLD) / GLIDE));
+      setYear(pts[i] + g * (pts[i + 1] - pts[i]));
+      if (tt < total) auto = requestAnimationFrame(step);
+      else { setYear(END); stopPlay(); if (r) idleSoon(6000); else idleSoon(1800, true); } // sin tramo, vuelve al presente
     });
   }
   function togglePlay() { if (auto) { stopPlay(); idleSoon(8000); } else play(0); }

@@ -56,20 +56,6 @@
     "verificado": true
   },
   {
-    "id": "luz-de-mar",
-    "titulo": "Luz de mar",
-    "anio": 2010,
-    "anioTexto": "",
-    "categoria": "Cine",
-    "poster": "public/posters/placeholder-poster.svg",
-    "posterWebp": "",
-    "rol": "",
-    "sinopsis": "",
-    "videoUrl": "",
-    "tmdbId": null,
-    "verificado": false
-  },
-  {
     "id": "un-plan-perfecto",
     "titulo": "Un plan perfecto",
     "anio": 2026,

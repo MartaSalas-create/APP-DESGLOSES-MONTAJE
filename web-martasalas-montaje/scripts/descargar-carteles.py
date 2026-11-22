@@ -51,7 +51,6 @@ OBRAS = [
     {"archivo": "el-lodo", "titulo": "El lodo", "anio": 2021, "categoria": "Cine", "tipo": "movie", "consultas": ["El lodo"]},
     {"archivo": "el-juego-de-las-llaves", "titulo": "El juego de las llaves", "anio": 2022, "categoria": "Cine", "tipo": "movie", "consultas": ["El juego de las llaves"]},
     {"archivo": "el-ano-de-la-furia", "titulo": "El año de la furia", "anio": 2020, "categoria": "Cine", "tipo": "movie", "consultas": ["El año de la furia"]},
-    {"archivo": "luz-de-mar", "titulo": "Luz de mar", "anio": 2010, "categoria": "Cine", "tipo": "movie", "consultas": ["Luz de mar"]},
     {"archivo": "un-plan-perfecto", "titulo": "Un plan perfecto", "anio": 2026, "categoria": "Cine", "tipo": "movie", "consultas": ["Un plan perfecto"]},
     # --- Televisión ---
     {"archivo": "machos-alfa", "titulo": "Machos Alfa T1/T6", "anio": 2022, "anioTexto": "2022/2026", "orden": 2026, "categoria": "Series", "tipo": "tv", "consultas": ["Machos Alfa"]},

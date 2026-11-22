@@ -972,3 +972,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .trk-btn:hover .trk-eye { stroke: var(--text); }
 .trk-btn.is-off .trk-eye .eye-x { display: inline; }
 .trk-btn.is-off { opacity: .45; }
+/* Monitor: títulos de los trabajos en la tipografía de «Work in progress» (JetBrains Mono), en negrita */
+.mon-title, .mon-title.is-long { font-family: var(--mono); font-weight: 800; letter-spacing: -.03em; }
+.mon-title { font-size: calc(clamp(20px, 2.2vw, 34px) * var(--fs)); }
+.mon-title.is-long { font-size: calc(clamp(17px, 1.7vw, 26px) * var(--fs)); }

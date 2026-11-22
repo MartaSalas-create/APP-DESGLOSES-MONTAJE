@@ -1067,3 +1067,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #credits strong.has-ficha:hover, #credits strong.has-ficha:focus-visible { color: #e8322b; outline: none; }
 /* Reel: pestaña de tráileres */
 .tab[data-reel="trailers"] .tab-sw { background: #e8322b; }
+
+/* Reel: todos los tráileres del mismo tamaño */
+.reel-item:first-child { grid-column: auto; aspect-ratio: 16/9; }

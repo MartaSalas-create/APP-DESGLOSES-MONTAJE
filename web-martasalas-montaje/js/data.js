@@ -33,6 +33,7 @@ window.SITE = {
     // tráileres oficiales de las obras montadas (de lo más actual a lo más antiguo)
     trailers: [
       { id: "6XW5F3a0wxo", s: "public/stills/un-plan-perfecto.jpg", t: "Un plan perfecto" }, { id: "seSA6OzeNpA", s: "public/stills/machos-alfa.jpg", t: "Machos Alfa" }, { id: "ASd2DeS6wmw", s: "public/stills/el-juego-de-las-llaves.jpg", t: "El juego de las llaves" },
+      { id: "_DAdiLKCJ7g", s: "public/stills/bso.jpg", t: "BSO (musical)" },
       { id: "3tBYR2JTeHk", s: "public/stills/el-ano-de-la-furia.jpg", t: "El año de la furia" }, { id: "p3FKGuK_p-k", s: "public/stills/la-otra-mirada-2.jpg", t: "La otra mirada" }, { id: "4Apr_Ce4eag", s: "public/stills/vivir-sin-permiso.jpg", t: "Vivir sin permiso" },
       { id: "k2oJLX4u8Pc", s: "public/stills/la-victima-numero-8.jpg", t: "La víctima número 8" }, { id: "23l0iEZIpMA", s: "public/stills/el-ministerio-del-tiempo.jpg", t: "El Ministerio del Tiempo" }, { id: "KW8558tPoT0", s: "public/stills/seis-hermanas.jpg", t: "Seis hermanas" },
       { id: "QFVKY2HR3aA", s: "public/stills/la-chica-de-ayer.jpg", t: "La chica de ayer" }, { id: "Jdp_75r3xLQ", s: "public/stills/los-serrano.jpg", t: "Los Serrano" }

@@ -516,6 +516,7 @@
     if (k === "l") { shuttle(1); e.preventDefault(); }
     else if (k === "j") { shuttle(-1); e.preventDefault(); }
     else if (k === "k") { stopShuttle(); idleSoon(8000); e.preventDefault(); }
+    else if ((k === "i" || k === "o") && t !== chead && !transportEl.contains(t)) { toggleMark(k === "i" ? "in" : "out"); e.preventDefault(); }
   });
 
   // Al cargar, la secuencia se reproduce una vez

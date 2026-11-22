@@ -147,7 +147,7 @@
     // escrito a mano con lápiz graso sobre un trozo de celuloide
     k.innerHTML = '<i class="cue" aria-hidden="true"></i><span class="gp">' + k.innerHTML + "</span>";
   });
-  document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="grease"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 .85 1 1"/></feComponentTransfer></filter></svg>');
+  document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="grease-real" x="-5%" y="-10%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="3" seed="11" result="t"/><feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 2.05" result="holes"/><feTurbulence type="fractalNoise" baseFrequency="0.05 0.9" numOctaves="2" seed="5" result="streak"/><feDisplacementMap in="SourceGraphic" in2="streak" scale="2.2" result="d"/><feComposite in="d" in2="holes" operator="in"/></filter><filter id="grease"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 .85 1 1"/></feComponentTransfer></filter></svg>');
   // al entrar en pantalla, cada rótulo arranca como el principio de una bobina de 35 mm (una sola vez)
   if (!reduceMotion && "IntersectionObserver" in window) {
     var reelIO = new IntersectionObserver(function (entries) {

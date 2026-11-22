@@ -955,3 +955,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #contacto .kicker.reel-label { width: min(640px, 94vw); aspect-ratio: 800 / 270; background-image: url(../assets/picture-lock-pelicula.jpg); }
 #contacto .reel-label .cue { display: none; }
 #contacto .reel-label .gp { text-shadow: 0 0 2px rgba(0,0,0,.9), 0 1px 4px rgba(0,0,0,.85), 0 0 14px rgba(0,0,0,.55); } /* legible sobre fotogramas claros */
+
+/* Picture lock: borde de celuloide marrón y traslúcido; texto más grande, sin contorno, con textura de lápiz graso real */
+#contacto .kicker.reel-label { background-image: url(../assets/picture-lock-pelicula.png); }
+#contacto .reel-label .gp { filter: url(#grease-real); text-shadow: none; color: #f7f2e6; font-size: clamp(36px, 5.4vw, 64px); letter-spacing: .03em; }
+#contacto .reel-label .gp { color: #fff; opacity: 1; mix-blend-mode: normal; }

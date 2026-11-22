@@ -976,3 +976,9 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .mon-title, .mon-title.is-long { font-family: var(--mono); font-weight: 800; letter-spacing: -.03em; }
 .mon-title { font-size: calc(clamp(20px, 2.2vw, 34px) * var(--fs)); }
 .mon-title.is-long { font-size: calc(clamp(17px, 1.7vw, 26px) * var(--fs)); }
+
+/* Contacto: sobre (correo) a la izquierda del teléfono, en lugar del email escrito */
+#contacto .fin-links { margin-top: clamp(40px, 5vw, 64px); }
+.fin-links a.is-mail { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: var(--tc); border-color: var(--tc); color: #1a0f05; }
+.fin-links a.is-mail:hover { background: #ffa04d; border-color: #ffa04d; }
+.fin-links a.is-mail svg { width: 16px; height: 16px; }

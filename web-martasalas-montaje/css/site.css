@@ -941,3 +941,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .monitor-src .hero-tags { font-size: clamp(12px, 1vw, 14px); opacity: .85; }
 /* Player: hashtags en el borde inferior de la pantalla, a la izquierda */
 .monitor-src .src-screen > .hero-tags { position: absolute; left: clamp(22px, 2.4vw, 32px); bottom: clamp(18px, 2vw, 26px); margin: 0; text-align: left; justify-content: flex-start; }
+/* «Más de 25 años…» en una sola línea */
+.hero-head .hero-years { max-width: none; }
+@media (min-width: 761px) { .hero-head .hero-years { white-space: nowrap; } }

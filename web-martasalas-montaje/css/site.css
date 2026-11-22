@@ -1089,3 +1089,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
     repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 26px) top / 100% 7px no-repeat,
     repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 130px) top / 100% 16px no-repeat; }
 .about { padding-top: clamp(80px, 11vw, 140px); }
+/* Años en naranja (tu historia); los códigos de tiempo siguen en blanco (lo técnico, como el burn-in) */
+:root { --yr: #ff8a2a; }
+.career-year, #trayectoria .yr, .block:not(.light) .yr, .award .mono, .photo figcaption .mono, .fm-meta, .clip-tip .mono { color: var(--yr); }
+.career-range { background: rgba(255,138,42,.1); border-top-color: var(--yr); }

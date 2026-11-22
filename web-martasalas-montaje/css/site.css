@@ -994,3 +994,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .fin-links a.is-mail.is-open { gap: 8px; padding: 4px 14px; }
 .fin-links a.is-mail.is-open .mail-addr { max-width: 220px; }
 .fin-links a.is-mail[data-copied]::after { content: attr(data-copied); position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); font: 600 11px var(--mono); color: var(--muted); white-space: nowrap; }
+/* Contacto: enlaces y hashtags lo más abajo posible (justo encima del pie); la pregunta sigue en el centro */
+.fin > .wrap { justify-content: flex-start; padding-bottom: 28px; }
+#contacto .kicker.reel-label { margin-top: auto; }
+#contacto .fin-links { margin-top: auto; }
+#contacto .fin-tags { margin-bottom: 0; }

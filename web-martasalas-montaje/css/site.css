@@ -923,3 +923,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   .hero-under .transport { margin-left: 0; justify-self: center; justify-content: center; }
   .hero-under .hero-actions-under { padding-top: 4px; }
 }
+
+/* La frase va bajo «Montadora de cine y televisión» */
+.hero-lede-head { margin: 12px 0 0; max-width: 60ch; }
+.hero-lede-head .hero-quote { display: block; font-size: clamp(18px, 1.7vw, 24px); }
+.monitor-src .hero-lede { font-size: clamp(15px, 1.3vw, 18px); line-height: 1.5; }

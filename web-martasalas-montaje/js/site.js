@@ -726,4 +726,56 @@
     }, { rootMargin: "0px 0px -6% 0px" });
     reveals.forEach(function (el) { io.observe(el); });
   }
+
+  /* =========================================================
+     Monitor: suciedad y rayas de la copia de 35 mm animadas
+     Cada fotograma (a 18 fps, como un proyector) trae su propio polvo y pelos;
+     las rayas verticales duran varios fotogramas y bailan un poco; la luz parpadea levemente.
+     ========================================================= */
+  (function () {
+    var scr = document.getElementById("monScreen"); if (!scr || reduceMotion) return;
+    var cv = document.createElement("canvas"); cv.className = "mon-dirt"; cv.setAttribute("aria-hidden", "true");
+    scr.appendChild(cv);
+    var ctx = cv.getContext("2d"), W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+    function size() { var r = scr.getBoundingClientRect(); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    size(); window.addEventListener("resize", size);
+    var rnd = Math.random, scratches = [], running = false, last = 0, FPS = 18;
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      // rayas verticales: nacen de vez en cuando, viven unos fotogramas y se desplazan un poco
+      if (rnd() < 0.08 && scratches.length < 3) scratches.push({ x: rnd() * W, life: 6 + rnd() * 30, w: 0.6 + rnd() * 1.1, light: rnd() < 0.6, a: 0.25 + rnd() * 0.35 });
+      scratches = scratches.filter(function (k) { return --k.life > 0; });
+      scratches.forEach(function (k) {
+        k.x += (rnd() - 0.5) * 1.6;
+        ctx.strokeStyle = k.light ? "rgba(255,244,222," + (k.a * (0.6 + rnd() * 0.4)) + ")" : "rgba(10,6,3," + (k.a + 0.15) + ")";
+        ctx.lineWidth = k.w; ctx.beginPath();
+        var y0 = rnd() < 0.3 ? rnd() * H * 0.5 : 0, y1 = rnd() < 0.3 ? H * (0.5 + rnd() * 0.5) : H;
+        ctx.moveTo(k.x, y0); ctx.lineTo(k.x + (rnd() - 0.5) * 2, y1); ctx.stroke();
+      });
+      // polvo: puntos claros y oscuros distintos en cada fotograma
+      var n = 3 + Math.floor(rnd() * 9);
+      for (var i = 0; i < n; i++) {
+        var dark = rnd() < 0.7, r = 0.5 + rnd() * (rnd() < 0.1 ? 3.5 : 1.4);
+        ctx.fillStyle = dark ? "rgba(8,5,2," + (0.45 + rnd() * 0.4) + ")" : "rgba(255,246,228," + (0.35 + rnd() * 0.4) + ")";
+        ctx.beginPath(); ctx.ellipse(rnd() * W, rnd() * H, r, r * (0.6 + rnd() * 0.6), rnd() * 3, 0, 6.3); ctx.fill();
+      }
+      // pelos y fibras: de vez en cuando, una curva fina
+      if (rnd() < 0.22) {
+        var x = rnd() * W, y = rnd() * H, L = 14 + rnd() * 40;
+        ctx.strokeStyle = "rgba(8,5,2," + (0.4 + rnd() * 0.35) + ")"; ctx.lineWidth = 0.7 + rnd() * 0.6; ctx.beginPath(); ctx.moveTo(x, y);
+        ctx.bezierCurveTo(x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L, x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L, x + (rnd() - 0.5) * L, y + (rnd() - 0.5) * L); ctx.stroke();
+      }
+      // parpadeo de la lámpara
+      scr.style.setProperty("--flicker", (0.94 + rnd() * 0.08).toFixed(3));
+      // el grano salta de sitio en cada fotograma
+      scr.style.setProperty("--gx", Math.floor(rnd() * 160) + "px"); scr.style.setProperty("--gy", Math.floor(rnd() * 160) + "px");
+    }
+    function loop(t) { if (!running) return; if (t - last > 1000 / FPS) { last = t; frame(); } requestAnimationFrame(loop); }
+    var vis = new IntersectionObserver(function (es) {
+      var on = es[0].isIntersecting && !document.hidden;
+      if (on && !running) { running = true; size(); requestAnimationFrame(loop); } else if (!on) running = false;
+    });
+    vis.observe(scr);
+    document.addEventListener("visibilitychange", function () { if (document.hidden) running = false; else { var r = scr.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight && !running) { running = true; requestAnimationFrame(loop); } } });
+  })();
 })();

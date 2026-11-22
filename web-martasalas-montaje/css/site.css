@@ -1018,3 +1018,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .nle-head::after { content: ""; position: absolute; top: -10px; bottom: -4px; left: -10px; right: -10px; }
 .nle-track.is-scrubbing, .nle-track.is-scrubbing * { cursor: ew-resize !important; user-select: none; }
 .nle-track.is-scrubbing .nle-head { box-shadow: 0 0 10px 1px rgba(47,140,255,.7); }
+
+/* ---------- Monitor: suciedad y rayas animadas (canvas), grano que salta y parpadeo de lámpara ---------- */
+.mon-dirt { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; mix-blend-mode: normal; opacity: .85; border-radius: 4px; }
+.monitor-screen::before { background: var(--grain); background-size: 160px 160px; background-position: var(--gx, 0) var(--gy, 0); }
+.monitor-screen > .mon-quote, .monitor-screen > .mon-frame { filter: brightness(var(--flicker, 1)); }
+.monitor-screen > .mon-frame { filter: sepia(.35) saturate(.8) contrast(.95) brightness(var(--flicker, 1)); }
+@media (prefers-reduced-motion: reduce) { .mon-dirt { display: none; } }

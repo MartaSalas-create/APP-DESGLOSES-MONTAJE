@@ -61,7 +61,6 @@ OBRAS = [
     {"archivo": "la-chica-de-ayer", "titulo": "La chica de ayer", "anio": 2009, "categoria": "Series", "tipo": "tv", "consultas": ["La chica de ayer"]},
     {"archivo": "la-otra-mirada-2", "titulo": "La otra mirada", "anio": 2019, "categoria": "Series", "tipo": "tv", "consultas": ["La otra mirada"], "temporada": 2},
     {"archivo": "brigada-costa-del-sol", "titulo": "Brigada Costa del Sol", "anio": 2019, "categoria": "Series", "tipo": "tv", "consultas": ["Brigada Costa del Sol"]},
-    {"archivo": "los-serrano", "titulo": "Los Serrano", "anio": 2003, "categoria": "Series", "tipo": "tv", "consultas": ["Los Serrano"]},
     {"archivo": "seis-hermanas", "titulo": "Seis hermanas", "anio": 2015, "categoria": "Series", "tipo": "tv", "consultas": ["Seis hermanas"]},
     {"archivo": "la-victima-numero-8", "titulo": "La víctima número 8", "anio": 2018, "categoria": "Series", "tipo": "tv", "consultas": ["La víctima número 8"]},
 ]

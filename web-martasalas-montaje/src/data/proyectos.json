@@ -182,20 +182,6 @@
     "verificado": false
   },
   {
-    "id": "los-serrano",
-    "titulo": "Los Serrano",
-    "anio": 2004,
-    "anioTexto": "2003–2004",
-    "categoria": "Series",
-    "poster": "public/posters/los-serrano.jpg",
-    "posterWebp": "public/posters/los-serrano.webp",
-    "rol": "",
-    "sinopsis": "Diego Serrano (Antonio Resines) es un viudo padre de familia al cargo de sus tres hijos, Marcos, Guille y Curro. Lucía (Belén Rueda) es una mujer divorciada madre de dos hijas, Eva y Teté. Todo cambia cuando ésta, en un viaje hacia la playa, sufre un pinchazo, y la persona que para a socorrerla no es otro que Diego, el que fue su primer novio de joven. Después de casarse, las dos familias tendrán que convivir bajo el mismo techo y están obligados a entenderse. (wiki)",
-    "videoUrl": "https://www.youtube.com/watch?v=Jdp_75r3xLQ",
-    "tmdbId": 7283,
-    "verificado": false
-  },
-  {
     "id": "seis-hermanas",
     "titulo": "Seis hermanas",
     "anio": 2017,

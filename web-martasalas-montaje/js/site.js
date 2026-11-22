@@ -580,6 +580,18 @@
   lb.addEventListener("click", function (e) { if (e.target === lb) closeVideo(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !lb.hidden) closeVideo(); });
 
+  /* Contacto: al pulsar el sobre se despliega la dirección de correo (y se copia); un segundo clic abre el correo */
+  (function mailReveal() {
+    var m = document.querySelector(".fin-links .is-mail"); if (!m) return;
+    m.addEventListener("click", function (e) {
+      if (m.classList.contains("is-open")) return;          // ya visible: abre el programa de correo
+      e.preventDefault(); m.classList.add("is-open");
+      if (navigator.clipboard) navigator.clipboard.writeText("martasalas@me.com").then(function () {
+        m.setAttribute("data-copied", "Copiado"); setTimeout(function () { m.removeAttribute("data-copied"); }, 1800);
+      }, function () {});
+    });
+  })();
+
   /* =========================================================
      5. TRAYECTORIA: filtros y búsqueda
      ========================================================= */

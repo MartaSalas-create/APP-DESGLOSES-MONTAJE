@@ -987,3 +987,10 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .block-head h2 b, .about-title b, .fin h2 b { font-family: var(--mono); font-weight: 800; letter-spacing: -.04em; }
 .fin h2 b { letter-spacing: -.05em; }
 .block-head h2 b, .about-title b, .fin h2 b, .hero-name { word-spacing: -.1em; } /* espacio claro entre palabras en la tipografía mono */
+
+/* Sobre: al pulsarlo se despliega la dirección */
+.fin-links a.is-mail { position: relative; gap: 0; transition: gap .25s, padding .25s; }
+.fin-links a.is-mail .mail-addr { max-width: 0; overflow: hidden; white-space: nowrap; font-weight: 700; transition: max-width .35s ease; }
+.fin-links a.is-mail.is-open { gap: 8px; padding: 4px 14px; }
+.fin-links a.is-mail.is-open .mail-addr { max-width: 220px; }
+.fin-links a.is-mail[data-copied]::after { content: attr(data-copied); position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); font: 600 11px var(--mono); color: var(--muted); white-space: nowrap; }

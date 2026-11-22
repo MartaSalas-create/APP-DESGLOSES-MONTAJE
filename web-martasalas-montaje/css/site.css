@@ -1025,3 +1025,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .monitor-screen > .mon-quote, .monitor-screen > .mon-frame { filter: brightness(var(--flicker, 1)); }
 .monitor-screen > .mon-frame { filter: sepia(.35) saturate(.8) contrast(.95) brightness(var(--flicker, 1)); }
 @media (prefers-reduced-motion: reduce) { .mon-dirt { display: none; } }
+/* «En la sala de montaje» en una sola línea y con menos espacio entre «En» y «la» */
+.about-title { white-space: nowrap; font-size: clamp(26px, 4.3vw, 60px); }
+.about-title b { word-spacing: -.32em; }

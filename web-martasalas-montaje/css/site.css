@@ -939,3 +939,5 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .src-quote em { color: var(--coral); }
 .monitor-src .src-screen { gap: clamp(14px, 1.8vw, 24px); }
 .monitor-src .hero-tags { font-size: clamp(12px, 1vw, 14px); opacity: .85; }
+/* Player: hashtags en el borde inferior de la pantalla, a la izquierda */
+.monitor-src .src-screen > .hero-tags { position: absolute; left: clamp(22px, 2.4vw, 32px); bottom: clamp(18px, 2vw, 26px); margin: 0; text-align: left; justify-content: flex-start; }

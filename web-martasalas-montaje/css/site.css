@@ -944,3 +944,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* «Más de 25 años…» en una sola línea */
 .hero-head .hero-years { max-width: none; }
 @media (min-width: 761px) { .hero-head .hero-years { white-space: nowrap; } }
+
+/* Hashtags en la última página, bajo los enlaces */
+.fin-tags { justify-content: center; margin: 22px 0 0; font-size: 13px; }

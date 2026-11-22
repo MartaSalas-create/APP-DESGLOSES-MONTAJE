@@ -880,3 +880,36 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 
 /* Botones «Ver reel» y «Descargar CV» debajo de la pantalla del Composer */
 .hero-actions-under { margin-top: 14px; }
+
+/* ---------- Inicio: nombre y rol encima del Composer; botones y botonera debajo ---------- */
+.hero-head { margin-bottom: 18px; }
+.hero-head .hero-name { font-size: clamp(36px, 4.6vw, 74px); padding-bottom: 0; }
+.hero-head .hero-role { margin-top: 8px; }
+.hero-under { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+.hero-under .hero-actions-under { margin-top: 0; }
+.hero-under .transport { padding: 0; }
+.hero-under .transport-hint { margin-left: 10px; font-size: 12px; font-family: var(--mono); letter-spacing: .04em; }
+@media (min-width: 981px) { .hero-under .transport { margin-left: auto; } }
+/* «Descargar CV» con el mismo fondo de luz de proyector que las tarjetas de CV del final */
+.hero-actions .btn.btn-cv { border: 1px solid transparent; color: #f2ece3;
+  background: radial-gradient(110% 90% at 0% 0%, rgba(255,236,200,.22), rgba(255,236,200,.06) 50%, transparent 80%) padding-box,
+              linear-gradient(rgba(255,255,255,.05), rgba(255,255,255,.02)) padding-box,
+              linear-gradient(140deg, rgba(255,236,200,.6), rgba(255,255,255,.1) 45%, rgba(255,255,255,.05)) border-box;
+  box-shadow: 0 10px 26px -12px rgba(255,226,180,.35); }
+.hero-actions .btn.btn-cv:hover { box-shadow: 0 12px 30px -10px rgba(255,226,180,.5); }
+
+/* ---------- Trayectoria: dos columnas fijas ---------- */
+.credits.credits-2col { columns: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; align-items: start; }
+.credits-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+@media (max-width: 900px) { .credits.credits-2col { grid-template-columns: 1fr; } }
+
+/* ---------- Docencia: cita centrada ---------- */
+#docencia .quote { text-align: center; text-wrap: balance; }
+
+/* Contacto: «Picture lock» escrito en lápiz graso sobre una tira de película en color con sus fotogramas */
+#contacto .kicker.reel-label { width: min(560px, 92vw); aspect-ratio: 760 / 132; padding: 0; justify-content: center; gap: 14px; transform: rotate(-1.4deg);
+  background: url(../assets/picture-lock-pelicula.svg) center / 100% 100% no-repeat; border: 0; box-shadow: 0 18px 40px -16px rgba(0,0,0,.8); }
+#contacto .kicker.reel-label::before, #contacto .kicker.reel-label::after { display: none; }
+#contacto .reel-label .gp { font-size: clamp(22px, 3.2vw, 34px); color: #fff; padding: .1em .45em; border-radius: 3px;
+  background: rgba(10,9,8,.42); text-shadow: 0 2px 6px rgba(0,0,0,.8); transform: rotate(-2deg); }
+#contacto .reel-label .cue { --s: 20px; }

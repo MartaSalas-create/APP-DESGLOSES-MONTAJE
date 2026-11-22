@@ -446,6 +446,7 @@
     tPlay.innerHTML = svgUse("i-play"); tPlay.classList.remove("on"); tPlay.setAttribute("aria-label", BTN.play.label);
   }
   function play(delay) {
+    if (typeof shut !== "undefined" && shut.raf) { cancelAnimationFrame(shut.raf); shut.raf = null; shut.dir = 0; shut.rate = 1; }
     stopPlay(); clearTimeout(idleTimer);
     var r = range();
     var START = r ? r[0] + 0.5 : Y1, END = r ? r[1] : Y0;
@@ -488,6 +489,34 @@
   }
   chead.addEventListener("keydown", onKeys);
   transportEl.addEventListener("keydown", onKeys);
+
+  /* J K L como en los programas de montaje: L avanza (hacia lo más antiguo), J retrocede (hacia el presente),
+     K para. Pulsar J o L otra vez dobla la velocidad (1×, 2×, 4×, 8×). */
+  var shut = { dir: 0, rate: 1, raf: null };
+  function stopShuttle() { if (shut.raf) cancelAnimationFrame(shut.raf); shut.raf = null; shut.dir = 0; shut.rate = 1; stopPlay(); }
+  function shuttle(dir) {
+    if (auto) stopPlay();
+    if (shut.dir === dir) shut.rate = Math.min(8, shut.rate * 2); else { shut.dir = dir; shut.rate = 1; }
+    clearTimeout(idleTimer); showFrame(true);
+    tPlay.innerHTML = svgUse("i-pause"); tPlay.classList.add("on");
+    if (shut.raf) return;
+    var tPrev = null;
+    shut.raf = requestAnimationFrame(function st(ts) {
+      if (tPrev === null) tPrev = ts;
+      var dt = (ts - tPrev) / 1000; tPrev = ts;
+      var v = lastYv - shut.dir * shut.rate * (span / 9) * dt;
+      if (v <= Y0 || v >= Y1) { setYear(Math.max(Y0, Math.min(Y1, v))); stopShuttle(); idleSoon(8000); return; }
+      setYear(v); shut.raf = requestAnimationFrame(st);
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    var t = e.target; if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    var k = e.key.toLowerCase();
+    if (k === "l") { shuttle(1); e.preventDefault(); }
+    else if (k === "j") { shuttle(-1); e.preventDefault(); }
+    else if (k === "k") { stopShuttle(); idleSoon(8000); e.preventDefault(); }
+  });
 
   // Al cargar, la secuencia se reproduce una vez
   if (reduceMotion) { setYear(Y1); showFrame(false); }
@@ -585,18 +614,23 @@
   function renderCredits() {
     var html = "", count = 0;
     GROUPS.forEach(function (g) {
-      var part = "";
-      g.cats.forEach(function (cat) {
+      var part = "", cols = { L: "", R: "" };
+      // columnas fijas: izquierda Largometrajes y Series; derecha Documental y Cortometrajes; el resto, donde haya menos
+      var COL = { "Largometrajes y TV movies": "L", "Series de ficción": "L", "Documental y reportaje": "R", "Cortometrajes": "R",
+        "Programas de TV": "L", "Musical": "R", "Publicidad": "L", "Otros": "R", "Ayudante de montaje": "L", "Script": "R" };
+      var ORDER_C = ["Largometrajes y TV movies", "Documental y reportaje", "Series de ficción", "Cortometrajes", "Programas de TV", "Musical", "Publicidad", "Otros", "Ayudante de montaje", "Script"];
+      g.cats.slice().sort(function (a, b) { return ORDER_C.indexOf(a) - ORDER_C.indexOf(b); }).forEach(function (cat) {
         if (current !== "Todo" && cat !== current) return;
         var items = byCat[cat].filter(function (it) { return !query || norm(it.join(" ")).indexOf(query) !== -1; });
         if (!items.length) return;
         count += items.length;
-        part += '<div class="credit-group" data-trk="' + TRACK_COLOR[cat] + '"><h3 class="credit-cat"><span class="cat-t">' + esc(cat) + '</span> <span class="count">' + items.length + "</span></h3><ul>" +
+        var gh = '<div class="credit-group" data-trk="' + TRACK_COLOR[cat] + '"><h3 class="credit-cat"><span class="cat-t">' + esc(cat) + '</span> <span class="count">' + items.length + "</span></h3><ul>" +
           items.map(function (it) {
             return '<li><span class="yr">' + esc(it[0]) + '</span><span class="ct"><strong>' + esc(it[1]) + "</strong>" + (it[2] ? "<span>" + esc(it[2]) + "</span>" : "") + "</span></li>";
           }).join("") + "</ul></div>";
+        cols[COL[cat] || "L"] += gh; part += gh;
       });
-      if (part) html += '<h3 class="credits-section">' + g.title + '</h3><div class="credits">' + part + "</div>";
+      if (part) html += '<h3 class="credits-section">' + g.title + '</h3><div class="credits credits-2col"><div class="credits-col">' + cols.L + '</div><div class="credits-col">' + cols.R + "</div></div>";
     });
     $("#credits").innerHTML = html;
     $("#empty").hidden = count > 0;

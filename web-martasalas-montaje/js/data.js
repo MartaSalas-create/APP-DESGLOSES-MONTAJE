@@ -196,7 +196,8 @@ window.SITE = {
     ["1997", "Curso de Literatura y Cine", "UNED"],
     ["1995", "Ayudante de producción audiovisual", "Comunidad de Madrid"],
     ["1994", "Imagen y sonido", "Casa de Oficios Magerit"],
-    ["1991–1994", "Módulos III de Operaciones de Imagen y Sonido y de Mantenimiento y Operaciones Técnicas de Radio y TV", "CFTP Puerta Bonita"],
-    ["1992", "Softimage en Silicon Graphics · Animación 3D", "Promovisa · Taller Ex-Tipo. Pieza «Dos», exhibida en Imagina 93"]
+    ["1992", "Softimage en Silicon Graphics · Animación 3D", "Promovisa · Taller Ex-Tipo. Pieza «Dos», exhibida en Imagina 93"],
+    ["1991–1994", "Módulo III de Operaciones de Imagen y Sonido", "Técnico Especialista Superior (equivalente al actual Grado Superior) · CFTP Puerta Bonita"],
+    ["1991–1994", "Módulo III de Mantenimiento y Operaciones Técnicas de Radio y TV", "Técnico Especialista Superior (equivalente al actual Grado Superior) · CFTP Puerta Bonita"]
   ]
 };

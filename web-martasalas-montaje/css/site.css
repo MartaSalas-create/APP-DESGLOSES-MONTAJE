@@ -960,3 +960,4 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 #contacto .kicker.reel-label { background-image: url(../assets/picture-lock-pelicula.png); }
 #contacto .reel-label .gp { filter: url(#grease-real); text-shadow: none; color: #f7f2e6; font-size: clamp(36px, 5.4vw, 64px); letter-spacing: .03em; }
 #contacto .reel-label .gp { color: #fff; opacity: 1; mix-blend-mode: normal; }
+#contacto .reel-label .gp { color: rgba(250,246,236,.78); font-size: clamp(40px, 6vw, 72px); } /* lápiz graso menos intenso, un pelín más grande */

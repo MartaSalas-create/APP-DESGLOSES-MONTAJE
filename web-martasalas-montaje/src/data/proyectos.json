@@ -222,5 +222,19 @@
     "tmdbId": 126872,
     "verificado": false,
     "videoUrl": "https://www.youtube.com/watch?v=_DAdiLKCJ7g"
+  },
+  {
+    "anio": 2025,
+    "anioTexto": "",
+    "categoria": "TV",
+    "id": "una-tarda-amb",
+    "poster": "public/posters/una-tarda-amb.jpg",
+    "posterWebp": "public/posters/una-tarda-amb.webp",
+    "rol": "Montaje y guion",
+    "sinopsis": "El programa de conversaciones de La 2Cat presentado y dirigido por la actriz Candela Peña, con codirección de Bob Pop. Una mirada fresca, empática y cercana a través de encuentros con personas que, desde distintos rincones del territorio, tienen mucho que decir. Serie de 8 capítulos. Catorce para 2Cat (RTVE).",
+    "titulo": "Una tarda amb…",
+    "tmdbId": 307721,
+    "verificado": true,
+    "videoUrl": ""
   }
 ]

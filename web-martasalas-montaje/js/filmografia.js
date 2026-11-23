@@ -114,7 +114,7 @@
   /* ---------- Trayectoria: los títulos con cartel abren su ficha ---------- */
   function clave(t) {
     return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .split(" · ")[0].replace(/\s+t\d.*$/, "").replace(/[^a-z0-9ñ ]/g, "").replace(/\s+/g, " ").trim();
+      .split(" · ")[0].replace(/\(.*?\)/g, "").replace(/\s+t\d.*$/, "").replace(/[^a-z0-9ñ ]/g, "").replace(/\s+/g, " ").trim();
   }
   var porTitulo = {};
   function enlazaTrayectoria() {

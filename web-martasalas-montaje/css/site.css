@@ -74,12 +74,12 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .nle-track a { flex: var(--w, 1) 1 0; min-width: 0; text-decoration: none; font: 600 11px/22px var(--sans); color: #fff; padding: 0 8px;
   border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .5; transition: opacity .2s, flex-grow .4s; }
 .nle-track a:hover, .nle-track a.is-current { opacity: 1; }
-.nle-track a[data-c="0"], .nle-track a[data-c="6"] { background: var(--ink-3); color: #cfc8bf; }
+.nle-track a[data-c="0"], .nle-track a.nle-lock { background: var(--ink-3); color: #cfc8bf; }   /* START y PICTURE LOCK en gris: solo las bobinas llevan color */
 .nle-track a[data-c="1"] { background: var(--c1); color: #2a1600; }
 .nle-track a[data-c="2"] { background: var(--c2); }
 .nle-track a[data-c="3"] { background: var(--c3); }
 .nle-track a[data-c="4"] { background: var(--c4); }
-.nle-track a[data-c="5"] { background: var(--c5); }
+.nle-track a[data-c="5"]:not(.nle-lock) { background: var(--c5); }
 /* START y PICTURE LOCK: marcas con icono al principio y al final de la secuencia */
 .nle-track a.nle-mark { display: flex; align-items: center; gap: 6px; letter-spacing: .08em; }
 .nle-track a.nle-mark span { overflow: hidden; text-overflow: ellipsis; }

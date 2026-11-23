@@ -57,7 +57,7 @@
     grid.innerHTML = lista.map(function (p) {
       return '<li class="filmo-item"><button type="button" class="filmo-card" data-id="' + esc(p.id) + '" aria-label="Ver detalles de ' + esc(p.titulo) + '">' +
         cartel(p, "filmo-poster", true) +
-        (embedDe(p.videoUrl) ? '<span class="filmo-play" aria-hidden="true">▶ Tráiler</span>' : "") +
+        (embedDe(p.videoUrl) ? '<span class="filmo-play" aria-hidden="true">▶ Tráiler</span>' : p.videoUrl ? '<span class="filmo-play" aria-hidden="true">▶ Vídeo</span>' : "") +
         '<span class="filmo-cap"><strong>' + esc(p.titulo) + '</strong><span class="mono">' + esc(p.anioTexto || p.anio) + " · " + esc(p.categoria) + "</span></span>" +
         "</button></li>";
     }).join("");
@@ -81,10 +81,14 @@
     sin.classList.toggle("is-empty", !p.sinopsis);
     // dentro de un visor que no admite vídeos incrustados, solo el enlace a YouTube
     var framed = (function () { try { return window.self !== window.top; } catch (err) { return true; } })();
+    // vídeos de otras webs (RTVE Play…): no se pueden incrustar, se abren en su web con un botón
+    var sitio = function (u) { return /rtve\.es/.test(u) ? "RTVE Play" : /3cat|ccma/.test(u) ? "3Cat" : /vimeo/.test(u) ? "Vimeo" : /youtu/.test(u) ? "YouTube" : "su web"; };
     modal.querySelector(".fm-video").innerHTML = video
       ? (framed ? "" : '<iframe src="' + esc(video) + '" title="Vídeo de ' + esc(p.titulo) + '" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>') +
-        '<a class="fm-video-link" href="' + esc(p.videoUrl) + '" target="_blank" rel="noopener">▶ Ver el tráiler en YouTube ↗</a>'
-      : "";
+        '<a class="fm-video-link" href="' + esc(p.videoUrl) + '" target="_blank" rel="noopener">▶ Ver el tráiler en ' + sitio(p.videoUrl) + ' ↗</a>'
+      : p.videoUrl
+        ? '<a class="fm-video-link" href="' + esc(p.videoUrl) + '" target="_blank" rel="noopener">▶ Ver en ' + sitio(p.videoUrl) + ' ↗</a>'
+        : "";
     modal.hidden = false;
     document.body.style.overflow = "hidden";
     modal.querySelector(".fm-close").focus();

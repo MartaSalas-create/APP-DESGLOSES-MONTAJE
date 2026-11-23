@@ -162,6 +162,13 @@
     $$(".reel-label").forEach(function (k) { k.classList.add("is-waiting"); reelIO.observe(k); });
   }
   window.addEventListener("scroll", onScroll, { passive: true });
+  /* Formación: el subtítulo cuenta las formaciones solo (se actualiza al añadir cursos en data.js) */
+  (function () {
+    var el = document.getElementById("trainCount"), t = D.training || []; if (!el || !t.length) return;
+    var yr = function (x) { return parseInt(String(x[0]).slice(0, 4), 10); };
+    var first = Math.min.apply(null, t.map(yr)), last = Math.max.apply(null, t.map(yr));
+    el.textContent = t.length + " formaciones desde " + first + ", la última en " + last;
+  })();
   window.addEventListener("resize", function () { clearTimeout(layoutNle.t); layoutNle.t = setTimeout(layoutNle, 120); });
 
   /* El playhead del menú de páginas se arrastra como en el timeline: al moverlo, la página corre hasta ese punto.

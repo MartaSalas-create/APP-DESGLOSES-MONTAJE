@@ -91,9 +91,10 @@
      ========================================================= */
   var track = $("#nleTrack"), head = $("#nleHead"), tcEl = $("#tc"), label = $("#nleLabel");
   var navClips = $$("a", track);
-  var names = ["Start", "Trabajos en pantalla", "Reel", "Trayectoria", "Docencia", "Formación", "Contacto"];
+  var names = ["Start", "Trabajos en pantalla", "Trayectoria", "Docencia", "Formación", "Contacto"];
+  var LAST = names.length - 1;
   var sections = navClips.map(function (a) { return $(a.getAttribute("href")); });
-  navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 || i === 6 ? "" : String(i)); });
+  navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 || i === LAST ? "" : String(i)); });
   var TC_START = tcToFrames("00:59:50:00"), TC_END = tcToFrames("02:00:00:00");
   var bounds = [];
 
@@ -127,7 +128,7 @@
     head.style.left = (a.offsetLeft + within * a.offsetWidth) + "px";
     tcEl.textContent = framesToTc(TC_START + p * (TC_END - TC_START));
     navClips.forEach(function (c, j) { c.classList.toggle("is-current", j === idx); });
-    label.textContent = (idx === 0 ? "Start · martasalas.com" : idx === 6 ? "Picture lock · " + names[idx] : "Bobina " + idx + " · " + names[idx]);
+    label.textContent = (idx === 0 ? "Start · martasalas.com" : idx === LAST ? "Picture lock · " + names[idx] : "Bobina " + idx + " · " + names[idx]);
     if (onScroll.last !== undefined && onScroll.last !== idx) cueFlash();
     onScroll.last = idx;
   }
@@ -602,8 +603,8 @@
     return '<article class="' + cls + '"><span class="clip-n" aria-hidden="true">' + n + "</span>" + body + "</article>";
   }).join("");
 
-  $("#awards").innerHTML = D.awards.map(function (a) {
-    return '<div class="award reveal"><span class="mono">' + esc(a.year) + "</span><b>" + esc(a.text) + "</b><span>" + esc(a.work) + "</span></div>";
+  $("#awards").innerHTML = '<span class="awards-k mono">Premios y nominaciones</span>' + D.awards.map(function (a) {
+    return '<span class="award"><span class="mono">' + esc(a.year) + "</span> " + esc(a.text) + " <i>· " + esc(a.work) + "</i></span>";
   }).join("");
 
   /* =========================================================
@@ -617,7 +618,7 @@
         '<span class="play">▶</span><span class="reel-n">' + (v.t ? "Tráiler · " + esc(v.t) : (kind === "tv" ? "Series" : "Cine") + " · Clip " + pad(i + 1)) + "</span></a>";
     }).join("");
   }
-  renderReel("trailers");
+  if (reelGrid) renderReel("trailers");   // (la sección Reel se quitó: los tráileres siguen en las fichas y en Trayectoria)
   $$("[data-reel]").forEach(function (b) {
     b.addEventListener("click", function () {
       $$("[data-reel]").forEach(function (x) { var on = x === b; x.classList.toggle("is-active", on); x.setAttribute("aria-selected", on); });
@@ -634,7 +635,7 @@
   function closeVideo() { lb.hidden = true; lbFrame.innerHTML = ""; document.body.style.overflow = ""; if (lastFocus) lastFocus.focus(); }
   // Dentro de un visor que no admite vídeos incrustados, el enlace abre YouTube
   var framed = (function () { try { return window.self !== window.top; } catch (err) { return true; } })();
-  reelGrid.addEventListener("click", function (e) {
+  if (reelGrid) reelGrid.addEventListener("click", function (e) {
     var b = e.target.closest(".reel-item"); if (!b || framed) return;
     e.preventDefault(); openVideo(b.dataset.id);
   });

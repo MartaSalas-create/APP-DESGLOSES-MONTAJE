@@ -1096,3 +1096,11 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 /* Botonera: el icono del botón activo vuelve a encenderse en naranja (y en el clic) */
 .avid-btn.on, .avid-btn.on:hover { color: var(--yr); }
 .avid-btn:active { color: var(--yr); }
+
+/* ---------- Premios: una sola línea compacta bajo los carteles ---------- */
+.awards { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px; margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); grid-template-columns: none; }
+.awards .award { display: inline; padding: 0; border: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
+.awards .award .mono { color: var(--yr); font-weight: 600; margin-right: 4px; }
+.awards .award i { font-style: normal; color: var(--muted); }
+.awards-k { width: 100%; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 1080px) { .awards { grid-template-columns: none; } .awards .award { border-bottom: 0; padding-bottom: 0; } }

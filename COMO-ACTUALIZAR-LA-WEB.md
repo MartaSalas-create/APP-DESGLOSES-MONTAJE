@@ -7,7 +7,7 @@
 
 ## Dónde está cada cosa
 
-- Créditos de Trayectoria, Docencia, Formación, premios y tráileres del Reel: `js/data.js`.
+- Créditos de Trayectoria, Docencia, Formación, premios y tráileres (`reels.trailers`, se abren desde las fichas y desde Trayectoria; la sección Reel se quitó): `js/data.js`.
 - Carteles de Trabajos en pantalla (título, año, sinopsis, tráiler): `src/data/proyectos.json`, con las imágenes en `public/posters/`.
 - Fotogramas de los tráileres: `public/stills/`.
 - CV en PDF: `assets/marta-salas-cv-montaje.pdf` y `assets/marta-salas-cv-docencia.pdf`.

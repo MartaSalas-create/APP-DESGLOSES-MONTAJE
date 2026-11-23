@@ -208,5 +208,19 @@
     "videoUrl": "https://www.youtube.com/watch?v=k2oJLX4u8Pc",
     "tmdbId": 83265,
     "verificado": false
+  },
+  {
+    "anio": 2021,
+    "anioTexto": "",
+    "categoria": "TV",
+    "id": "bso",
+    "poster": "public/posters/bso.jpg",
+    "posterWebp": "public/posters/bso.webp",
+    "rol": "",
+    "sinopsis": "Emilio Aragón dirige y presenta este show de entretenimiento musical que homenajea a su invitado principal, a través de las canciones que componen la Banda Sonora de su vida. Raphael, Los Javis, Belén Rueda o Joaquín (futbolista) serán algunos de los protagonistas. En cada programa, uno de ellos será entrevistado por Emilio, que a su vez irá dando paso a actuaciones únicas, interpretadas de muy diversas formas por artistas invitados. Cada programa representará el universo del homenajeado, con una escenografía acorde a su personalidad, con coreografías dirigidas por Iker Carrera, efectos visuales y una banda fija, que acompañará las interpretaciones musicales.",
+    "titulo": "BSO",
+    "tmdbId": 126872,
+    "verificado": false,
+    "videoUrl": "https://www.youtube.com/watch?v=_DAdiLKCJ7g"
   }
 ]

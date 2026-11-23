@@ -1113,3 +1113,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .avid-btn.on, .avid-btn.on:hover, .avid-btn:active { color: var(--inout); }
 /* Cursor del nombre en violeta Avid, como los controles */
 .cursor { background: var(--inout); }
+
+/* Filmografía: filtro de programas de TV */
+.filmo-filter[data-cat="TV"] { --ff-c: var(--c5); --ff-ink: #fff; }

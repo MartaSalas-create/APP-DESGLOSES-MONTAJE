@@ -91,7 +91,7 @@
      ========================================================= */
   var track = $("#nleTrack"), head = $("#nleHead"), tcEl = $("#tc"), label = $("#nleLabel");
   var navClips = $$("a", track);
-  var names = ["Start", "Trabajos en pantalla", "Trayectoria", "Docencia", "Formación", "Contacto"];
+  var names = ["Start", "Filmografía seleccionada", "Trayectoria", "Docencia", "Formación", "Contacto"];
   var LAST = names.length - 1;
   var sections = navClips.map(function (a) { return $(a.getAttribute("href")); });
   navClips.forEach(function (a, i) { a.setAttribute("data-n", i === 0 || i === LAST ? "" : String(i)); });

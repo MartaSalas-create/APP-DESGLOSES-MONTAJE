@@ -236,5 +236,47 @@
     "tmdbId": 307721,
     "verificado": true,
     "videoUrl": ""
+  },
+  {
+    "anio": 2001,
+    "anioTexto": "",
+    "categoria": "Cine",
+    "id": "uno-mas-uno-menos",
+    "poster": "public/posters/uno-mas-uno-menos.jpg",
+    "posterWebp": "public/posters/uno-mas-uno-menos.webp",
+    "rol": "Comontaje",
+    "sinopsis": "Una periodista (Ana) tiene que hacer, por compromiso, un documental. En él va descubriendo el mundo de Lourdes, una chica de 18 años, síndrome de Down, que sueña con ser enfermera y casarse con su novio Carlos. El trabajo y la relación obligada van alimentando un auténtico interés y una verdadera amistad.",
+    "titulo": "Uno más, uno menos",
+    "tmdbId": 1228996,
+    "verificado": false,
+    "videoUrl": ""
+  },
+  {
+    "anio": 2013,
+    "anioTexto": "",
+    "categoria": "TV",
+    "id": "me-resbala",
+    "poster": "public/posters/me-resbala.jpg",
+    "posterWebp": "public/posters/me-resbala.webp",
+    "rol": "Montaje",
+    "sinopsis": "‘Me resbala’ es un disparatado juego en el que un grupo de grandes humoristas españoles participan en retos en los que se pone a prueba su capacidad de improvisación y su espontaneidad a la hora de sacar a relucir su vis cómica y sus dotes de interpretación en diferentes situaciones.",
+    "titulo": "Me resbala",
+    "tmdbId": 66910,
+    "verificado": false,
+    "videoUrl": ""
+  },
+  {
+    "anio": 2013,
+    "anioTexto": "",
+    "categoria": "TV",
+    "id": "por-arte-de-magia",
+    "poster": "public/posters/por-arte-de-magia.jpg",
+    "posterWebp": "public/posters/por-arte-de-magia.webp",
+    "rol": "Montaje",
+    "sinopsis": "Por arte de magia fue un programa de televisión de entretenimiento familiar presentado por Anna Simon que se estrenó el 13 de septiembre de 2013 en Antena 3. Se trata de la adaptación del formato británico The Magicians, emitido por BBC One. A falta de 4 emisiones por emitir, la cadena de televisión Antena 3 decidió retirar el programa, debido a sus bajos índices de audiencias.",
+    "titulo": "Por arte de magia",
+    "tmdbId": 102893,
+    "verificado": false,
+    "videoUrl": "https://www.youtube.com/watch?v=-b3mpzZtUV0"
   }
 ]

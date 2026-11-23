@@ -1111,3 +1111,5 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .avid-btn[data-act="in"].on, .avid-btn[data-act="out"].on { color: var(--inout); }
 /* Botonera: todos los botones activos (play/pausa, I, O y al pulsar) en violeta Avid */
 .avid-btn.on, .avid-btn.on:hover, .avid-btn:active { color: var(--inout); }
+/* Cursor del nombre en violeta Avid, como los controles */
+.cursor { background: var(--inout); }

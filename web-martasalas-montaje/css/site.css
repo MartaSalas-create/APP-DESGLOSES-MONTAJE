@@ -1104,3 +1104,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .awards .award i { font-style: normal; color: var(--muted); }
 .awards-k { width: 100%; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 @media (max-width: 1080px) { .awards { grid-template-columns: none; } .awards .award { border-bottom: 0; padding-bottom: 0; } }
+/* Tramo marcado con I/O en violeta (homenaje a Avid): mismo diseño, solo cambia el color */
+:root { --inout: #a98bff; }
+.career-range { background: rgba(169,139,255,.16) !important; border-top-color: var(--inout) !important; }
+.career-mark { border-color: var(--inout) !important; }
+.avid-btn[data-act="in"].on, .avid-btn[data-act="out"].on { color: var(--inout); }

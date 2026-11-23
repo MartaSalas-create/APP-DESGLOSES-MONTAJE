@@ -55,7 +55,6 @@ OBRAS = [
     # --- Televisión ---
     {"archivo": "machos-alfa", "titulo": "Machos Alfa T1/T6", "anio": 2022, "anioTexto": "2022/2026", "orden": 2026, "categoria": "Series", "tipo": "tv", "consultas": ["Machos Alfa"]},
     {"archivo": "el-comisario", "titulo": "El comisario", "anio": 2004, "anioTexto": "2004–2008", "orden": 2008, "categoria": "Series", "tipo": "tv", "consultas": ["El comisario"]},
-    {"archivo": "upa-dance", "titulo": "Un paso adelante", "anio": 2002, "categoria": "Series", "tipo": "tv", "consultas": ["Un paso adelante", "UPA Dance"]},
     {"archivo": "el-ministerio-del-tiempo", "titulo": "El Ministerio del Tiempo", "anio": 2015, "categoria": "Series", "tipo": "tv", "consultas": ["El Ministerio del Tiempo"]},
     {"archivo": "vivir-sin-permiso", "titulo": "Vivir sin permiso", "anio": 2018, "categoria": "Series", "tipo": "tv", "consultas": ["Vivir sin permiso"]},
     {"archivo": "la-chica-de-ayer", "titulo": "La chica de ayer", "anio": 2009, "categoria": "Series", "tipo": "tv", "consultas": ["La chica de ayer"]},

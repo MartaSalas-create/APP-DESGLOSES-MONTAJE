@@ -98,20 +98,6 @@
     "verificado": false
   },
   {
-    "id": "upa-dance",
-    "titulo": "Un paso adelante",
-    "anio": 2003,
-    "anioTexto": "2001–2003",
-    "categoria": "Series",
-    "poster": "public/posters/upa-dance.jpg",
-    "posterWebp": "public/posters/upa-dance.webp",
-    "rol": "",
-    "sinopsis": "Un paso adelante, trata sobre una famosa Escuela de Artes Escénicas. Carmen Arranz, directora de la escuela, da el privilegio a 20 jóvenes de formar parte de su centro. Para ello, antes tienen que pasar unas duras pruebas de acceso, en las que solo quedarán los mejores. Una vez dentro, los alumnos, tienen que demostrar que sobresalen sobre los demás compañeros en las asignaturas que se les imparten: música, baile clásico, baile moderno, canto, interpretación y teatro. Los profesores son importantes artistas y conocidos, algunos de ellos incluso han sido formados por la Escuela en la que ahora imparten clase. Éstos ayudarán a formarse a los alumnos no solo como artistas si no también personalmente. Esta escuela de gran rendimiento nos muestra las 24 horas de formación y día a día de los alumnos y también de los profesores.",
-    "videoUrl": "",
-    "tmdbId": 6798,
-    "verificado": false
-  },
-  {
     "id": "el-ministerio-del-tiempo",
     "titulo": "El Ministerio del Tiempo",
     "anio": 2017,

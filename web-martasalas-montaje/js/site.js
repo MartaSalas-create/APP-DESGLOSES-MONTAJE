@@ -439,11 +439,11 @@
   var BTN = {
     "in":   { icon: "i-in",        label: "Marcar entrada (I)" },
     "out":  { icon: "i-out",       label: "Marcar salida (O)" },
-    "prev": { icon: "i-prev-edit", label: "Ir al corte anterior · más reciente" },
+    "prev": { icon: "i-prev-edit", label: "Ir al inicio del timeline (2026)" },
     "back": { icon: "i-step-back", label: "Un año más reciente" },
     "play": { icon: "i-play",      label: "Reproducir la carrera (espacio)" },
     "fwd":  { icon: "i-step-fwd",  label: "Un año más antiguo" },
-    "next": { icon: "i-next-edit", label: "Ir al corte siguiente · más antiguo" }
+    "next": { icon: "i-next-edit", label: "Ir al final del timeline (1991)" }
   };
   var ORDER = MODE === "completa" ? ["in", "out", "|", "prev", "back", "play", "fwd", "next"] : ["prev", "play", "next"];
   var svgUse = function (id) { return '<svg aria-hidden="true" focusable="false"><use href="#' + id + '"/></svg>'; };
@@ -540,7 +540,7 @@
     var act = b.dataset.act;
     if (act === "play") togglePlay();
     else if (act === "prev") { if (typeof stopShuttle === "function") stopShuttle(); stopPlay(); showFrame(true); setYear(Y1); idleSoon(8000); }   // al inicio del timeline
-    else if (act === "next") jump(-1);
+    else if (act === "next") { if (typeof stopShuttle === "function") stopShuttle(); stopPlay(); showFrame(true); setYear(Y0); idleSoon(8000); }   // al final del timeline
     else if (act === "back") goTo(Math.min(Y1 - 1, (curYear == null ? 2026 : curYear) + 1));
     else if (act === "fwd") goTo(Math.max(Y0, (curYear == null ? 2026 : curYear) - 1));
     else toggleMark(act);

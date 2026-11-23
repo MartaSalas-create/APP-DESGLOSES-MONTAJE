@@ -1109,3 +1109,5 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
 .career-range { background: rgba(169,139,255,.16) !important; border-top-color: var(--inout) !important; }
 .career-mark { border-color: var(--inout) !important; }
 .avid-btn[data-act="in"].on, .avid-btn[data-act="out"].on { color: var(--inout); }
+/* Botonera: todos los botones activos (play/pausa, I, O y al pulsar) en violeta Avid */
+.avid-btn.on, .avid-btn.on:hover, .avid-btn:active { color: var(--inout); }

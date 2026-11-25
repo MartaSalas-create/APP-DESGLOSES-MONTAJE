@@ -1,0 +1,17 @@
+# Publicación de la web de Marta Salas en Netlify
+# La web está en la carpeta web-martasalas-montaje y no necesita compilarse.
+[build]
+  base = "web-martasalas-montaje"
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

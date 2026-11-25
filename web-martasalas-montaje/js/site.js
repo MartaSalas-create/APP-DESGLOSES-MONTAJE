@@ -1,6 +1,35 @@
 (function () {
   "use strict";
   var D = window.SITE;
+
+  /* Acentos como etiquetas de cinta adhesiva rotuladas a mano: cada letra un poco distinta,
+     tinta algo corrida y corte de tijera irregular (siempre el mismo para cada palabra) */
+  (function () {
+    document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ink-bleed" x="-10%" y="-30%" width="120%" height="160%">' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d"/>' +
+      '<feGaussianBlur in="d" stdDeviation="1.2" result="b"/><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="1" seed="7" result="patch"/>' +
+      '<feColorMatrix in="patch" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -0.35" result="patchA"/><feComposite in="b" in2="patchA" operator="in" result="bleed"/>' +
+      '<feComponentTransfer in="bleed" result="bleed2"><feFuncA type="linear" slope="0.85"/></feComponentTransfer><feMerge><feMergeNode in="bleed2"/><feMergeNode in="d"/></feMerge></filter></svg>');
+    function tape(e) {
+      if (e.classList.contains("tape") || e.closest(".trk-btn")) return;
+      var t = e.textContent, seed = 0;
+      for (var k = 0; k < t.length; k++) seed = (seed * 31 + t.charCodeAt(k)) % 233280;
+      var rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      var letters = Array.prototype.map.call(t, function (ch) {
+        return ch === " " ? "</span> <span class=\"w\">" : '<i style="transform:rotate(' + ((rnd() - .5) * 9).toFixed(1) + 'deg) translateY(' + ((rnd() - .5) * .14).toFixed(2) + 'em) scale(' + (0.93 + rnd() * .14).toFixed(2) + ')">' + ch + "</i>";
+      }).join("");
+      e.innerHTML = '<span class="sr">' + t + '</span><span class="ink" aria-hidden="true"><span class="w">' + letters + "</span></span>";
+      var pts = ["0% " + (rnd() * 8).toFixed(1) + "%"], x, i, ends = 7;
+      for (x = 6; x < 100; x += 12) pts.push(x + "% " + (rnd() * 3).toFixed(1) + "%");
+      for (i = 0; i <= ends; i++) pts.push((100 - rnd() * 3.5).toFixed(1) + "% " + (i / ends * 100).toFixed(1) + "%");
+      for (x = 94; x > 0; x -= 12) pts.push(x + "% " + (100 - rnd() * 3).toFixed(1) + "%");
+      for (i = ends; i >= 0; i--) pts.push((rnd() * 3.5).toFixed(1) + "% " + (i / ends * 100).toFixed(1) + "%");
+      e.style.setProperty("--cut", "polygon(" + pts.join(",") + ")");
+      e.style.setProperty("--rot", ((rnd() - .5) * 4 - 1).toFixed(1) + "deg");
+      e.classList.add("tape");
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("em"), tape);
+  })();
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var esc = function (t) {

@@ -563,3 +563,22 @@ body.theme-moviola { background: #2a2622; }
 
 .theme-sala .nav-switch button, .theme-guion .nav-switch button, .theme-corte .nav-switch button, .theme-moviola .nav-switch button { font-family: Inter, -apple-system, Helvetica, Arial, sans-serif; letter-spacing: 0; text-transform: none; transform: none; }
 .theme-sala .nav-switch button.on, .theme-corte .nav-switch button.on { background: #ff6b5a; color: #fff; }
+
+/* ---------- 5 · Guion ↔ Montaje + línea de tiempo ---------- */
+.theme-sw-mixto { background: linear-gradient(90deg, #f6f1e7 0 40%, #fff 40% 50%, #1d2026 50%); box-shadow: inset -40px -10px 0 -30px #e8a9a9; }
+.mix-hd { height: 96px; grid-template-columns: minmax(240px, 1fr) auto minmax(320px, 1.6fr); }
+.mix-paper { padding: 10px 22px; }
+.mix-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; color: #c0392b; margin-bottom: 2px; }
+.mix-film { padding: 8px 14px; display: flex; flex-direction: column; justify-content: space-between; }
+.mix-tl { position: relative; margin: 4px 0; }
+.mix-ruler { position: relative; height: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9px; color: #8a919c; }
+.mix-ruler span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.mix-ruler span:first-child { transform: none; }
+.mix-clips { display: flex; gap: 1px; height: 24px; border-radius: 3px; overflow: hidden; }
+.mix-clips i { display: block; min-width: 1px; cursor: pointer; opacity: .92; }
+.mix-clips i:hover { opacity: 1; filter: brightness(1.12); }
+.mix-clips i.cur { box-shadow: inset 0 0 0 2px #fff; opacity: 1; }
+.mix-ph { position: absolute; top: 10px; bottom: -3px; width: 2px; background: #ff3b30; box-shadow: 0 0 6px rgba(255,59,48,.7); }
+.mix-ph:before { content: ''; position: absolute; top: -6px; left: -5px; border: 6px solid transparent; border-top-color: #ff3b30; }
+.mix-ph em { position: absolute; top: -18px; left: 6px; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #ffb3ad; white-space: nowrap; }
+@media (max-width: 1000px) { .mix-hd { grid-template-columns: 1fr auto; height: auto; } .mix-film { grid-column: 1 / -1; } }

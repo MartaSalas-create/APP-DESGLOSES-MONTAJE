@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Desglose de Montaje · Guion → Pantalla</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Oswald:wght@500;700&family=Permanent+Marker&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -26,6 +28,7 @@
         <button class="btn" id="menuBtn">Proyecto ▾</button>
         <div class="menu-list" id="menuList">
           <button data-action="projects-panel">Mis proyectos (renombrar, abrir, borrar)</button>
+          <button data-action="theme-panel">🎨 Apariencia (probar estilos)</button>
           <button data-action="new-empty">Nuevo proyecto vacío</button>
           <button data-action="export-json">Guardar copia (.json)</button>
           <label class="menu-item">Abrir copia (.json)<input type="file" id="jsonInput" accept=".json" hidden></label>
@@ -37,6 +40,7 @@
       </div>
     </div>
   </header>
+  <div id="themeDeco" class="no-print"></div>
 
   <nav class="tabs no-print" id="tabs"></nav>
 
@@ -59,6 +63,7 @@
   <script src="js/doctor.js"></script>
   <script src="js/map.js"></script>
   <script src="js/attach.js"></script>
+  <script src="js/theme.js"></script>
   <script src="js/pdf.js"></script>
 </body>
 </html>

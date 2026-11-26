@@ -687,6 +687,7 @@
     $('#tabs').hidden = !p;
     if (!p) { $('#main').innerHTML = welcomeHTML(); return; }
     renderTab();
+    if (window.Theme) Theme.deco();
   }
 
   function sections() {

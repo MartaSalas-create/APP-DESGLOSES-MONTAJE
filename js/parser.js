@@ -9,7 +9,7 @@
   const LINES_PER_PAGE = 54;
 
   // Encabezado de secuencia: "12 INT. CASA - DÍA 12", "ESC. 62 INT. PISO — NOCHE", "INT/EXT. COCHE"
-  const HEADING_RE = /^(?:\d{1,4}[A-Z]{0,2}\s+(?=\d))?(?:(?:ESC(?:ENA)?|SEC(?:UENCIA)?|SC|SCENE)\.?\s*)?(\d{1,4}(?:[.\-]\d{1,4})?[A-Z]{0,2})?\s*[.\-–—:)]?\s*(INT\.?\s*\/\s*EXT\.?|EXT\.?\s*\/\s*INT\.?|INT\.?\s*[-–]\s*EXT\.?|I\s*\/\s*E\.?|INT\.|EXT\.|INT\b|EXT\b|INTERIOR\b|EXTERIOR\b)\s*[.\-–—:]?\s*(.*)$/i;
+  const HEADING_RE = /^(?:\d{1,4}[A-Z]{0,2}\s+(?=\d))?(?:(?:ESC(?:ENA)?|SEC(?:UENCIA)?|SC|SCENE)\.?\s*)?(\d{1,4}(?:[.\-]\d{1,4})?[A-Z]{0,2})?\s*[.\-–—:)]{0,2}\s*(INT\.?\s*\/\s*EXT\.?|EXT\.?\s*\/\s*INT\.?|INT\.?\s*[-–]\s*EXT\.?|I\s*\/\s*E\.?|INT\.|EXT\.|INT\b|EXT\b|INTERIOR\b|EXTERIOR\b)\s*[.\-–—:]?\s*(.*)$/i;
 
   const TIME_WORDS = [
     'DÍA', 'DIA', 'NOCHE', 'AMANECER', 'ATARDECER', 'ANOCHECER', 'TARDE', 'MAÑANA', 'MEDIODÍA', 'MEDIODIA',
@@ -162,8 +162,10 @@
   function buildScenes(typed, totalPages) {
     const scenes = [];
     const preamble = [];
+    const pre = [];
     let cur = null;
     typed.forEach(l => {
+      if (!cur && l.type !== 'heading') pre.push(l);
       if (l.type === 'heading') {
         cur = {
           num: l.heading.num, intExt: l.heading.intExt, location: l.heading.location, time: l.heading.time,
@@ -173,7 +175,51 @@
         scenes.push(cur);
         return;
       }
-      if (!cur) { if (l.type !== 'blank' && l.type !== 'skip') preamble.push({ text: l.text.trim(), size: l.size || 0, page: l.page || 1 }); return; }
+      if (!cur) { if (l.type !== 'blank' && l.type !== 'skip') preamble.push({ text: l.text.trim(), size: l.size || 0, page: l.page || 1, _l: l }); return; }
+      addLine(cur, l);
+    });
+
+    // Guion antes de la primera secuencia reconocida (p. ej. «SOBRE NEGRO:» o una sec. 1 sin INT./EXT.):
+    // se convierte en su propia secuencia en vez de perderse en la portada.
+    const first = scenes[0];
+    if (first && pre.length) {
+      const pg = l => l.page || Math.floor(l.pos || 0) + 1;
+      const MARK = /^(SOBRE\s+NEGRO|NEGRO|FUNDIDO|FADE\s+IN|ABRE|ABRIMOS|INICIO|PR[OÓ]LOGO|COLD\s+OPEN|TEASER|CR[EÉ]DITOS)\b/i;
+      let from = pre.findIndex(l => l.type !== 'blank' && l.type !== 'skip' && MARK.test(l.text.trim()));
+      // sin marca: solo el texto de la misma página que la primera secuencia (y nunca la portada)
+      if (from < 0 && first.page > Math.min(...pre.map(pg))) from = pre.findIndex(l => pg(l) === first.page && l.type !== 'blank' && l.type !== 'skip');
+      const body = from >= 0 ? pre.slice(from).filter(l => l.type !== 'skip') : [];
+      const firstText = body.find(l => l.type !== 'blank');
+      if (firstText && body.filter(l => l.type !== 'blank').length >= 1) {
+        const head = firstText.text.trim();
+        const mNum = head.match(/^(\d{1,4}(?:[.\-]\d{1,4})?[A-Z]{0,2})\s*[.\-–—:)]{0,2}\s+(.+)$/);
+        const n1 = parseInt(first.num, 10);
+        const sc = {
+          num: mNum ? mNum[1] : (!isNaN(n1) && n1 > 1 ? String(n1 - 1) : (first.num ? '0' : '')),
+          intExt: '', location: (mNum ? mNum[2] : head).replace(/[:.\s]+$/, '').toUpperCase().slice(0, 80), time: '',
+          heading: head, pos: firstText.pos || 0, page: pg(firstText),
+          characters: [], offCharacters: [], action: [], body: []
+        };
+        body.forEach(l => { if (l !== firstText) addLine(sc, l); });
+        scenes.unshift(sc);
+        const used = new Set(body);
+        for (let i = preamble.length - 1; i >= 0; i--) if (used.has(preamble[i]._l)) preamble.splice(i, 1);
+      }
+    }
+    preamble.forEach(p => delete p._l);
+
+    // Encabezado repetido sin texto justo antes del mismo encabezado con número: se descarta
+    const normH = h => String(h || '').toUpperCase().replace(/^\s*\d{1,4}(?:[.\-]\d{1,4})?[A-Z]{0,2}\s*[.\-–—:)]{0,2}\s*/, '').replace(/\s+\*?\d{1,4}[A-Z]{0,2}\*?\s*$/, '').replace(/[^A-ZÁÉÍÓÚÑÜ0-9]+/g, ' ').trim();
+    for (let i = scenes.length - 2; i >= 0; i--) {
+      const a = scenes[i], b = scenes[i + 1];
+      if (!a.body.some(t => String(t).trim()) && normH(a.heading) && normH(a.heading) === normH(b.heading)) {
+        if (!b.num && a.num) b.num = a.num;
+        b.pos = Math.min(a.pos, b.pos); b.page = Math.min(a.page, b.page);
+        scenes.splice(i, 1);
+      }
+    }
+
+    function addLine(cur, l) {
       if (l.type === 'cue') {
         if (l.character && !cur.characters.includes(l.character)) cur.characters.push(l.character);
         if (l.off && !cur.offCharacters.includes(l.character)) cur.offCharacters.push(l.character);
@@ -188,7 +234,7 @@
       } else if (l.type === 'blank') {
         cur.body.push('');
       }
-    });
+    }
 
     let autoNum = 0;
     scenes.forEach((s, i) => {

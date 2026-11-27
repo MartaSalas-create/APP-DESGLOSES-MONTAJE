@@ -442,7 +442,9 @@
 
   function mergeVersion(p, parsed) {
     const old = {};
-    p.scenes.forEach(s => { old[String(s.num).toUpperCase()] = s; });
+    // si un número estaba repetido, se queda la secuencia con más trabajo hecho
+    const weight = s => JSON.stringify([s.notes, s.conflict, s.estados, s.gnotes, s.summaryEdited ? s.summary : '']).length;
+    p.scenes.forEach(s => { const k = String(s.num).toUpperCase(); if (!old[k] || weight(s) > weight(old[k])) old[k] = s; });
     let kept = 0;
     const scenes = parsed.scenes.map(ps => {
       const s = sceneFromParsed(ps);
@@ -450,11 +452,19 @@
       if (o) {
         kept++;
         s.id = o.id;
-        ['conflict', 'tramaId', 'intensity', 'keyEvent', 'eventLabel', 'notes'].forEach(k => { s[k] = o[k]; });
+        ['conflict', 'tramaId', 'intensity', 'keyEvent', 'eventLabel', 'notes', 'estados', 'estado', 'gnotes', 'tramas2', 'durMontaje', 'adjuntos', 'needDetail', 'globeDx', 'globeDy', 'rodaje', 'ep'].forEach(k => { if (o[k] !== undefined) s[k] = o[k]; });
         if (o.summaryEdited) { s.summary = o.summary; s.summaryEdited = true; }
         NEEDS.forEach(n => { s.needs[n.k] = !!(s.needs[n.k] || o.needs[n.k]); });
       }
       return s;
+    });
+    // las separatas añadidas a mano que no vienen en la versión nueva se conservan en su sitio
+    const newNums = new Set(scenes.map(s => String(s.num).toUpperCase()));
+    p.scenes.forEach((o, i) => {
+      if (!o.separata || newNums.has(String(o.num).toUpperCase())) return;
+      let at = scenes.length;
+      for (let j = i - 1; j >= 0; j--) { const k = scenes.findIndex(x => x.id === p.scenes[j].id); if (k >= 0) { at = k + 1; break; } }
+      scenes.splice(at, 0, o);
     });
     const ids = new Set(scenes.map(s => s.id));
     p.scenes = scenes;

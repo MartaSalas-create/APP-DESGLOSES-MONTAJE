@@ -1002,6 +1002,7 @@
         ${A('interes', 'Puntos de interés')}
       </div>
       <h3>Análisis avanzado</h3>
+      <div class="toolbar no-print"><button class="btn btn-small" data-action="gv-from-analysis">→ Llevar estas notas al guion</button><span class="muted" style="font-size:12px">Cada apunte que cite secuencias aparece como nota sobre esa secuencia en la pestaña Guion.</span></div>
       <div class="form-grid">
         ${A('sobrantes', 'Posibles secuencias sobrantes', 'Marca también «Posible sobrante» en el desglose.')}
         ${A('problemas', 'Problemas generales o estructurales')}

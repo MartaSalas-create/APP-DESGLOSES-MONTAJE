@@ -58,6 +58,7 @@
       <div class="gv-note-h"><span class="gv-n">${i + 1}</span>
         <select data-k="${k('d')}" data-rerender="1" class="gv-dept">${Object.entries(A.DEPTS).map(([d, l]) => `<option value="${d}" ${n.d === d ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
         <button class="btn btn-small btn-ghost no-print" data-action="gv-del" data-id="${s.id}" data-i="${i}" title="Borrar nota">✕</button></div>
+      ${n.src ? `<div class="gv-src">${esc(SRC_LABEL[n.src] || n.src)}</div>` : ''}
       ${n.q ? `<div class="gv-quote">«${esc(n.q)}»</div>` : ''}
       ${A.area(k('t'), 'class="cell-input gv-text-in" rows="2" placeholder="Escribe la nota…"')}
       <div class="gv-note-f no-print">${n.sent && !changed
@@ -428,5 +429,113 @@
     sepParsed = null;
   };
 
-  window.GuionView = { tab, blocks, ocrParse, pdfPages, isImg };
+  /* ---------- Lectura de guion → notas sobre el guion ---------- */
+  const AN_FIELDS = [
+    ['sobrantes', 'Posibles secuencias sobrantes', true], ['problemas', 'Problemas generales o estructurales', true],
+    ['necesidades', 'Necesidades específicas de montaje', true], ['preguntas', 'Preguntas para dirección', true],
+    ['interes', 'Puntos de interés', false], ['estructura', 'Estructura: actos, eventos y giros', false]
+  ];
+  const SRC_LABEL = Object.fromEntries(AN_FIELDS.map(([k, l]) => ['an:' + k, 'Lectura · ' + l]));
+  // apuntes: una entrada por viñeta o párrafo
+  function items(text) {
+    const out = []; let cur = null;
+    String(text || '').split('\n').forEach(line => {
+      const t = line.trim();
+      if (!t) { cur = null; return; }
+      if (/^([-•*·]|\d{1,2}[.)])\s+/.test(t) || !cur || /:$/.test(cur)) { cur = t.replace(/^([-•*·]|\d{1,2}[.)])\s+/, ''); out.push(cur); return; }
+      out[out.length - 1] = cur = cur + ' ' + t;
+    });
+    return out.filter(x => x.length > 2);
+  }
+  // números de secuencia citados: «sec. 6-8», «(2C)», «7 y 10:», «34/36/34B»
+  function refs(item, scenes) {
+    const order = scenes.map(x => String(x.num).toUpperCase()); const have = new Set(order); const out = [];
+    const add = n => { n = String(n).toUpperCase().replace(/\s+/g, ''); if (have.has(n) && !out.includes(n)) out.push(n); };
+    const list = str => {
+      const toks = str.split(/\s*(?:,|\/|\by\b|\be\b)\s*/i);
+      toks.forEach(tk => {
+        const r = tk.match(/^(\d{1,4}[A-Z]{0,2})\s*[-–]\s*(\d{1,4}[A-Z]{0,2})$/i);
+        if (r) { const a = order.indexOf(r[1].toUpperCase()), b = order.indexOf(r[2].toUpperCase()); if (a >= 0 && b > a && b - a < 40) order.slice(a, b + 1).forEach(add); else { add(r[1]); add(r[2]); } }
+        else if (/^\d{1,4}[A-Z]{0,2}$/i.test(tk)) add(tk);
+        else if (/^[A-Z]$/i.test(tk) && out.length) add(out[out.length - 1].replace(/[A-Z]+$/, '') + tk); // 25B/C
+      });
+    };
+    const NUM = '\\d{1,4}[A-Z]{0,2}(?:\\s*[-–]\\s*\\d{1,4}[A-Z]{0,2})?';
+    const SEQ = new RegExp('\\b(?:sec(?:uencias?)?|esc(?:enas?)?|secs)\\.?\\s*(' + NUM + '(?:\\s*(?:,|\\/|\\by\\b|\\be\\b)\\s*(?:' + NUM + '|[A-Z]\\b))*)', 'gi');
+    let m; while ((m = SEQ.exec(item))) list(m[1]);
+    const PAR = new RegExp('\\((' + NUM + '(?:\\s*[,\\/]\\s*(?:' + NUM + '|[A-Z]))*)\\)', 'gi');
+    while ((m = PAR.exec(item))) list(m[1]);
+    const LEAD = item.match(new RegExp('^((?:' + NUM + ')(?:\\s*(?:,|\\/|\\by\\b)\\s*(?:' + NUM + '))*)\\s*:'));
+    if (LEAD) list(LEAD[1]);
+    // números con letra sueltos (25B, 2C, 25B/C): casi siempre son secuencias
+    const LET = /\b(\d{1,4}[A-Z]{1,2})((?:\/[A-Z]{1,2})*)\b/g;
+    while ((m = LET.exec(item))) { add(m[1]); (m[2] || '').split('/').filter(Boolean).forEach(x => add(m[1].replace(/[A-Z]+$/, '') + x)); }
+    return out;
+  }
+  function guessDept(field, t) {
+    if (field !== 'necesidades') return 'montaje';
+    if (/\b(vfx|gfx|r[oó]tulo|cartela|sobreimpres|grafismo|pantalla|inserto de tv|croma|limpieza)/i.test(t)) return 'vfx';
+    if (/\b(m[uú]sica|canci[oó]n|tango|partitura|tema musical|playback)/i.test(t)) return 'musica';
+    if (/\b(sonido|sfx|ambiente|off|v\.o\.|adr|doblaje|mezcla|foley)/i.test(t)) return 'sonido';
+    if (/\b(color|etalonaje|look|lut|paleta)/i.test(t)) return 'color';
+    return 'montaje';
+  }
+  async function aiMap(fields, scenes) {
+    const AI = window.AIEditor; if (!AI || !AI.available || !AI.available()) return null;
+    const list = scenes.slice(0, 400).map(x => `${x.num} | ${(x.heading || '').slice(0, 70)}`).join('\n');
+    const txt = fields.map(([k, l]) => `### ${k} (${l})\n${A.P().analysis[k] || ''}`).join('\n\n');
+    const r = await AI.ask(`${AI.PERSONA || ''}
+TAREA: convierte las notas de la lectura de guion en acotaciones sobre el guion, una por secuencia.
+Para cada apunte, indica a qué secuencias del guion se refiere (usa SOLO números de esta lista) y el departamento al que va (montaje, color, vfx, sonido, musica). Si un apunte habla de varias secuencias, devuélvelo una vez con todas. Si no se refiere a ninguna secuencia concreta, déjalo con "secs": []. Reescribe cada apunte como una nota breve y concreta para esa secuencia, sin inventar nada que no esté en el texto. Di siempre «secuencia» y «sec.», nunca «escena».
+
+SECUENCIAS (número | encabezado):
+${list}
+
+NOTAS DE LA LECTURA:
+${txt}
+
+Responde SOLO con JSON: {"notas":[{"campo":"preguntas","secs":["12","12A"],"texto":"…","dept":"montaje"}]}`, { modelTier: 'complex' });
+    return r && Array.isArray(r.notas) ? r.notas : null;
+  }
+  A.actions['gv-from-analysis'] = () => {
+    const an = A.P().analysis || {};
+    A.showModal(`<h3>Llevar la lectura al guion</h3>
+      <p>Cada apunte que cite secuencias se convierte en una <b>nota</b> sobre esa secuencia en la pestaña <b>Guion</b>, marcada con su origen. Desde allí puedes revisarla y pasarla al desglose con un toque.</p>
+      <div class="gv-an-list">${AN_FIELDS.map(([k, l, def]) => { const n = items(an[k]).length; return `<label><input type="checkbox" class="gv-an" value="${k}" ${def && n ? 'checked' : ''} ${n ? '' : 'disabled'}> ${esc(l)} <span class="muted">(${n} apunte${n === 1 ? '' : 's'})</span></label>`; }).join('')}</div>
+      <p class="muted" style="font-size:12px">${window.AIEditor && AIEditor.available && AIEditor.available() ? 'Claude decidirá a qué secuencias y departamento va cada apunte.' : 'Se buscan los números de secuencia citados en el texto (sec. 12, (2C), 7 y 10…).'} Si lo repites, no se duplican las notas.</p>
+      <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="gv-from-analysis-ok">Llevar al guion</button></div>`);
+  };
+  A.actions['gv-from-analysis-ok'] = async () => {
+    const keys = Array.from(document.querySelectorAll('input.gv-an:checked')).map(x => x.value);
+    if (!keys.length) { A.hideModal(); return; }
+    const fields = AN_FIELDS.filter(f => keys.includes(f[0]));
+    const scenes = A.P().scenes; const byNum = {}; scenes.forEach(x => { const k = String(x.num).toUpperCase(); if (!byNum[k]) byNum[k] = x; });
+    A.showModal(`<h3><span class="spinner"></span>Llevando la lectura al guion…</h3><p>Relacionando cada apunte con sus secuencias.</p>`);
+    let notas = null;
+    try { notas = await aiMap(fields, scenes); } catch (e) { console.warn(e); notas = null; }
+    if (!notas) {
+      notas = [];
+      fields.forEach(([k]) => items(A.P().analysis[k]).forEach(t => notas.push({ campo: k, secs: refs(t, scenes), texto: t, dept: guessDept(k, t) })));
+    }
+    let added = 0, general = 0; const touched = new Set();
+    notas.forEach(n => {
+      const secs = (n.secs || []).map(x => String(x).toUpperCase()).filter(x => byNum[x]);
+      if (!secs.length) { general++; return; }
+      const src = 'an:' + (n.campo || keys[0]); const d = A.DEPTS[n.dept] ? n.dept : 'montaje';
+      const texto = String(n.texto || '').trim(); if (!texto) return;
+      secs.forEach(num => {
+        const sc = byNum[num]; const ns = notesOf(sc);
+        if (ns.some(x => x.src === src && x.t === texto)) return;
+        ns.push({ id: A.uid(), q: '', t: texto, d, sent: false, src });
+        added++; touched.add(sc.id);
+      });
+    });
+    A.save();
+    A.showModal(`<h3>Lectura llevada al guion</h3>
+      <p><b>${added}</b> nota${added === 1 ? '' : 's'} nueva${added === 1 ? '' : 's'} en <b>${touched.size}</b> secuencia${touched.size === 1 ? '' : 's'}.${general ? ` ${general} apunte${general === 1 ? '' : 's'} general${general === 1 ? '' : 'es'}, sin secuencia concreta, se queda${general === 1 ? '' : 'n'} solo en la Lectura.` : ''}</p>
+      <div class="actions"><button class="btn" data-action="close-modal">Cerrar</button><button class="btn btn-primary" data-action="gv-goto-notes">Ver en el guion</button></div>`);
+  };
+  A.actions['gv-goto-notes'] = () => { A.hideModal(); onlyNotes = true; A.setTab('guion'); };
+
+  window.GuionView = { tab, blocks, ocrParse, pdfPages, isImg, refs, items };
 })();

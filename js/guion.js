@@ -313,7 +313,7 @@
     }
   });
   /* Imágenes y PDF escaneados: Claude lee las páginas y las transcribe en formato guion */
-  const OCR_PROMPT = `Eres el ayudante de una montadora de cine. Te paso fotos o escaneos de páginas de un guion (una separata). Transcribe TODO el texto de las páginas, en el orden en que aparecen, en texto plano y con este formato exacto, sin comentarios ni Markdown:
+  const OCR_PROMPT = `Eres el ayudante de una montadora de cine. Te paso fotos o escaneos de páginas de un guion (completo o una separata). Transcribe TODO el texto de las páginas (incluida la portada si la hay), en el orden en que aparecen, en texto plano y con este formato exacto, sin comentarios ni Markdown:
 - Cada encabezado de secuencia en su propia línea, con su número delante tal como aparece (p. ej. «12A. INT. COCINA - NOCHE»). Si el número aparece en el margen, ponlo delante.
 - Una línea en blanco entre bloques.
 - El nombre del personaje que habla en MAYÚSCULAS en su propia línea (con (OFF), (V.O.) o (CONT'D) si los lleva) y, debajo, su diálogo con 4 espacios al principio de cada línea. Las acotaciones entre paréntesis en su propia línea, también con 4 espacios.
@@ -340,7 +340,8 @@
     }
     return out;
   }
-  async function ocrScenes(blobs, name) {
+  async function ocrScenes(blobs, name) { return (await ocrParse(blobs, name)).scenes || []; }
+  async function ocrParse(blobs, name) {
     const sample = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('sample') : null;
     if (!sample) throw new Error('Leer imágenes necesita la versión de la app en claude.ai (usa Claude para leer el texto).');
     const lim = sample.limits ? await sample.limits() : { images: true };
@@ -354,7 +355,8 @@
       text += '\n\n' + String((r && r.text) || '').replace(/^```[a-z]*\n?|```$/gm, '');
     }
     const r = await SP().parseFile(new File([text.trim()], (name || 'separata').replace(/\.[^.]+$/, '') + '.txt', { type: 'text/plain' }));
-    return r.scenes || [];
+    r.format = 'leído de imagen con Claude'; r.filename = name; r.ocr = true;
+    return r;
   }
 
   function reviewModal() {
@@ -420,5 +422,5 @@
     sepParsed = null;
   };
 
-  window.GuionView = { tab, blocks };
+  window.GuionView = { tab, blocks, ocrParse, pdfPages, isImg };
 })();

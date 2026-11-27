@@ -1735,16 +1735,42 @@
   /* ------------------------------------------------------------------ */
   /* Subida de guiones                                                    */
   /* ------------------------------------------------------------------ */
+  // Lee un archivo de guion; un PDF escaneado (sin texto) se lee como imagen con Claude
+  async function readScript(file) {
+    try { return await ScriptParser.parseFile(file); }
+    catch (e) {
+      if (!/\.pdf$/i.test(file.name) || !window.GuionView) throw e;
+      showModal(`<h3><span class="spinner"></span>Es un PDF escaneado: leyendo las páginas con Claude…</h3><p id="gvSepProg">${esc(file.name)}</p>`);
+      const imgs = await GuionView.pdfPages(file);
+      const r = await GuionView.ocrParse(imgs, file.name);
+      r.pages = Math.max(r.pages || 1, imgs.length); return r;
+    }
+  }
+  // Fotos o escaneos: todas las imágenes elegidas a la vez son las páginas de un mismo guion
+  async function readImages(imgs) {
+    const name = imgs.length > 1 ? `${imgs.length} imágenes` : imgs[0].name;
+    showModal(`<h3><span class="spinner"></span>Leyendo el guion de las imágenes con Claude…</h3><p id="gvSepProg">${esc(name)}</p><p class="muted">Las fotos se leen en el orden en que las eliges. Puede tardar un poco.</p>`);
+    const r = await GuionView.ocrParse(imgs, name);
+    r.pages = Math.max(r.pages || 1, imgs.length); return r;
+  }
+
   async function handleFiles(files) {
     files = Array.from(files || []).filter(Boolean);
     if (!files.length) return;
-    if (files.length === 1) return handleFile(files[0]);
+    const isImg = window.GuionView ? GuionView.isImg : () => false;
+    const imgs = files.filter(isImg); files = files.filter(f => !isImg(f));
+    if (imgs.length && !files.length) {
+      try { return handleFile(null, await readImages(imgs)); }
+      catch (e) { showModal(`<h3>No se ha podido leer el guion</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`); return; }
+    }
+    if (files.length === 1 && !imgs.length) return handleFile(files[0]);
     const parsedList = [];
     for (let i = 0; i < files.length; i++) {
       showModal(`<h3><span class="spinner"></span>Leyendo guiones… ${i + 1} de ${files.length}</h3><p>${esc(files[i].name)}</p>`);
-      try { parsedList.push(await ScriptParser.parseFile(files[i])); }
+      try { parsedList.push(await readScript(files[i])); }
       catch (e) { parsedList.push({ error: e.message || String(e), filename: files[i].name }); }
     }
+    if (imgs.length) { try { parsedList.push(await readImages(imgs)); } catch (e) { parsedList.push({ error: e.message || String(e), filename: imgs.length + ' imágenes' }); } }
     pendingMulti = parsedList.filter(x => !x.error);
     const bad = parsedList.filter(x => x.error);
     const cur = RP();
@@ -1757,19 +1783,21 @@
   }
   let pendingMulti = null;
 
-  async function handleFile(file) {
-    if (!file) return;
-    showModal(`<h3><span class="spinner"></span>Leyendo «${esc(file.name)}»…</h3><p>Detectando secuencias, personajes y necesidades.</p>`);
-    let parsed;
+  async function handleFile(file, preParsed) {
+    if (!file && !preParsed) return;
+    let parsed = preParsed;
     try {
-      parsed = await ScriptParser.parseFile(file);
+      if (!parsed) {
+        showModal(`<h3><span class="spinner"></span>Leyendo «${esc(file.name)}»…</h3><p>Detectando secuencias, personajes y necesidades.</p>`);
+        parsed = await readScript(file);
+      }
     } catch (e) {
       console.error(e);
       showModal(`<h3>No se ha podido leer el guion</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
       return;
     }
     const cur = RP();
-    const summary = `<p><b>${parsed.scenes.length}</b> secuencias · <b>${parsed.pages}</b> páginas · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
+    const summary = `<p><b>${parsed.scenes.length}</b> secuencias · <b>${parsed.pages}</b> página${parsed.pages == 1 ? '' : 's'} · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
     if (!cur || !cur.scenes.length) {
       if (cur && !cur.scenes.length) applyParsed(cur, parsed);
       else createFromParsed(parsed);

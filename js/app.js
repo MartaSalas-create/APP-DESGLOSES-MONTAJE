@@ -628,6 +628,8 @@
   }
   const minutesPerPage = p => (Number(p.durationMin) && p.pages) ? Number(p.durationMin) / sumPages(p) : 1;
   const sumPages = p => p.scenes.reduce((a, s) => a + (s.lengthPages || 0), 0) || 1;
+  // recorta un texto largo por una palabra entera y con «…»
+  const clip = (t, n) => { t = String(t || ''); if (t.length <= n) return t; const c = t.slice(0, n); const sp = c.lastIndexOf(' '); return (sp > n * 0.6 ? c.slice(0, sp) : c).replace(/[\s,.;:]+$/, '') + '…'; };
   const sceneHeading = s => `${s.intExt ? s.intExt + '. ' : ''}${s.location}${s.time ? ' — ' + s.time : ''}`;
   const montajeScenes = p => p.montajeOrder.map(id => sceneById(p, id)).filter(Boolean);
 
@@ -907,13 +909,21 @@
     const pos = i => p.scenes.slice(0, i).reduce((a, s) => a + (s.lengthPages || 0), 0) / total * 100;
     const ACT_COL = ['#8fa3bf', '#5b8fc7', '#e0a35a', '#cc6b55', '#5f9e6e'];
     const giros = p.scenes.filter(s => s.keyEvent);
+    // marcas de giro en la barra: si están muy juntas se apilan en filas (no se pisan)
+    const gms = [], lastAt = [];
+    giros.forEach((g, k) => {
+      const x = pos(idx.get(g.id)) + (g.lengthPages || 0) / total * 50;
+      let lv = 0; while (lastAt[lv] != null && x - lastAt[lv] < 3.2) lv++;
+      lastAt[lv] = x; gms.push({ x, lv, k });
+    });
+    const gmMax = gms.reduce((m, g) => Math.max(m, g.lv), 0);
     let n = 0;
     const card = (title, k, sec) => { n++; return `<div class="sch-card"><h4><span class="sch-num">${sec}.${n}</span>${esc(title)}</h4>${bulletsHTML(an[k])}</div>`; };
     const block = (cls, num, title, sub, cards) => { const odd = cards.length % 2 ? ' sch-odd' : ''; return `<div class="sch-block ${cls}"><div class="sch-block-h"><b>${num}</b> ${esc(title)} <span>${esc(sub)}</span></div><div class="sch-grid${odd}">${cards.join('')}</div></div>`; };
     const credits = [p.credits.guion && 'Guion: ' + p.credits.guion, p.credits.direccion && 'Dirección: ' + p.credits.direccion, p.credits.montaje && 'Montaje: ' + p.credits.montaje].filter(Boolean).join('   ·   ');
     const meta = [p.episodio, p.formato, p.genero, p.version, p.fecha].filter(Boolean).join('   ·   ');
     const stat = (v, l) => `<td><b>${esc(v)}</b><span>${esc(l)}</span></td>`;
-    const actRows = acts.map((a, j) => { const x0 = pos(a.i), x1 = j + 1 < acts.length ? pos(acts[j + 1].i) : 100; const last = j + 1 < acts.length ? acts[j + 1].i : p.scenes.length; return { a, j, x0, x1, min: Math.round((x1 - x0) / 100 * dur), from: p.scenes[a.i] ? p.scenes[a.i].num : '', to: p.scenes[last - 1] ? p.scenes[last - 1].num : '' }; });
+    const actRows = acts.map((a, j) => { const x0 = pos(a.i), x1 = j + 1 < acts.length ? pos(acts[j + 1].i) : 100; const last = j + 1 < acts.length ? acts[j + 1].i : p.scenes.length; return { a, j, x0, x1, min: fmtMin((x1 - x0) / 100 * dur).replace("'", ''), from: p.scenes[a.i] ? p.scenes[a.i].num : '', to: p.scenes[last - 1] ? p.scenes[last - 1].num : '' }; });
     n = 0; const b1 = [card('Historia', 'historia', 1), card('Género y tono', 'generoTono', 1), card('Personajes', 'personajes', 1)];
     n = 0; const b2 = [card('Temas', 'temas', 2), card('Mapa de personajes', 'mapa', 2), card('Estructura: actos, eventos y giros', 'estructura', 2), card('Puntos de interés', 'interes', 2)];
     n = 0; const b3 = [card('Posibles secuencias sobrantes', 'sobrantes', 3), card('Problemas generales o estructurales', 'problemas', 3), card('Necesidades específicas de montaje', 'necesidades', 3), card('Preguntas para dirección', 'preguntas', 3)];
@@ -931,11 +941,11 @@
         <td class="sch-mini"><h4>Personajes principales <small>nº de secuencias</small></h4>${chars.length ? `<table class="sch-tbl">${chars.map(c => { const t = tramaById(p, p.characters[c].tramaId); return `<tr><td class="sch-nm"><b>${esc(c)}</b></td><td class="sch-br"><i style="width:${Math.max(4, st[c].count / maxC * 100)}%;background:${t ? t.color : '#b9b4ab'}"></i></td><td class="sch-n">${st[c].count}</td></tr>`; }).join('')}</table>` : '<p class="sch-empty">Sin personajes detectados.</p>'}</td>
       </tr></table>
       ${acts.length ? `<div class="sch-struct"><h4>Estructura <small>duración aproximada de cada acto y puntos de giro</small></h4>
-        <div class="sch-actbar">${actRows.map(r => `<div style="width:${r.x1 - r.x0}%;background:${ACT_COL[r.j % ACT_COL.length]}">${r.x1 - r.x0 > 6 ? r.j + 1 : ''}</div>`).join('')}
-          ${giros.map((s, k) => `<span class="sch-gm" style="left:${pos(idx.get(s.id)) + (s.lengthPages || 0) / total * 50}%">${k + 1}</span>`).join('')}</div>
+        <div class="sch-actbar" style="margin-top:${10 + gmMax * 17}px">${actRows.map(r => `<div style="width:${r.x1 - r.x0}%;background:${ACT_COL[r.j % ACT_COL.length]}">${r.x1 - r.x0 > 6 ? r.j + 1 : ''}</div>`).join('')}
+          ${gms.map(g => `<span class="sch-gm" style="left:${g.x}%;top:${-9 - g.lv * 17}px">${g.k + 1}</span>`).join('')}</div>
         <div class="sch-two">
-          <table class="sch-list">${actRows.map(r => `<tr><td><span class="sch-dot" style="background:${ACT_COL[r.j % ACT_COL.length]}">${r.j + 1}</span></td><td><b>${esc(r.a.name)}</b></td><td class="sch-r">${r.min}′ · sec. ${esc(r.from)}${r.to && r.to !== r.from ? '–' + esc(r.to) : ''}</td></tr>`).join('')}</table>
-          ${giros.length ? `<table class="sch-list">${giros.map((s, k) => `<tr><td><span class="sch-gdot">${k + 1}</span></td><td><b>${esc(s.eventLabel || 'Punto de giro')}</b></td><td class="sch-r">sec. ${esc(s.num)}</td></tr>`).join('')}</table>` : '<p class="sch-empty">Sin puntos de giro marcados.</p>'}
+          <div><table class="sch-list">${actRows.map(r => `<tr><td><span class="sch-dot" style="background:${ACT_COL[r.j % ACT_COL.length]}">${r.j + 1}</span></td><td><b>${esc(r.a.name)}</b></td><td class="sch-r">${r.min}′ · sec. ${esc(r.from)}${r.to && r.to !== r.from ? '–' + esc(r.to) : ''}</td></tr>`).join('')}</table></div>
+          ${giros.length ? `<div><table class="sch-list">${giros.map((s, k) => `<tr><td><span class="sch-gdot">${k + 1}</span></td><td><b>${esc(s.eventLabel || 'Punto de giro')}</b></td><td class="sch-r">sec. ${esc(s.num)}</td></tr>`).join('')}</table></div>` : '<p class="sch-empty">Sin puntos de giro marcados.</p>'}
         </div></div>` : ''}
       ${block('b1', '1', 'Primera lectura', 'Historia, género, tono y personajes', b1)}
       ${block('b2', '2', 'Segunda lectura', 'Temas y mapa de personajes', b2)}
@@ -1392,7 +1402,7 @@
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Trama</th><th class="num">Intensidad (0–10)</th><th class="num">Punto de giro / evento</th><th>Etiqueta (globo)</th></tr></thead>
         <tbody>${scenes.map(s => {
           const t = tramaOf(p, s);
-          return `<tr><td class="num"><b>${esc(dnum(s))}</b></td><td>${esc(sceneHeading(s))}<div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 120))}</div></td>
+          return `<tr><td class="num"><b>${esc(dnum(s))}</b></td><td>${esc(sceneHeading(s))}<div class="muted" style="font-size:12px">${esc(clip(s.summary, 120))}</div></td>
           <td>${t ? `<span class="trama-dot" style="background:${t.color}"></span>${esc(t.letter)}` : '—'}</td>
           <td class="num"><input class="cell-input" type="number" min="0" max="10" step="0.5" style="width:70px" data-k="s:${s.id}:intensity" data-num="1" data-rerender="1" data-lazy="1" value="${esc(s.intensity)}"></td>
           <td class="num"><input type="checkbox" data-k="s:${s.id}:keyEvent" data-rerender="1" ${s.keyEvent ? 'checked' : ''}></td>
@@ -1485,7 +1495,7 @@
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${ds.map(d => `<th class="dept-th dept-th-${d}">${esc(DEPTS[d])}<br><span style="font-weight:400">${p.scenes.filter(s => NEEDS.some(n => n.dept === d && s.needs[n.k])).length} sec.</span></th>`).join('')}</tr></thead>
         <tbody>${rows.map(s => `<tr>
           <td class="num"><b>${esc(dnum(s))}</b></td>
-          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 140))}</div></td>
+          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(clip(s.summary, 140))}</div></td>
           <td>${estadoSelect(s)}</td>
           <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
           ${ds.map(d => `<td class="dept-td-${d}" style="min-width:190px"><div class="needs-cell" style="min-width:0;margin-bottom:4px">${needChipsFor(s, d)}${d === 'sonido' && s.offCharacters && s.offCharacters.length ? `<span class="muted" style="font-size:11px">off: ${esc(s.offCharacters.join(', '))}</span>` : ''}</div>${area('s:' + s.id + ':notes.' + d, 'class="cell-input" style="min-width:170px;min-height:44px" placeholder="Notas"')}</td>`).join('')}
@@ -1594,7 +1604,7 @@
         <thead><tr><th class="num">Nº</th><th>Secuencia</th><th>Estado</th><th class="num">Dur. est.</th>${fields.map(f => `<th>${esc(f[1])}</th>`).join('')}<th>Notas ${esc(DEPTS[n.dept])}</th></tr></thead>
         <tbody>${rows.map(s => `<tr>
           <td class="num"><b>${esc(dnum(s))}</b></td>
-          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(s.summary.slice(0, 160))}</div></td>
+          <td style="min-width:200px"><b>${esc(sceneHeading(s))}</b><div class="muted" style="font-size:12px">${esc(clip(s.summary, 160))}</div></td>
           <td>${estadoSelect(s)}</td>
           <td class="num">${fmtMin(s.lengthPages * mpp)}</td>
           ${fields.map(f => `<td>${area('s:' + s.id + ':needDetail.' + n.k + '.' + f[0], 'class="cell-input" style="min-width:260px;min-height:80px"')}</td>`).join('')}

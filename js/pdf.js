@@ -23,19 +23,25 @@
     root.querySelectorAll('.no-print, .toolbar, .card-tools, .handle, button.btn, .est-caret, .est-menu, script').forEach(el => el.remove());
     root.querySelectorAll('details').forEach(d => { d.removeAttribute('open'); });
     root.querySelectorAll('textarea').forEach(t => {
-      const d = document.createElement('div'); d.className = 'pdf-text'; d.textContent = t.value || t.textContent || ''; d.style.minWidth = getComputedStyle(t).minWidth || ''; d.style.display = 'block';
+      // el texto se reparte en su columna: sin anchos mínimos grandes que obliguen a reducir toda la página
+      const d = document.createElement('div'); d.className = 'pdf-text'; d.textContent = t.value || t.textContent || ''; d.style.minWidth = Math.min(parseFloat(getComputedStyle(t).minWidth) || 0, 150) + 'px'; d.style.display = 'block';
       t.replaceWith(d);
     });
     root.querySelectorAll('select').forEach(s => {
       const o = s.options[s.selectedIndex]; const d = document.createElement('span'); d.className = 'pdf-text';
+      const sw = s.getBoundingClientRect().width; if (sw) d.style.minWidth = Math.min(sw, 140) + 'px';
       d.textContent = o && o.value !== '' ? o.textContent : '—';
       if (s.className.includes('lbl-bg-')) d.className += ' estado-badge ' + (s.className.match(/lbl-bg-\S+/) || [''])[0];
       s.replaceWith(d);
     });
     root.querySelectorAll('input').forEach(i => {
       if (i.type === 'checkbox') { const d = document.createElement('span'); d.textContent = i.checked ? '✓' : ''; i.replaceWith(d); return; }
-      if (i.type === 'file' || i.type === 'color') { i.remove(); return; }
-      const d = document.createElement('span'); d.className = 'pdf-text'; d.textContent = i.value || ''; i.replaceWith(d);
+      if (i.type === 'file') { i.remove(); return; }
+      // el color se conserva como muestra (y no descoloca las rejillas)
+      if (i.type === 'color') { const d = document.createElement('span'); d.className = 'pdf-swatch'; d.style.background = i.value; i.replaceWith(d); return; }
+      const d = document.createElement('span'); d.className = 'pdf-text'; d.textContent = i.value || '';
+      const iw = i.getBoundingClientRect().width; if (iw) d.style.minWidth = Math.min(iw, 200) + 'px';
+      i.replaceWith(d);
     });
   }
 
@@ -67,9 +73,11 @@
       const pageH = Math.floor(pageMmH / mm * W);                     // alto de página en px CSS
       // posibles cortes: final de filas, fichas, bloques…
       const top0 = box.getBoundingClientRect().top;
-      const cuts = Array.from(box.querySelectorAll('tr, .card, .char-card, .dept, .emo-card, .panel, h2, h3, .field, .merge-item, .note, .legend, .stepline-wrap, .emo-big, .sch-card, .sch-row'))
+      // (nunca justo después de un título, de la cabecera de una tabla o de una fila de apartado: se cortan antes)
+      const cuts = Array.from(box.querySelectorAll('tbody tr, .card, .char-card, .dept, .emo-card, .panel, .field, .merge-item, .note, .legend, .stepline-wrap, .emo-big, .sch-card, .sch-row'))
+        .filter(el => !(el.tagName === 'TR' && el.children.length === 1 && el.nextElementSibling))
         .map(el => Math.round(el.getBoundingClientRect().bottom - top0))
-        .concat(Array.from(box.querySelectorAll('.sch-block, .sch-row, .sch-struct')).map(el => Math.round(el.getBoundingClientRect().top - top0) - 4))
+        .concat(Array.from(box.querySelectorAll('.sch-block, .sch-row, .sch-struct, h2, h3, table')).map(el => Math.round(el.getBoundingClientRect().top - top0) - 4))
         .filter(y => y > 0 && y < total).sort((a, b) => a - b);
       const pages = []; let y = 0;
       while (y < total - 2) {

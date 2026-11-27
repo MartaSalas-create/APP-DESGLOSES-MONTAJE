@@ -635,3 +635,10 @@ body.theme-moviola { background: #2a2622; }
 .sch-card p, .sch-card ul { margin: 0; } .sch-card ul { padding-left: 18px; } .sch-card li { margin: 2px 0; }
 .sch-empty { color: #9a948a; font-style: italic; font-size: 12px; margin: 0; }
 .sch-foot { text-align: center; font-size: 10px; color: #9a948a; letter-spacing: .12em; margin-top: 8px; text-transform: uppercase; }
+
+/* Duración de montaje y totales */
+.durm-input { width: 76px; min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
+tfoot.dur-foot td { background: #1f2430; color: #fff; border-top: 2px solid #1f2430; padding: 8px 10px; white-space: nowrap; }
+tfoot.dur-foot .dur-tot b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+tfoot.dur-foot .dur-tot small { display: block; opacity: .75; font-size: 11px; }
+tfoot.dur-foot .dur-tot-label { font-weight: 700; letter-spacing: .08em; }

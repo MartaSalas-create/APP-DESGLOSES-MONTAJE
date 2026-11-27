@@ -587,6 +587,45 @@
   }
   const fmtEighths = e => { e = Math.max(1, Math.round(e)); const w = Math.floor(e / 8), r = e % 8; return (w ? w + (r ? ' ' : '') : '') + (r ? r + '/8' : ''); };
   const fmtMin = m => { m = Math.round(m * 10) / 10; return (Math.round(m) === m ? m : m.toFixed(1)) + "'"; };
+  /* Duración de montaje: se escribe como 1:30 (min:seg), 1'30 o 1,5 (minutos) */
+  function parseDur(v) {
+    v = String(v == null ? '' : v).trim().replace(/[″"]+$/, '');
+    if (!v) return null;
+    const m = v.match(/^(\d+)\s*[:'’´]\s*(\d{1,2})?$/);
+    if (m) return Number(m[1]) + (m[2] ? Number(m[2]) / 60 : 0);
+    const n = parseFloat(v.replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+  const fmtMS = m => { const t = Math.round(m * 60); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  const durEst = (p, s) => (s.lengthPages || 0) * minutesPerPage(p);
+  const durmInput = s => `<input class="cell-input durm-input" data-k="s:${s.id}:durMontaje" value="${esc(s.durMontaje || '')}" placeholder="min:seg" title="Duración real en montaje (p. ej. 1:30)">`;
+  function durTotalsHTML(p, list) {
+    const est = list.reduce((a, s) => a + durEst(p, s), 0);
+    const withM = list.filter(s => parseDur(s.durMontaje) != null);
+    const mon = withM.reduce((a, s) => a + parseDur(s.durMontaje), 0);
+    return { est: `<b>${fmtMin(est)}</b><small>${fmtMS(est)}</small>`,
+      mon: `<b>${fmtMS(mon)}</b><small>${withM.length}/${list.length} sec.</small>` };
+  }
+  function durFootRow(p, list, cols, lead) {
+    const t = durTotalsHTML(p, list);
+    let labelDone = false;
+    const tds = cols.map(c => {
+      if (c.k === 'dur') return `<td class="num dur-tot" data-tot="est">${t.est}</td>`;
+      if (c.k === 'durm') return `<td class="num dur-tot" data-tot="mon">${t.mon}</td>`;
+      if (!labelDone) { labelDone = true; return `<td class="dur-tot-label">TOTAL</td>`; }
+      return '<td></td>';
+    }).join('');
+    return `<tfoot class="dur-foot" data-list="${list.map(s => s.id).join(',')}"><tr>${lead ? '<td></td>' : ''}${tds}</tr></tfoot>`;
+  }
+  function refreshDurTotals() {
+    const p = P();
+    document.querySelectorAll('tfoot.dur-foot').forEach(f => {
+      const ids = f.dataset.list ? f.dataset.list.split(',') : [];
+      const list = ids.map(id => sceneById(p, id)).filter(Boolean);
+      const t = durTotalsHTML(p, list);
+      f.querySelectorAll('[data-tot]').forEach(td => { td.innerHTML = t[td.dataset.tot]; });
+    });
+  }
   const minutesPerPage = p => (Number(p.durationMin) && p.pages) ? Number(p.durationMin) / sumPages(p) : 1;
   const sumPages = p => p.scenes.reduce((a, s) => a + (s.lengthPages || 0), 0) || 1;
   const sceneHeading = s => `${s.intExt ? s.intExt + '. ' : ''}${s.location}${s.time ? ' — ' + s.time : ''}`;
@@ -992,6 +1031,7 @@
     { k: 'page', label: 'Pág.', cls: 'num', td: s => `<td class="num">${s.page}</td>` },
     { k: 'eighths', label: 'Octavos', cls: 'num', td: s => `<td class="num">${fmtEighths(s.eighths)}</td>` },
     { k: 'dur', label: 'Dur. est.', cls: 'num', td: s => `<td class="num">${fmtMin(s.lengthPages * mpp)}</td>` },
+    { k: 'durm', label: 'Dur. montaje', cls: 'num', td: s => `<td class="num">${durmInput(s)}</td>` },
     { k: 'estado', label: 'Estado', td: s => `<td>${estadoSelect(s)}</td>` },
     { k: 'trama', label: 'Trama', td: s => `<td>${tramaSelect('s:' + s.id + ':tramaId')}</td>` },
     { k: 'chars', label: 'Personajes', td: s => `<td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>` },
@@ -1011,7 +1051,8 @@
     { k: 'summary', label: 'Resumen', td: s => `<td>${esc(s.summary)}</td>` },
     { k: 'conflict', label: 'Conflicto / objetivo', hidden: true, td: s => `<td>${esc(s.conflict || '')}</td>` },
     { k: 'needs', label: 'Necesidades', td: s => `<td class="esc-needs">${needsDropdown(s)}</td>` },
-    { k: 'dur', label: 'Dur. est.', cls: 'num', hidden: true, td: s => `<td class="num">${fmtMin(s.lengthPages * minutesPerPage(p))}</td>` },
+    { k: 'dur', label: 'Dur. est.', cls: 'num', td: s => `<td class="num">${fmtMin(s.lengthPages * minutesPerPage(p))}</td>` },
+    { k: 'durm', label: 'Dur. montaje', cls: 'num', td: s => `<td class="num">${durmInput(s)}</td>` },
     { k: 'estado', label: 'Estado', td: s => `<td>${estadoBadge(s)}</td>` }
   ];
 
@@ -1021,7 +1062,12 @@
     const hid = (p.colHidden || {})[table];
     const hidden = new Set(hid || cols.filter(c => c.hidden).map(c => c.k));
     const by = Object.fromEntries(cols.map(c => [c.k, c]));
-    const keys = order.filter(k => by[k]).concat(cols.map(c => c.k).filter(k => !order.includes(k)));
+    const keys = order.filter(k => by[k]);
+    cols.forEach((c, i) => {
+      if (keys.includes(c.k)) return;
+      const prev = i > 0 ? keys.indexOf(cols[i - 1].k) : -1;
+      keys.splice(prev >= 0 ? prev + 1 : keys.length, 0, c.k);
+    });
     const list = keys.map(k => Object.assign({}, by[k], { off: hidden.has(k) }));
     return all ? list : list.filter(c => !c.off);
   }
@@ -1077,7 +1123,7 @@
                 ${field('Personajes en off', `<input data-k="s:${s.id}:offCharacters" data-list="1" value="${esc((s.offCharacters || []).join(', '))}">`)}
               </div>
             </div></td></tr>` : ''}`;
-        }).join('')}</tbody></table></div>
+        }).join('')}</tbody>${durFootRow(p, p.scenes, dCols, true)}</table></div>
     </section>`;
   }
 
@@ -1110,7 +1156,7 @@
         <tbody>${p.scenes.filter(s => escVisible(p, s)).map(s => {
           const t = tramaOf(p, s);
           return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">${eCols.map(c => c.td(s)).join('')}</tr>`;
-        }).join('')}</tbody></table></div>
+        }).join('')}</tbody>${durFootRow(p, p.scenes.filter(s => escVisible(p, s)), eCols, false)}</table></div>
     </section>`;
   }
 
@@ -1734,11 +1780,11 @@
   function exportCSV(p) {
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const mpp = minutesPerPage(p);
-    const head = ['Estado', 'Nº', 'INT/EXT', 'Localización', 'Día/Noche', 'Trama', 'Personajes', 'Resumen', 'Conflicto / objetivo', 'Página', 'Octavos', 'Duración est. (min)', 'Intensidad', 'Punto de giro', 'Necesidades', 'Notas montaje', 'Notas color', 'Notas VFX', 'Notas sonido', 'Notas música'];
+    const head = ['Estado', 'Nº', 'INT/EXT', 'Localización', 'Día/Noche', 'Trama', 'Personajes', 'Resumen', 'Conflicto / objetivo', 'Página', 'Octavos', 'Duración est. (min)', 'Duración montaje', 'Intensidad', 'Punto de giro', 'Necesidades', 'Notas montaje', 'Notas color', 'Notas VFX', 'Notas sonido', 'Notas música'];
     const rows = p.scenes.map(s => {
       const t = tramaOf(p, s);
       return [ESTADOS.filter(e => getEstados(s).includes(e.k)).map(e => e.label).join(', ') || 'SIN RODAR', s.num, s.intExt, s.location, s.time, t ? t.letter + ' · ' + t.name : '', s.characters.join(', '), s.summary, s.conflict, s.page, fmtEighths(s.eighths),
-        (s.lengthPages * mpp).toFixed(1), s.intensity, s.keyEvent ? (s.eventLabel || 'sí') : '', NEEDS.filter(n => s.needs[n.k]).map(n => n.label).join(', '),
+        (s.lengthPages * mpp).toFixed(1), s.durMontaje || '', s.intensity, s.keyEvent ? (s.eventLabel || 'sí') : '', NEEDS.filter(n => s.needs[n.k]).map(n => n.label).join(', '),
         s.notes.montaje, s.notes.color, s.notes.vfx, s.notes.sonido, s.notes.musica];
     });
     download(fileBase(p) + '_escaleta.csv', '﻿' + [head, ...rows].map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
@@ -2058,10 +2104,12 @@
     else if (el.dataset.list) v = el.value.split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
     else if (el.dataset.num) v = Math.max(0, Math.min(10, parseFloat(el.value) || 0));
     else v = el.value;
+    if (isChange && /:durMontaje$/.test(k) && parseDur(v) != null) { v = fmtMS(parseDur(v)); el.value = v; }
     setPath(t.obj, t.path, v);
     if (el.dataset.edited) t.obj[el.dataset.edited] = true;
     if (el.dataset.list) ensureCharacters(P());
     if (k === 'p:formato') { ensureEpisodes(RP()); render(); }
+    if (/:durMontaje$/.test(k)) refreshDurTotals();
     save();
     if (el.dataset.rerenderSelect) renderProjectSelect();
     if (el.dataset.rerender && (isChange || !el.dataset.lazy)) {

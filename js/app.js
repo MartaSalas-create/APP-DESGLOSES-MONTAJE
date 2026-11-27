@@ -845,12 +845,61 @@
   /* ------------------------------------------------------------------ */
   /* Pestaña: Lectura / análisis de guion                                  */
   /* ------------------------------------------------------------------ */
+  /* ---------- PDF vertical esquemático de la Lectura de guion ---------- */
+  function bulletsHTML(txt) {
+    const t = String(txt || '').trim();
+    if (!t) return '<p class="sch-empty">— pendiente —</p>';
+    const lines = t.split(/\n+/).map(x => x.trim()).filter(Boolean);
+    if (lines.length === 1 && !/^[-•·*]/.test(lines[0])) return `<p>${esc(lines[0])}</p>`;
+    return `<ul>${lines.map(l => `<li>${esc(l.replace(/^[-•·*]\s*/, ''))}</li>`).join('')}</ul>`;
+  }
+  function schemaLecturaHTML(p) {
+    const an = p.analysis || {}; const mpp = minutesPerPage(p);
+    const st = characterStats(p);
+    const chars = Object.keys(p.characters).filter(c => !p.characters[c].hidden && st[c]).sort((a, b) => st[b].count - st[a].count).slice(0, 8);
+    const maxC = Math.max(1, ...chars.map(c => st[c].count));
+    const tr = p.tramas.map(t => ({ t, n: p.scenes.filter(s => s.tramaId === t.id).length })).filter(x => x.n);
+    const maxT = Math.max(1, ...tr.map(x => x.n));
+    const dur = Number(p.durationMin) || sumPages(p);
+    // estructura: actos y puntos de giro
+    const total = p.scenes.reduce((a, s) => a + (s.lengthPages || 0), 0) || 1;
+    const idx = new Map(p.scenes.map((s, i) => [s.id, i]));
+    const acts = (p.acts || []).map(a => ({ name: a.name, i: idx.get(a.start) })).filter(a => a.i != null).sort((a, b) => a.i - b.i);
+    const pos = i => p.scenes.slice(0, i).reduce((a, s) => a + (s.lengthPages || 0), 0) / total * 100;
+    const ACT_COL = ['#c9d3e3', '#a9c6e8', '#f2c9a0', '#e8a9a9', '#a9ddb9'];
+    const giros = p.scenes.filter(s => s.keyEvent);
+    const card = (icon, title, k) => `<div class="sch-card"><h4><span>${icon}</span>${esc(title)}</h4>${bulletsHTML(an[k])}</div>`;
+    const credits = [p.credits.guion && 'Guion: ' + p.credits.guion, p.credits.direccion && 'Dirección: ' + p.credits.direccion, p.credits.montaje && 'Montaje: ' + p.credits.montaje].filter(Boolean).join(' · ');
+    return `<div class="sch">
+      <div class="sch-head">
+        <div><div class="sch-kicker">LECTURA DE GUION · DOCUMENTO DE TRABAJO</div><h1>${esc((p.title || 'Sin título').toUpperCase())}</h1>
+          <div class="sch-sub">${esc([p.episodio, p.genero, p.formato, p.version, p.fecha].filter(Boolean).join(' · '))}</div>${credits ? `<div class="sch-sub">${esc(credits)}</div>` : ''}</div>
+        <div class="sch-stats">${[[p.scenes.length, 'secuencias'], [p.pages || '—', 'páginas'], [fmtMin(dur), p.durationMin ? 'duración' : 'dur. estimada'], [chars.length ? Object.keys(st).length : 0, 'personajes'], [tr.length, 'tramas']].map(([v, l]) => `<div><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>
+      </div>
+      ${p.logline ? `<div class="sch-logline">«${esc(p.logline)}»</div>` : ''}
+      <div class="sch-row">
+        <div class="sch-mini"><h4>🧵 Tramas</h4>${tr.length ? tr.map(x => `<div class="sch-bar"><span class="sch-tag" style="background:${x.t.color}">${esc(x.t.letter)}</span><span class="sch-bl">${esc(x.t.name)}</span><i style="width:${x.n / maxT * 100}%;background:${x.t.color}"></i><b>${x.n}</b></div>`).join('') : '<p class="sch-empty">Sin tramas asignadas</p>'}</div>
+        <div class="sch-mini"><h4>👥 Personajes principales</h4>${chars.length ? chars.map(c => { const t = tramaById(p, p.characters[c].tramaId); return `<div class="sch-bar"><span class="sch-bl"><b>${esc(c)}</b></span><i style="width:${st[c].count / maxC * 100}%;background:${t ? t.color : '#bbb'}"></i><b>${st[c].count}</b></div>`; }).join('') : '<p class="sch-empty">—</p>'}</div>
+      </div>
+      ${acts.length ? `<div class="sch-row sch-struct"><h4>🎬 Estructura</h4><div class="sch-acts">${acts.map((a, j) => { const x0 = pos(a.i), x1 = j + 1 < acts.length ? pos(acts[j + 1].i) : 100; return `<div style="left:${x0}%;width:${x1 - x0}%;background:${ACT_COL[j % ACT_COL.length]}"><span>${esc(a.name)}</span><small>${Math.round((x1 - x0) / 100 * dur)}′</small></div>`; }).join('')}</div>
+        <div class="sch-giros">${giros.map(s => `<div style="left:${pos(idx.get(s.id)) + (s.lengthPages || 0) / total * 50}%"><i></i><span>${esc((s.eventLabel || 'Giro').toUpperCase().slice(0, 22))}<br><small>esc. ${esc(s.num)}</small></span></div>`).join('')}</div></div>` : ''}
+      <div class="sch-block b1"><div class="sch-block-h">1ª LECTURA · Historia, género, tono y personajes</div><div class="sch-grid">
+        ${card('📖', 'Historia', 'historia')}${card('🎭', 'Género y tono', 'generoTono')}${card('👤', 'Personajes', 'personajes')}</div></div>
+      <div class="sch-block b2"><div class="sch-block-h">2ª LECTURA · Temas y mapa de personajes</div><div class="sch-grid">
+        ${card('💡', 'Temas', 'temas')}${card('🗺', 'Mapa de personajes', 'mapa')}${card('🧱', 'Estructura: actos, eventos y giros', 'estructura')}${card('⭐', 'Puntos de interés', 'interes')}</div></div>
+      <div class="sch-block b3"><div class="sch-block-h">ANÁLISIS AVANZADO · Necesidades de montaje</div><div class="sch-grid">
+        ${card('✂️', 'Posibles secuencias sobrantes', 'sobrantes')}${card('⚠️', 'Problemas generales o estructurales', 'problemas')}${card('🎚', 'Necesidades específicas de montaje', 'necesidades')}${card('❓', 'Preguntas para dirección', 'preguntas')}</div></div>
+      <div class="sch-foot">Desglose de montaje · del guion a la pantalla</div>
+    </div>`;
+  }
+
   function tabAnalisis(p) {
     const A = (k, label, help) => field(label, area('p:analysis.' + k, 'rows="4"'), 'wide', help);
     return `<section class="panel">
       ${printHeader(p, 'Lectura de guion')}
       <h2>El guion como punto de partida</h2>
       <p class="lead">Notas para la reunión con dirección y la lectura de guion. Se imprimen como documento de trabajo.</p>
+      <div class="toolbar no-print"><button class="btn btn-small btn-primary" data-action="print-schema">📄 PDF vertical · esquema visual</button><span class="muted" style="font-size:12px">Documento A4 vertical, esquemático, con tramas, personajes y estructura: para la reunión con dirección o para clase.</span></div>
       <h3>1ª lectura · Historia, género, tono y personajes</h3>
       <div class="form-grid">
         ${A('historia', 'Historia (de qué trata)')}
@@ -1839,6 +1888,18 @@
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
     'export-json': () => { const p = RP(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
+    'print-schema': async () => {
+      const p = P(); if (!p || !window.PdfExport) return;
+      showModal(`<h3><span class="spinner"></span>Generando PDF vertical…</h3><p id="pdfProg">Preparando el esquema.</p>`);
+      try {
+        const blob = await PdfExport.exportPDF(`${p.title} — Lectura de guion`, '', (i, n) => { const el = document.getElementById('pdfProg'); if (el) el.textContent = `Página ${i} de ${n}…`; }, { portrait: true, html: schemaLecturaHTML(p) });
+        hideModal();
+        await download(fileBase(p) + '_Lectura_de_guion_esquema.pdf', blob, 'application/pdf');
+      } catch (e) {
+        console.error(e);
+        showModal(`<h3>No se ha podido generar el PDF</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
+      }
+    },
     'print': async () => {
       const p = P(); if (!p || !window.PdfExport) return;
       const tabLabelTxt = tabLabel(tab);

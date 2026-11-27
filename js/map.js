@@ -161,7 +161,7 @@
     g.nodes.filter(n => n.kind === 'c').forEach(n => { n.r = Math.min(n.r, Math.max(8, laneH * 0.16)); });
     g.nodes.filter(n => n.kind === 'g').forEach(n => { n.r = Math.min(n.r, Math.max(8, laneH * 0.12)); });
     const homeY = n => laneY['t:' + (n.tr ? n.tr.id : '')] != null ? laneY['t:' + n.tr.id] : (top + bottom) / 2;
-    const bg = [];
+    const bg = [], keep = [], fg = [];
     // franjas de las tramas
     T.forEach((n, i) => {
       bg.push(`<rect x="0" y="${top + laneH * i}" width="${VW}" height="${laneH}" fill="${n.color}" fill-opacity="${i % 2 ? 0.10 : 0.16}"/>`);
@@ -175,13 +175,14 @@
       const mid = s => (s.pos || 0) + (s.lengthPages || 0) / 2;
       // eje de páginas y actos
       const step = total > 150 ? 20 : total > 60 ? 10 : total > 20 ? 5 : 1;
-      for (let pg = 0; pg <= total; pg += step) bg.push(`<line x1="${X(pg)}" x2="${X(pg)}" y1="${top}" y2="${bottom}" stroke="#000" stroke-opacity="0.06"/><text x="${X(pg)}" y="${bottom + 16}" text-anchor="middle" font-size="10" fill="#2a4f8f">${Math.round(pg)}</text>`);
-      bg.push(`<text x="${R0}" y="${bottom + 30}" text-anchor="end" font-size="10" fill="#999">páginas del guion →</text>`);
+      for (let pg = 0; pg <= total; pg += step) bg.push(`<line x1="${X(pg)}" x2="${X(pg)}" y1="${top}" y2="${bottom}" stroke="#000" stroke-opacity="0.06"/><text x="${X(pg)}" y="${bottom + 13}" text-anchor="middle" font-size="10" fill="#2a4f8f">${Math.round(pg)}</text>`);
+      bg.push(`<text x="${R0}" y="${bottom + 25}" text-anchor="end" font-size="10" fill="#999">páginas del guion →</text>`);
       acts.forEach((a, j) => {
         const s0 = p.scenes[a.i]; const x = X(s0 ? s0.pos || 0 : 0);
         if (j) bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="3"/>`);
         const next = acts[j + 1] ? p.scenes[acts[j + 1].i] : null; const x2 = next ? X(next.pos || 0) : R0;
-        bg.push(`<text x="${(x + x2) / 2}" y="${top - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${esc(a.name.toUpperCase())}</text>`);
+        const nm = window.LabelPlacer.fit(a.name.toUpperCase(), Math.max(20, x2 - x - 6), 11, 7, true);
+        bg.push(`<text x="${(x + x2) / 2}" y="${top - 18}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
       });
       g.nodes.forEach(n => {
         if (n.kind === 'g') target[n.id] = { x: X(mid(n.s)), y: homeY(n) - laneH * 0.2, lockX: true };
@@ -199,18 +200,25 @@
       acts.forEach((a, j) => {
         const x = L0 + colW * j;
         bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="${j ? 3 : 1}" stroke-opacity="${j ? 1 : 0.3}"/>`);
-        bg.push(`<text x="${x + colW / 2}" y="${top - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${esc(a.name.toUpperCase())}</text>`);
+        const nm = window.LabelPlacer.fit(a.name.toUpperCase(), colW - 8, 11, 7, true);
+        bg.push(`<text x="${x + colW / 2}" y="${top - 18}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
       });
       T.forEach(n => {
         const c = cnt[n.id] || acts.map(() => 0); const best = c.indexOf(Math.max(...c));
         c.forEach((v, j) => {
           const x = L0 + colW * j, y = laneY[n.id] - laneH / 2;
           if (v) bg.push(`<rect x="${x + 3}" y="${y + 3}" width="${colW - 6}" height="${laneH - 6}" rx="8" fill="${n.color}" fill-opacity="${0.12 + 0.5 * v / max}" ${j === best ? `stroke="${textColor(n.color)}" stroke-width="3"` : ''}/>`);
-          bg.push(`<text x="${x + colW - 10}" y="${y + 16}" text-anchor="end" font-size="10" font-weight="700" fill="${textColor(n.color)}">${v ? v + ' sec.' + (j === best ? ' · más peso' : '') : ''}</text>`);
+          const ct = v ? v + ' sec.' + (j === best ? ' · más peso' : '') : '';
+          if (ct) { fg.push(`<text x="${x + 10}" y="${y + 16}" text-anchor="start" font-size="10" font-weight="700" fill="${textColor(n.color)}" pointer-events="none" ${window.LabelPlacer.HALO}>${ct}</text>`); const tw = window.LabelPlacer.textW(ct, 10, true); keep.push({ x: x + 10, y: y + 6, w: tw, h: 13 }); }
         });
       });
       g.nodes.forEach(n => {
-        if (n.kind === 'g') target[n.id] = { x: colX(of.get(n.s.id) || 0), y: homeY(n) - laneH * 0.18 };
+        if (n.kind === 'g') {
+          // repartidos dentro de su acto según su momento (no todos en el centro de la columna)
+          const k = of.get(n.s.id) || 0, i = p.scenes.indexOf(n.s), a0 = acts[k].i, a1 = acts[k + 1] ? acts[k + 1].i : p.scenes.length;
+          const fr = a1 - a0 > 1 ? (i - a0) / (a1 - a0 - 1) : 0.5;
+          target[n.id] = { x: L0 + colW * k + 26 + fr * (colW - 52), y: homeY(n) - laneH * 0.12, lockX: true };
+        }
         if (n.kind === 'c') {
           const c = acts.map(() => 0); p.scenes.forEach(s => { if (s.characters.includes(n.name)) c[of.get(s.id)]++; });
           target[n.id] = { x: colX(c.indexOf(Math.max(...c))), y: homeY(n) + laneH * 0.2 };
@@ -235,7 +243,7 @@
         q.x = Math.max(L0 - 10, Math.min(VW - n.r - 6, q.x)); q.y = Math.max(top + n.r, Math.min(bottom - n.r, q.y));
       });
     }
-    return { pos, bg: bg.join('') };
+    return { pos, bg: bg.join(''), keep, fg: fg.join('') };
   }
 
   /* ---------------- Dibujo ---------------- */
@@ -253,6 +261,7 @@
     const o = [`<rect width="${VW}" height="${VH}" fill="#fff"/>`, LY.bg];
     o.push(`<text x="16" y="24" font-size="15" font-weight="800" fill="#2a4f8f" letter-spacing="1">${esc((p.title || '').toUpperCase())} · MAPA DE TRAMAS</text>`);
     // enlaces
+    const pills = [];
     g.edges.forEach(e => {
       const a = pos[e.a], b = pos[e.b]; if (!a || !b) return;
       const faded = nb && !(nb.has(e.a) && nb.has(e.b)) || (sel && sel.startsWith('e:') && sel !== e.id && e.kind === 'tt');
@@ -267,6 +276,7 @@
         o.push(`<path class="edge-hit" data-id="${esc(e.id)}" d="${dd}" fill="none" stroke="transparent" stroke-width="22"/>`);
         const mx = curved ? (a.x + b.x) / 4 + cxp / 2 : (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         const note = st(p).notes[e.key];
+        if (!faded) pills.push({ x: mx - 16, y: my - 12, w: 32, h: 24 });
         if (!faded) o.push(`<g class="edge-hit" data-id="${esc(e.id)}"><rect x="${mx - 15}" y="${my - 11}" width="30" height="22" rx="11" fill="#fff" stroke="#2a4f8f"/><text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="11" font-weight="800" fill="#2a4f8f">${e.w}${note ? '✎' : ''}</text><title>${esc(ta.label)} ↔ ${esc(tb.label)}: ${e.w} personajes compartidos${e.shared && e.shared.length ? ' (' + esc(e.shared.join(', ')) + ')' : ''}</title></g>`);
       } else if (e.kind === 'ct') {
         const tn = g.nodes.find(n => n.id === e.b);
@@ -281,6 +291,20 @@
         o.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#b03a69" stroke-width="${1 + Math.min(5, e.w * 0.5)}" stroke-opacity="${faded ? 0.05 : 0.35}"><title>${e.w} secuencias juntos</title></line>`);
       }
     });
+    // rótulos: se colocan antes de dibujar, en el hueco libre más cercano a su nodo
+    const LP = window.LabelPlacer;
+    const rad = n => n.kind === 'g' ? n.r * 1.42 : n.r;
+    const obst = g.nodes.filter(n => pos[n.id]).map(n => { const q = pos[n.id], r = rad(n) + 2; return { x: q.x - r, y: q.y - r, w: 2 * r, h: 2 * r }; }).concat(pills, LY.keep || []);
+    const lab = {};
+    const rank = { t: 0, g: 1, c: 2 };
+    const want = g.nodes.filter(n => pos[n.id]).sort((a, b) => rank[a.kind] - rank[b.kind]).map(n => {
+      const q = pos[n.id];
+      if (n.kind === 't') { const t = n.label.toUpperCase().slice(0, 32); return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 13, true) + 4, h: 15, gap: n.r + 3, prefer: 'down' }; }
+      if (n.kind === 'g') { const t = n.label.slice(0, 30); return { n, t, ax: q.x, ay: q.y, w: Math.max(LP.textW(t, 10, true), 40) + 4, h: 24, gap: rad(n) + 3, prefer: 'down' }; }
+      const t = n.label.slice(0, 22); return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 11, true) + 4, h: 13, gap: n.r + 3, prefer: 'down' };
+    });
+    const boxes = LP.place(want, { bounds: { x0: 4, y0: mode === 'libre' ? 34 : 50, x1: VW - 4, y1: VH - 30 }, obstacles: obst, step: 5, pad: 2 });
+    want.forEach((w, i) => { const q = pos[w.n.id], b = boxes[i]; lab[w.n.id] = { t: w.t, x: b.x + b.w / 2 - q.x, y: b.y - q.y }; });
     // nodos (primero personajes, encima tramas)
     const order = { c: 0, g: 1, t: 2 };
     g.nodes.slice().sort((x, y) => order[x.kind] - order[y.kind]).forEach(n => {
@@ -290,26 +314,27 @@
           <circle r="${n.r}" fill="${n.color}" stroke="${on ? '#222' : textColor(n.color)}" stroke-width="${on ? 4 : 2}"/>
           <text y="-6" text-anchor="middle" font-size="22" font-weight="900" fill="${textColor(n.color)}" pointer-events="none">${esc(n.t.letter)}</text>
           <text y="14" text-anchor="middle" font-size="10" fill="#333" pointer-events="none">${n.scenes} sec.</text>
-          <text y="${n.r + 16}" text-anchor="middle" font-size="13" font-weight="800" fill="${textColor(n.color)}" pointer-events="none">${esc(n.label.toUpperCase().slice(0, 32))}</text>
+          <text x="${lab[n.id].x}" y="${lab[n.id].y + 12}" text-anchor="middle" font-size="13" font-weight="800" fill="${textColor(n.color)}" pointer-events="none" ${LP.HALO}>${esc(lab[n.id].t)}</text>
           <title>${esc(n.t.letter + ' · ' + n.label)} — ${n.scenes} secuencias (arrastra para mover, toca para ver sus conexiones)</title></g>`);
       } else if (n.kind === 'g') {
         const r = n.r;
         o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
           <rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" transform="rotate(45)" fill="${n.color}" stroke="${on ? '#222' : '#d62828'}" stroke-width="${on ? 4 : 2.5}"/>
           <text y="4" text-anchor="middle" font-size="12" fill="#d62828" pointer-events="none">★</text>
-          <text y="${r + 18}" text-anchor="middle" font-size="10" font-weight="800" fill="#d62828" pointer-events="none">${esc(n.label.slice(0, 26))}</text>
-          <text y="${r + 30}" text-anchor="middle" font-size="9" fill="#666" pointer-events="none">sec. ${esc(n.s.num)}</text>
+          <text x="${lab[n.id].x}" y="${lab[n.id].y + 10}" text-anchor="middle" font-size="10" font-weight="800" fill="#d62828" pointer-events="none" ${LP.HALO}>${esc(lab[n.id].t)}</text>
+          <text x="${lab[n.id].x}" y="${lab[n.id].y + 21}" text-anchor="middle" font-size="9" fill="#666" pointer-events="none" ${LP.HALO}>sec. ${esc(n.s.num)}</text>
           <title>Punto de giro · sec. ${esc(n.s.num)}: ${esc(n.label)}</title></g>`);
       } else {
         o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
           <circle r="${n.r}" fill="#fff" stroke="${n.color}" stroke-width="${on ? 5 : 3.5}"/>
           <text y="4" text-anchor="middle" font-size="10" font-weight="800" fill="#333" pointer-events="none">${n.n}</text>
-          <text y="${n.r + 13}" text-anchor="middle" font-size="11" font-weight="700" fill="#222" pointer-events="none">${esc(n.label.slice(0, 22))}</text>
+          <text x="${lab[n.id].x}" y="${lab[n.id].y + 11}" text-anchor="middle" font-size="11" font-weight="700" fill="#222" pointer-events="none" ${LP.HALO}>${esc(lab[n.id].t)}</text>
           <title>${esc(n.name)} — ${n.n} secuencias</title></g>`);
       }
     });
-    o.push(`<text x="16" y="${VH - 28}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ◆★ punto de giro</text>`);
-    o.push(`<text x="16" y="${VH - 14}" font-size="10" fill="#888">━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
+    if (LY.fg) o.push(LY.fg);
+    o.push(`<text x="16" y="${VH - 17}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ◆★ punto de giro</text>`);
+    o.push(`<text x="16" y="${VH - 5}" font-size="10" fill="#888">━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
     return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="0 0 ${VW} ${VH}" ${zoom === 1 ? `width="100%" style="max-width:${VW}px"` : `width="${Math.round(VW * zoom)}" height="${Math.round(VH * zoom)}"`} font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
   }
 

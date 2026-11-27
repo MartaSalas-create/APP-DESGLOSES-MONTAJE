@@ -181,17 +181,28 @@ ${AI.script(p)}`;
       hs.forEach((h, i) => { if (i) path += ` H${X(h.pg)} V${Y(h.v)}`; });
       path += ` H${X(total)}`;
       o.push(`<path d="${path}" fill="none" stroke="#d62828" stroke-width="3.5" stroke-linejoin="miter"/>`);
-      hs.forEach((h, i) => {
-        const x = X(h.pg), y = Y(h.v);
-        const up = i % 2 === 0;
-        const ly = up ? Math.max(T + 34, y - 44) : Math.min(T + ph - 30, y + 30);
-        const lab = (h.etiqueta || HITOS[h.n - 1].nombre).toUpperCase().slice(0, 26);
-        const bw = Math.max(lab.length * 6.6, 60) + 16;
-        o.push(`<line x1="${x}" x2="${x}" y1="${y}" y2="${ly + (up ? 10 : -10)}" stroke="#2a4f8f" stroke-width="1" stroke-dasharray="2 2"/>`);
-        o.push(`<rect x="${x - bw / 2}" y="${ly - 12}" width="${bw}" height="28" rx="6" fill="#fff" stroke="#2a4f8f"/>`);
-        o.push(`<text x="${x}" y="${ly}" text-anchor="middle" font-size="10" font-weight="800" fill="#2a4f8f">${h.n} · p.${Math.round(h.pg)}${h.esc ? ' · sec. ' + esc(h.esc) : ''}</text>`);
-        o.push(`<text x="${x}" y="${ly + 12}" text-anchor="middle" font-size="10" fill="#222">${esc(lab)}</text>`);
-        o.push(`<circle cx="${x}" cy="${y}" r="5" fill="#fff" stroke="#d62828" stroke-width="2.5"><title>${h.n}. ${esc(HITOS[h.n - 1].nombre)} · p.${h.pg} · carga ${h.v}</title></circle>`);
+      // etiquetas: cada una en el hueco libre más cercano a su hito (sin pisarse ni tapar los escalones)
+      const LP = window.LabelPlacer;
+      const info = hs.map(h => {
+        const lab = (h.etiqueta || HITOS[h.n - 1].nombre).toUpperCase().slice(0, 30);
+        const head = `${h.n} · p.${Math.round(h.pg)}${h.esc ? ' · sec. ' + h.esc : ''}`;
+        return { h, x: X(h.pg), y: Y(h.v), lab, head, bw: Math.max(LP.textW(lab, 10), LP.textW(head, 10, true), 50) + 16 };
+      });
+      const stepPts = []; info.forEach((q, i) => { if (i) stepPts.push({ x: q.x, y: info[i - 1].y }); stepPts.push({ x: q.x, y: q.y }); });
+      stepPts.unshift({ x: X(0), y: info[0].y }); stepPts.push({ x: X(total), y: info[info.length - 1].y });
+      const obst = LP.alongPath(stepPts, 8, 3).concat(info.map(q => ({ x: q.x - 7, y: q.y - 7, w: 14, h: 14 })));
+      const boxes = LP.place(info.map((q, i) => ({ ax: q.x, ay: q.y, w: q.bw, h: 28, gap: 16, prefer: q.y > T + ph * 0.3 ? 'up' : 'down' })),
+        { bounds: { x0: L - 40, y0: T + 26, x1: L + pw + 40, y1: T + ph - 22 }, obstacles: obst, step: 5, pad: 4 });
+      info.forEach((q, i) => {
+        const b = boxes[i], cx = b.x + b.w / 2, above = b.y + b.h / 2 < q.y;
+        o.push(`<line x1="${q.x}" x2="${cx}" y1="${q.y}" y2="${above ? b.y + b.h : b.y}" stroke="#2a4f8f" stroke-width="1" stroke-dasharray="2 2"/>`);
+      });
+      info.forEach((q, i) => {
+        const b = boxes[i], cx = b.x + b.w / 2, h = q.h;
+        o.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="28" rx="6" fill="#fff" stroke="#2a4f8f"/>`);
+        o.push(`<text x="${cx}" y="${b.y + 12}" text-anchor="middle" font-size="10" font-weight="800" fill="#2a4f8f">${esc(q.head)}</text>`);
+        o.push(`<text x="${cx}" y="${b.y + 24}" text-anchor="middle" font-size="10" fill="#222">${esc(q.lab)}</text>`);
+        o.push(`<circle cx="${q.x}" cy="${q.y}" r="5" fill="#fff" stroke="#d62828" stroke-width="2.5"><title>${h.n}. ${esc(HITOS[h.n - 1].nombre)} · p.${h.pg} · carga ${h.v}</title></circle>`);
       });
     } else {
       o.push(`<text x="${W / 2}" y="${T + ph / 2}" text-anchor="middle" font-size="14" fill="#aaa">Genera o escribe los hitos para dibujar la gráfica</text>`);

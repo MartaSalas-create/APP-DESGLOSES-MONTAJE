@@ -107,15 +107,13 @@
     // Líneas finas por secuencia + etiquetas verticales
     const minGap = 13;
     let lastLabelX = -999;
+    const locBoxes = [];
     timeline.forEach(t => {
       const x = X(t.start);
       out.push(`<line x1="${x}" x2="${x}" y1="${plotTop}" y2="${plotBottom}" stroke="#c9d3e3" stroke-width="0.7"/>`);
       const s = t.s;
       const label = s.keyEvent && s.eventLabel && visible(s) ? s.eventLabel : '';
       const cx = X((t.start + t.end) / 2);
-      if (label) {
-        out.push(`<text transform="translate(${cx + 4} ${plotBottom - 8}) rotate(-90)" font-size="11" fill="#2a4f8f" font-weight="600">${esc(label.toUpperCase().slice(0, 40))}</text>`);
-      }
       if (x - lastLabelX >= minGap) {
         out.push(`<text x="${cx}" y="${plotBottom + 16}" text-anchor="middle" font-size="${zoomed ? 10 : 9}" fill="${zoomed ? '#555' : '#999'}" ${zoomed ? 'font-weight="700"' : ''}>${esc(s.num)}</text>`);
         lastLabelX = x;
@@ -123,9 +121,15 @@
       // Con zoom: rótulo vertical de cada secuencia (localización) si hay sitio
       const wpx = X(t.end) - X(t.start);
       if (zoomed && !label && wpx >= 15 && visible(s)) {
-        const maxChars = Math.floor((plotH * 0.52) / 6.2);
+        // el rótulo termina por debajo de la curva (no la cruza)
+        const avail = plotBottom - 6 - (Y(s.intensity) + 14);
+        const maxChars = Math.floor(avail / 6.2);
         const txt = `${s.intExt ? s.intExt + '. ' : ''}${s.location}${s.time ? ' · ' + s.time : ''}`;
-        out.push(`<text transform="translate(${cx + 3.5} ${plotBottom - 6}) rotate(-90)" font-size="10" fill="#8a94a6">${esc(txt.length > maxChars ? txt.slice(0, maxChars - 1) + '…' : txt)}</text>`);
+        if (maxChars >= 6) {
+          const shown = txt.length > maxChars ? txt.slice(0, maxChars - 1) + '…' : txt;
+          locBoxes.push({ x: cx - 6, y: plotBottom - 6 - shown.length * 6.2, w: 12, h: shown.length * 6.2 });
+          out.push(`<text transform="translate(${cx + 3.5} ${plotBottom - 6}) rotate(-90)" font-size="10" fill="#8a94a6">${esc(shown)}</text>`);
+        }
       }
     });
 
@@ -149,12 +153,14 @@
       const endMin = i + 1 < acts.length ? timeline[acts[i + 1].idx].start : totalMin;
       const x0 = X(startMin), x1 = X(endMin);
       if (a.idx > 0) out.push(`<line x1="${x0}" x2="${x0}" y1="${actLabelY - 30}" y2="${plotBottom + 28}" stroke="#d62828" stroke-width="5"/>`);
-      const dur = Math.round(endMin - startMin);
-      const name = a.name.toUpperCase();
-      const room = x1 - x0;
-      const fs = room > 260 ? 20 : room > 160 ? 15 : room > 90 ? 11 : 9;
-      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY}" text-anchor="middle" font-size="${fs}" fill="#2a4f8f" font-weight="600">${esc(name)}</text>`);
-      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY + 18}" text-anchor="middle" font-size="12" fill="#2a4f8f">${dur}'  ·  ${Math.round(startMin)}'–${Math.round(endMin)}'</text>`);
+      const fm = v => v < 10 && Math.round(v) !== Math.round(v * 10) / 10 ? (Math.round(v * 10) / 10).toString().replace('.', ',') : String(Math.round(v));
+      const room = Math.max(24, x1 - x0 - 8);
+      const LP = window.LabelPlacer;
+      const nm = LP.fit(a.name.toUpperCase(), room, room > 260 ? 20 : room > 160 ? 15 : 12, 7, true);
+      const full = `${fm(endMin - startMin)}'  ·  ${fm(startMin)}'–${fm(endMin)}'`;
+      const du = LP.textW(full, 12) <= room ? { text: full, fs: 12 } : LP.fit(`${fm(endMin - startMin)}'`, room, 11, 7);
+      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY}" text-anchor="middle" font-size="${nm.fs}" fill="#2a4f8f" font-weight="600">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
+      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY + 18}" text-anchor="middle" font-size="${du.fs}" fill="#2a4f8f">${esc(du.text)}</text>`);
     });
 
     // Curva
@@ -162,26 +168,27 @@
     out.push(`<path d="${smoothPath(pts)}" fill="none" stroke="#d62828" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`);
 
     // Globos: puntos de giro / eventos clave (color de la trama)
-    let globeLevel = 0;
-    let lastGlobeX = -999;
-    pts.forEach(pt => {
-      const s = pt.s;
-      if (!s.keyEvent) return;
+    const LP = window.LabelPlacer;
+    const gl = pts.filter(pt => pt.s.keyEvent).map(pt => {
+      const label = (pt.s.eventLabel || ('Sec. ' + pt.s.num)).toUpperCase();
+      const lines = wrap(label, 16).slice(0, 3);
+      return { pt, lines, bw: Math.max(...lines.map(l => l.length)) * 7.2 + 18, bh: lines.length * 14 + 10 };
+    });
+    const curveObst = LP.alongPath(pts, 8, 4).concat(pts.map(pt => ({ x: pt.x - 7, y: pt.y - 7, w: 14, h: 14 })), locBoxes);
+    const boxes = LP.place(gl.map(g => ({ ax: g.pt.x, ay: g.pt.y, w: g.bw, h: g.bh, gap: 22, prefer: g.pt.y > plotTop + plotH * 0.35 ? 'up' : 'down' })),
+      { bounds: { x0: plotLeft - 30, y0: plotTop + 2, x1: plotRight + 30, y1: plotBottom - 4 }, obstacles: curveObst, step: 6, pad: 4 });
+    gl.forEach((g, gi) => {
+      const pt = g.pt, s = pt.s, lines = g.lines, bw = g.bw, bh = g.bh;
       const tr = helpers.tramaOf(s);
       const color = tr ? tr.color : '#bbb';
-      const label = (s.eventLabel || ('Sec. ' + s.num)).toUpperCase();
-      const lines = wrap(label, 16).slice(0, 3);
-      const bw = Math.max(...lines.map(l => l.length)) * 7.2 + 18;
-      const bh = lines.length * 14 + 10;
-      globeLevel = pt.x - lastGlobeX < bw + 6 ? (globeLevel + 1) % 4 : 0;
-      lastGlobeX = pt.x;
-      const by = Math.max(plotTop + 4, pt.y - 34 - bh - globeLevel * (bh + 6));
+      const by = boxes[gi].y;
+      const bx = boxes[gi].x + bw / 2;
       const dx = Number(s.globeDx) || 0, dy = Number(s.globeDy) || 0;
       // el palito une el punto de la curva con el globo (se actualiza al arrastrar)
-      out.push(`<line class="stem" data-id="${s.id}" data-bx="${pt.x}" data-by="${by + bh / 2}" x1="${pt.x}" y1="${pt.y}" x2="${pt.x + dx}" y2="${by + bh / 2 + dy}" stroke="${color}" stroke-width="2"/>`);
+      out.push(`<line class="stem" data-id="${s.id}" data-bx="${bx}" data-by="${by + bh / 2}" x1="${pt.x}" y1="${pt.y}" x2="${bx + dx}" y2="${by + bh / 2 + dy}" stroke="${color}" stroke-width="2"/>`);
       out.push(`<g class="globe" data-id="${s.id}" transform="translate(${dx} ${dy})"><title>Arrastra para mover la etiqueta</title>`);
-      out.push(`<rect x="${pt.x - bw / 2}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${color}" stroke="rgba(0,0,0,.35)"/>`);
-      lines.forEach((l, i) => out.push(`<text x="${pt.x}" y="${by + 17 + i * 14}" text-anchor="middle" font-size="11" font-weight="700" fill="#222" pointer-events="none">${esc(l)}</text>`));
+      out.push(`<rect x="${bx - bw / 2}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${color}" stroke="rgba(0,0,0,.35)"/>`);
+      lines.forEach((l, i) => out.push(`<text x="${bx}" y="${by + 17 + i * 14}" text-anchor="middle" font-size="11" font-weight="700" fill="#222" pointer-events="none">${esc(l)}</text>`));
       out.push(`</g>`);
     });
 

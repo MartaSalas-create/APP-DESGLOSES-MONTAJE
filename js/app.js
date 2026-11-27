@@ -586,7 +586,7 @@
     return st;
   }
   const fmtEighths = e => { e = Math.max(1, Math.round(e)); const w = Math.floor(e / 8), r = e % 8; return (w ? w + (r ? ' ' : '') : '') + (r ? r + '/8' : ''); };
-  const fmtMin = m => { m = Math.round(m * 10) / 10; return (Math.round(m) === m ? m : m.toFixed(1)) + "'"; };
+  const fmtMin = m => { m = Math.round(m * 10) / 10; return (Math.round(m) === m ? String(m) : m.toFixed(1).replace('.', ',')) + "'"; };
   /* Duración de montaje: se escribe como 1:30 (min:seg), 1'30 o 1,5 (minutos) */
   function parseDur(v) {
     v = String(v == null ? '' : v).trim().replace(/[″"]+$/, '');
@@ -1243,6 +1243,9 @@
       o.push(`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${T + ph}" stroke="#ece9e4"/>`);
       o.push(`<text x="${X(i)}" y="${H - B + 16}" text-anchor="${i === 0 ? 'start' : i === ARC_ACTS.length - 1 ? 'end' : 'middle'}" font-size="${opt.small ? 9 : 11}" fill="#555" font-weight="600">${esc(opt.small ? a.short.split(' · ')[0] : a.short)}</text>`);
     });
+    const LP = window.LabelPlacer;
+    const allPts = [], words = [], ends = [];
+    list.forEach(({ n }) => ARC_ACTS.forEach((a, i) => { const v = emoVal(p, n, a.k); if (v !== null) allPts.push({ x: X(i) - 6, y: Y(v) - 6, w: 12, h: 12 }); }));
     list.forEach(({ n, color }) => {
       const pts = ARC_ACTS.map((a, i) => ({ i, v: emoVal(p, n, a.k), word: ((p.characters[n].arcoActos || {})[a.k] || {}).e || '' })).filter(x => x.v !== null);
       if (!pts.length) return;
@@ -1250,10 +1253,23 @@
       o.push(`<path d="${d}" fill="none" stroke="${color}" stroke-width="${opt.small ? 3 : 3}" stroke-linejoin="round" stroke-linecap="round"/>`);
       pts.forEach(q => {
         o.push(`<circle cx="${X(q.i)}" cy="${Y(q.v)}" r="${opt.small ? 4.5 : 5}" fill="#fff" stroke="${color}" stroke-width="2.5"><title>${esc(n)} · ${esc(ARC_ACTS[q.i].label)}: ${q.v > 0 ? '+' : ''}${q.v} ${esc(q.word)}</title></circle>`);
-        if (opt.small && q.word) o.push(`<text x="${X(q.i)}" y="${Y(q.v) + (q.v >= 0 ? -9 : 16)}" text-anchor="${q.i === 0 ? 'start' : q.i === ARC_ACTS.length - 1 ? 'end' : 'middle'}" font-size="10" font-style="italic" fill="#333">${esc(q.word.slice(0, 22))}</text>`);
+        if (opt.small && q.word) { const t = q.word.slice(0, 22); words.push({ t, ax: X(q.i), ay: Y(q.v), w: LP.textW(t, 10) + 4, h: 12, prefer: q.v >= 0 ? 'up' : 'down' }); }
       });
-      if (!opt.small) { const last = pts[pts.length - 1]; o.push(`<text x="${X(last.i) + 8}" y="${Y(last.v) + 4}" font-size="11" font-weight="700" fill="${color}">${esc(n)}</text>`); }
+      if (!opt.small) { const last = pts[pts.length - 1]; ends.push({ n, color, ax: X(last.i), ay: Y(last.v), w: LP.textW(n, 11, true) + 2, h: 13 }); }
     });
+    // palabras y nombres en el hueco libre más cercano (sin pisarse ni tapar puntos)
+    if (words.length) {
+      const bx = LP.place(words, { bounds: { x0: 2, y0: T - 2, x1: W - 2, y1: H - B + 2 }, obstacles: allPts, step: 4, pad: 2 });
+      words.forEach((q, i) => o.push(`<text x="${bx[i].x + 2}" y="${bx[i].y + 10}" font-size="10" font-style="italic" fill="#333" ${LP.HALO}>${esc(q.t)}</text>`));
+    }
+    if (ends.length) {
+      const bx = LP.place(ends.sort((a, b) => a.ay - b.ay).map(e => ({ ...e, dirs: ['right'], gap: 9, noDx: true })), { bounds: { x0: L, y0: 4, x1: W - 2, y1: H - B + 4 }, obstacles: allPts, step: 3, pad: 1 });
+      ends.forEach((e, i) => {
+        const b = bx[i];
+        if (Math.abs(b.y + b.h / 2 - e.ay) > 6) o.push(`<line x1="${e.ax + 6}" y1="${e.ay}" x2="${b.x - 1}" y2="${b.y + b.h / 2}" stroke="${e.color}" stroke-width="1"/>`);
+        o.push(`<text x="${b.x + 1}" y="${b.y + 10}" font-size="11" font-weight="700" fill="${e.color}">${esc(e.n)}</text>`);
+      });
+    }
     if (!list.some(({ n }) => ARC_ACTS.some(a => emoVal(p, n, a.k) !== null))) o.push(`<text x="${L + pw / 2}" y="${T + ph / 2 + 4}" text-anchor="middle" font-size="12" fill="#aaa">Sin valores todavía</text>`);
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
   }

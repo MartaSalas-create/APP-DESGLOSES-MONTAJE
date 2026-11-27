@@ -561,6 +561,9 @@
   const tramaById = (p, id) => p.tramas.find(t => t.id === id) || null;
   const sceneById = (p, id) => p.scenes.find(s => s.id === id);
   function tramaOf(p, s) { return tramaById(p, s.tramaId); }
+  // tramas que se entrelazan en la secuencia (además de la principal)
+  const tramas2Of = (p, s) => (s.tramas2 || []).filter(id => id && id !== s.tramaId).map(id => tramaById(p, id)).filter(Boolean);
+  const tramaIdsOf = s => [s.tramaId || '__none'].concat((s.tramas2 || []).filter(id => id && id !== s.tramaId));
   function textColor(hex) {
     // versión oscura y saturada del color de trama (textos de las fichas de escaleta de montaje)
     const n = parseInt((hex || '#888888').slice(1), 16);
@@ -673,6 +676,14 @@
   function tramaSelect(k, cls = 'cell-input') {
     const p = P(); const cur = val(k) || '';
     return `<select class="${cls}" data-k="${esc(k)}" data-rerender="1"><option value="">—</option>${p.tramas.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.letter)} · ${esc(t.name)}</option>`).join('')}</select>`;
+  }
+  // trama principal + tramas entrelazadas (se pueden añadir y quitar)
+  function tramaPicker(s) {
+    const p = P(); const t2 = tramas2Of(p, s); const used = new Set([s.tramaId].concat(t2.map(t => t.id)));
+    const free = p.tramas.filter(t => !used.has(t.id));
+    return `<div class="tp">${tramaSelect('s:' + s.id + ':tramaId')}
+      ${t2.map(t => `<span class="tp-chip" style="background:${t.color}" title="Trama entrelazada: ${esc(t.name)}">+ ${esc(t.letter)} · ${esc(t.name)}<button class="tp-x no-print" data-action="tp-del" data-id="${s.id}" data-t="${t.id}" title="Quitar">×</button></span>`).join('')}
+      ${s.tramaId && free.length ? `<select class="tp-add no-print" data-action-change="tp-add" data-id="${s.id}" title="Añadir otra trama que se entrelaza en esta secuencia"><option value="">＋ trama</option>${free.map(t => `<option value="${t.id}">${esc(t.letter)} · ${esc(t.name)}</option>`).join('')}</select>` : ''}</div>`;
   }
   function needsDropdown(s) {
     const key = 'n:' + s.id;
@@ -1049,7 +1060,7 @@
     { k: 'dur', label: 'Dur. est.', cls: 'num', td: s => `<td class="num">${fmtMin(s.lengthPages * mpp)}</td>` },
     { k: 'durm', label: 'Dur. montaje', cls: 'num', td: s => `<td class="num">${durmInput(s)}</td>` },
     { k: 'estado', label: 'Estado', td: s => `<td>${estadoSelect(s)}</td>` },
-    { k: 'trama', label: 'Trama', td: s => `<td>${tramaSelect('s:' + s.id + ':tramaId')}</td>` },
+    { k: 'trama', label: 'Trama', td: s => `<td>${tramaPicker(s)}</td>` },
     { k: 'chars', label: 'Personajes', td: s => `<td><input class="cell-input" data-k="s:${s.id}:characters" data-list="1" value="${esc(s.characters.join(', '))}" style="min-width:150px"></td>` },
     { k: 'summary', label: 'Acción / resumen', td: s => `<td>${area('s:' + s.id + ':summary', 'class="cell-input" data-edited="summaryEdited"')}</td>` },
     { k: 'conflict', label: 'Conflicto / objetivo', td: s => `<td>${area('s:' + s.id + ':conflict', 'class="cell-input" placeholder="¿Qué cambia? ¿Qué quiere cada personaje?"')}</td>` },
@@ -1062,7 +1073,7 @@
     { k: 'ie', label: 'INT/EXT', td: s => `<td>${esc(s.intExt)}</td>` },
     { k: 'loc', label: 'Localización', td: s => `<td>${esc(s.location)}</td>` },
     { k: 'time', label: 'Día/Noche', td: s => `<td>${esc(s.time)}</td>` },
-    { k: 'trama', label: 'Trama', td: s => { const t = tramaOf(p, s); return `<td>${t ? esc(t.name.toUpperCase()) : ''}</td>`; } },
+    { k: 'trama', label: 'Trama', td: s => { const t = tramaOf(p, s); const t2 = tramas2Of(p, s); return `<td>${t ? esc(t.name.toUpperCase()) : ''}${t2.map(x => `<div class="esc-t2">+ ${esc(x.letter)} · ${esc(x.name.toUpperCase())}</div>`).join('')}</td>`; } },
     { k: 'chars', label: 'Personajes', td: s => `<td>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', '))}</td>` },
     { k: 'summary', label: 'Resumen', td: s => `<td>${esc(s.summary)}</td>` },
     { k: 'conflict', label: 'Conflicto / objetivo', hidden: true, td: s => `<td>${esc(s.conflict || '')}</td>` },
@@ -1148,7 +1159,7 @@
   /* ------------------------------------------------------------------ */
   /* Filtro por tramas en las escaletas (de script y de montaje) */
   const escHidden = p => new Set(p.escHidden || []);
-  const escVisible = (p, s) => !escHidden(p).has(s.tramaId || '__none');
+  const escVisible = (p, s) => { const h = escHidden(p); return tramaIdsOf(s).some(id => !h.has(id)); };
   function escFilterBar(p, list) {
     const h = escHidden(p);
     const chip = (id, label, color) => `<span class="trama-vis-wrap"><button class="btn btn-small trama-vis ${h.has(id) ? 'off' : ''}" data-action="toggle-esc-vis" data-id="${id}" title="${h.has(id) ? 'Mostrar' : 'Ocultar'} esta trama"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button><button class="btn btn-small btn-ghost solo-btn" data-action="esc-solo" data-id="${id}" title="Ver solo esta trama">solo</button></span>`;
@@ -1171,7 +1182,8 @@
         <thead><tr>${eCols.map(c => colTh('escaleta', c)).join('')}</tr></thead>
         <tbody>${p.scenes.filter(s => escVisible(p, s)).map(s => {
           const t = tramaOf(p, s);
-          return `<tr style="background:${t ? t.color : '#fff'}" class="${s.needs.sobrante ? 'strike' : ''}">${eCols.map(c => c.td(s)).join('')}</tr>`;
+          const t2 = tramas2Of(p, s);
+          return `<tr style="background:${t ? t.color : '#fff'};${t2.length ? `--t2:${t2[0].color}` : ''}" class="${s.needs.sobrante ? 'strike' : ''} ${t2.length ? 'has-t2' : ''}">${eCols.map(c => c.td(s)).join('')}</tr>`;
         }).join('')}</tbody>${durFootRow(p, p.scenes.filter(s => escVisible(p, s)), eCols, false)}</table></div>
     </section>`;
   }
@@ -1219,7 +1231,7 @@
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
           <div class="row needs-row"><b>Necesidades:</b>${needsDropdown(s)}</div>
           ${window.Attach ? Attach.cardRow(s) : ''}
-          <div class="tag"><span class="no-print">${estadoSelect(s)}</span><span class="print-only">${estadoBadge(s)}</span> [ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
+          <div class="tag"><span class="no-print">${estadoSelect(s)}</span><span class="print-only">${estadoBadge(s)}</span> [ ${t ? esc(t.name.toUpperCase()) : 'SIN TRAMA'}${tramas2Of(p, s).map(x => ' + ' + esc(x.name.toUpperCase())).join('')} ]${s.keyEvent ? ' · ★ ' + esc(s.eventLabel || 'punto de giro') : ''}</div>
         </div>`;
       }).join('')}</div>
     </section>`;
@@ -1368,7 +1380,7 @@
     const hidden = new Set(p.steplineHidden || []);
     const { svg } = StepLine.render(p, scenes, {
       tramaOf: s => tramaOf(p, s), charactersByTrama: () => charactersByTrama(p),
-      isHidden: s => hidden.has(s.tramaId || '__none'), isTramaHidden: id => hidden.has(id),
+      isHidden: s => tramaIdsOf(s).every(id => hidden.has(id)), isTramaHidden: id => hidden.has(id),
       zoom: slZoom
     });
     const visChip = (id, label, color) => `<span class="trama-vis-wrap"><button class="btn btn-small trama-vis ${hidden.has(id) ? 'off' : ''}" data-action="toggle-trama-vis" data-id="${id}" title="${hidden.has(id) ? 'Mostrar' : 'Ocultar'}"><span class="trama-dot" style="background:${color}"></span>${esc(label)}</button><button class="btn btn-small btn-ghost solo-btn" data-action="trama-vis-solo" data-id="${id}" title="Ver solo esta trama">solo</button></span>`;
@@ -1978,6 +1990,7 @@
     'new-empty': () => { newProject(); tab = 'proyecto'; save(); render(); },
     'export-json': () => { const p = RP(); if (p) download(fileBase(p) + '.desglose.json', JSON.stringify(p, null, 1), 'application/json'); },
     'export-csv': () => { const p = P(); if (p) exportCSV(p); },
+    'tp-del': el => { const s = sceneById(P(), el.dataset.id); if (!s) return; s.tramas2 = (s.tramas2 || []).filter(id => id !== el.dataset.t); save(); renderTab(); },
     'print-schema': async () => {
       const p = P(); if (!p || !window.PdfExport) return;
       showModal(`<h3><span class="spinner"></span>Generando PDF vertical…</h3><p id="pdfProg">Preparando el esquema.</p>`);
@@ -2093,6 +2106,7 @@
   };
 
   const changeActions = {
+    'tp-add': el => { const s = sceneById(P(), el.dataset.id); if (!s || !el.value) return; s.tramas2 = (s.tramas2 || []).filter(id => id !== el.value && id !== s.tramaId).concat(el.value); save(); renderTab(); },
 
     'proj-rename': (el) => {
       const pr = state.projects[el.dataset.id]; if (!pr) return;
@@ -2319,7 +2333,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    applyPortada, RP, dnum, isSerie, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, changeActions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, RP, dnum, isSerie, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, changeActions, tramaPicker, tramas2Of, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

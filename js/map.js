@@ -29,7 +29,7 @@
     const used = new Set(p.scenes.map(s => s.tramaId).concat(Object.values(p.characters).map(c => c.tramaId)).filter(Boolean));
     const tramas = p.tramas.filter(t => !hidden.has(t.id) && used.has(t.id));   // las tramas sin secuencias ni personajes no se dibujan
     const tIds = new Set(tramas.map(t => t.id));
-    const scenesByT = {}; p.scenes.forEach(s => { if (s.tramaId) (scenesByT[s.tramaId] = scenesByT[s.tramaId] || []).push(s); });
+    const scenesByT = {}; p.scenes.forEach(s => { new Set([s.tramaId].concat(s.tramas2 || [])).forEach(id => { if (id) (scenesByT[id] = scenesByT[id] || []).push(s); }); });
     // personajes: secuencias totales y por trama
     const chars = {};
     p.scenes.forEach(s => s.characters.forEach(c => {
@@ -195,7 +195,7 @@
     } else {
       const colW = (R0 - L0) / acts.length; const colX = j => L0 + colW * (j + 0.5);
       // peso de cada trama en cada acto (nº de secuencias)
-      const cnt = {}; p.scenes.forEach(s => { if (!s.tramaId) return; const k = 't:' + s.tramaId; cnt[k] = cnt[k] || acts.map(() => 0); cnt[k][of.get(s.id)]++; });
+      const cnt = {}; p.scenes.forEach(s => { new Set([s.tramaId].concat(s.tramas2 || [])).forEach(id => { if (!id) return; const k = 't:' + id; cnt[k] = cnt[k] || acts.map(() => 0); cnt[k][of.get(s.id)]++; }); });
       const max = Math.max(1, ...Object.values(cnt).flat());
       acts.forEach((a, j) => {
         const x = L0 + colW * j;

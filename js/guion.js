@@ -46,6 +46,8 @@
     return out + esc(str.slice(at));
   }
 
+  // el encabezado sin el número de secuencia repetido («7. INT. …  7»)
+  const cleanHead = s => String(s.heading || A.sceneHeading(s)).replace(/^\s*\d+[A-Z]?\s*[.\-–)]?\s+(?=\S)/, '').replace(/\s+\d+[A-Z]?\s*$/, '');
   const lineFor = n => (n.q ? `«${n.q}» — ` : '') + (n.t || '').trim();
 
   function noteHTML(s, n, i) {
@@ -70,7 +72,8 @@
     const body = blocks(s.text).map(b => `<p class="gv-${b.k}">${marked(b.t, quotes, term)}</p>`).join('');
     return `<section class="gv-scene" id="gv-${s.id}">
       <div class="gv-page" style="${t ? `border-left-color:${t.color}` : ''}">
-        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${marked(s.heading || A.sceneHeading(s), [], term)}${t ? `<span class="gv-trama" style="background:${t.color}">${esc(t.letter)}</span>` : ''}</div>
+        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${marked(cleanHead(s), [], term)}</div>
+        <div class="gv-tp"><span>Trama</span>${A.tramaPicker(s)}</div>
         <div class="gv-text" data-id="${s.id}">${body || '<p class="gv-act muted">(Sin texto)</p>'}</div>
       </div>
       <aside class="gv-notes">

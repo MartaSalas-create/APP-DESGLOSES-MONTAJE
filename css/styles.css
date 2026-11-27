@@ -700,3 +700,14 @@ mark.gv-hit { background: #ffcf9e; border-radius: 2px; }
 /* PDF: notas debajo de cada secuencia, sin pegajosos */
 .pdf-root .gv-notes { position: static; }
 .pdf-root .gv-scene { grid-template-columns: minmax(0, 1fr) 360px; }
+/* Trama principal + entrelazadas */
+.tp { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tp > select.cell-input { min-width: 130px; max-width: 200px; }
+.tp-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #1d2026; border-radius: 4px; padding: 2px 4px 2px 7px; white-space: nowrap; }
+.tp-x { border: 0; background: rgba(0,0,0,.12); color: #1d2026; border-radius: 3px; width: 16px; height: 16px; line-height: 14px; padding: 0; font-size: 12px; cursor: pointer; }
+.tp-add { font: inherit; font-size: 11px; padding: 2px 4px; border: 1px dashed #b9b4ab; border-radius: 4px; background: #fff; color: #555; max-width: 110px; }
+.esc-t2 { font-size: 11px; font-weight: 700; opacity: .85; margin-top: 2px; }
+.gv-tp { display: flex; gap: 8px; align-items: center; margin: -4px 0 10px; font-family: Inter, system-ui, sans-serif; font-size: 12px; }
+.gv-tp > span { font-weight: 700; color: #777; text-transform: uppercase; font-size: 10px; letter-spacing: .06em; }
+.pdf-root .tp-chip { padding-right: 7px; }
+.escaleta tr.has-t2 > td:first-child { border-left: 9px solid var(--t2); }

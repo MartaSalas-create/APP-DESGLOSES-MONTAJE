@@ -134,7 +134,7 @@ Criterios:
 - SFX: efectos concretos y puntuales que el montaje necesita para funcionar (disparos, puertas, golpes, coches, teléfonos, objetos clave, foley destacado…). Descríbelos como se buscan en una librería: fuente + acción + matiz (p. ej. "Revólver años 70, disparo único en interior pequeño"). No incluyas diálogos ni voces de los actores.
 - AMBIENTES: el fondo continuo de cada lugar y momento (exterior/interior, día/noche, época, ciudad, multitud, tráfico, naturaleza, room tone). Un mismo ambiente sirve para todas las secuencias del mismo lugar y momento: NO lo repitas, agrupa las secuencias.
 - Ten en cuenta la época y el lugar de la historia (vehículos, teléfonos, máquinas de la época).
-- "archivo": nombre corto en MAYÚSCULAS sin espacios ni tildes, p. ej. "AMB_EXT_CALLE_MONTEVIDEO_NOCHE" o "SFX_DISPARO_REVOLVER_INT". Usa SIEMPRE el mismo nombre para el mismo sonido.
+- "archivo": nombre corto en MAYÚSCULAS sin espacios ni tildes, p. ej. "AMB_EXT_CALLE_CIUDAD_NOCHE" o "SFX_DISPARO_REVOLVER_INT". Usa SIEMPRE el mismo nombre para el mismo sonido.
 - "uso": para SFX, cuántas veces / variantes; para AMB, que sea continuo y la duración aproximada que cubre.
 
 Contexto de la película:

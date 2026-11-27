@@ -957,7 +957,7 @@
     <section class="panel">
       <h2>Personajes</h2>
       <p class="lead">Detectados en el guion (por los nombres sobre los diálogos). Asigna su trama principal; oculta los que sean falsos positivos o figuración. </p>
-      <div class="note" style="margin-bottom:12px"><b>Nombres repetidos.</b> Al subir el guion, la app une automáticamente los nombres que son el mismo personaje (con o sin cargo —«TENIENTE ROJAS» / «ROJAS»—, distinta tilde o erratas como «SUSNA» / «SUSANA») en el nombre que <b>más aparece</b>. Abajo verás lo que ha unido y puedes deshacerlo. Si queda alguno sin unir (por ejemplo «MADRE» y «EMILIA»), en la última columna elige el nombre bueno y pulsa <b>Unir</b>.</div>
+      <div class="note" style="margin-bottom:12px"><b>Nombres repetidos.</b> Al subir el guion, la app une automáticamente los nombres que son el mismo personaje (con o sin cargo —«DOCTORA GIL» / «GIL»—, distinta tilde o erratas como «ANDRSE» / «ANDRÉS») en el nombre que <b>más aparece</b>. Abajo verás lo que ha unido y puedes deshacerlo. Si queda alguno sin unir (por ejemplo «MADRE» y el nombre propio de ese personaje), en la última columna elige el nombre bueno y pulsa <b>Unir</b>.</div>
       ${(p.mergeLog || []).length ? `<div class="merge-log"><b>Nombres unificados (${p.mergeLog.length}):</b>${p.mergeLog.map((m, i) => `<div class="merge-item"><span><b>${esc(m.from)}</b> → <b>${esc(m.into)}</b> <span class="muted">· ${esc(m.reason)} · ${m.scenes.length} sec.</span></span><button class="btn btn-small" data-action="undo-merge" data-i="${i}">Deshacer</button></div>`).join('')}</div>` : ''}
       <div class="toolbar">
         <button class="btn btn-small" data-action="auto-char-tramas">Asignar trama a personajes según sus secuencias</button>

@@ -37,7 +37,7 @@
       const step = total > 60 ? 15 : total > 20 ? 5 : 1;
       const ticks = []; for (let m = 0; m <= total + 0.001; m += step) ticks.push(`<span style="left:${m / total * 100}%">${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}</span>`);
       const shot = scenes.filter(s => (s.estados || []).some(e => e !== 'eliminada' && e !== 'urgente')).reduce((a, s) => a + (s.lengthPages || 0) * mpp, 0);
-      box.innerHTML = `<div class="sala-tl"><div class="sala-ruler">${ticks.join('')}</div><div class="sala-clips">${scenes.map(s => `<i style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Esc. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>${shot ? `<span class="sala-ph" style="left:calc(22px + (100% - 44px) * ${Math.min(1, shot / total)})" title="Rodado: ${Math.round(shot)}′"></span>` : ''}</div>`;
+      box.innerHTML = `<div class="sala-tl"><div class="sala-ruler">${ticks.join('')}</div><div class="sala-clips">${scenes.map(s => `<i style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Sec. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>${shot ? `<span class="sala-ph" style="left:calc(22px + (100% - 44px) * ${Math.min(1, shot / total)})" title="Rodado: ${Math.round(shot)}′"></span>` : ''}</div>`;
     } else if (theme === 'corte') {
       const s0 = scenes.find(s => s.summary) || scenes[0];
       const frames = scenes.slice(0, 40).map(s => `<span style="background:${tramaColor(p, s)}"></span>`).join('');
@@ -64,7 +64,7 @@
         <div class="corte-cut"><span>${esc((p.title || 'DESGLOSE DE MONTAJE').toUpperCase().slice(0, 34))}</span><small>✂ CORTE A:</small></div>
         <div class="corte-film mix-film"><div class="corte-perf">${perf}</div>
           <div class="mix-tl"><div class="mix-ruler">${ticks.join('')}</div>
-            <div class="mix-clips">${scenes.map(s => `<i data-scene="${s.id}" class="${s.id === (s0 && s0.id) ? 'cur' : ''}" style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Esc. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>
+            <div class="mix-clips">${scenes.map(s => `<i data-scene="${s.id}" class="${s.id === (s0 && s0.id) ? 'cur' : ''}" style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Sec. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>
             ${shotMin ? `<span class="mix-ph" style="left:${Math.min(100, shotMin / total * 100)}%"><em>${shotN} rodadas · ${Math.round(shotMin)}′</em></span>` : ''}</div>
           <div class="corte-perf">${perf}</div></div></div><div class="corte-clap"></div>`;
     } else if (theme === 'moviola') {

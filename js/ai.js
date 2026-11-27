@@ -11,7 +11,7 @@
 
   const PERSONA = `Eres una montadora de cine y televisión con más de 30 años de experiencia en largometrajes, series y documental, y docente de montaje. Tienes un conocimiento pleno del guion cinematográfico y de las estructuras narrativas (estructura en actos, paradigma clásico, puntos de giro, tramas y subtramas, arcos de personaje, montajes alternos y paralelos, elipsis, ritmo) y trabajas con la metodología del step line de Juan Carlos Marimón («El montaje cinematográfico. Del guion a la pantalla»): curva de intensidad dramática, actos (Prólogo, Planteamiento, Desarrollo, Convergencia/Clímax, Resolución) y puntos de giro por trama.
 Estás preparando la preproducción de montaje: reuniones con dirección, lectura de guion, reunión de workflow de postproducción y necesidades para la coordinación de postproducción (color/conformado, GFX/VFX, sonido y música).
-Escribe en español de España, con vocabulario profesional de montaje, de forma concreta y útil para el equipo, sin relleno. Basa todo en el texto del guion; si algo es una interpretación tuya, formúlalo como propuesta.`;
+Escribe en español de España, con vocabulario profesional de montaje (di siempre «secuencia», nunca «escena», y abrevia «sec.»), de forma concreta y útil para el equipo, sin relleno. Basa todo en el texto del guion; si algo es una interpretación tuya, formúlalo como propuesta.`;
 
   const NEED_HELP = {
     accion: 'secuencia de acción (coreografía, cobertura, ritmo de corte)',
@@ -47,7 +47,7 @@ Escribe en español de España, con vocabulario profesional de montaje, de forma
   function sceneBlock(s, maxChars) {
     let t = (s.text || s.summary || '').replace(/\n{3,}/g, '\n\n').trim();
     if (t.length > maxChars) t = t.slice(0, maxChars) + ' […]';
-    return `### ESC ${s.num} | ${A.sceneHeading(s)} | ${A.fmtEighths(s.eighths)} pág | Personajes: ${s.characters.join(', ') || '—'}${(s.offCharacters || []).length ? ' | En off: ' + s.offCharacters.join(', ') : ''}\n${t}`;
+    return `### SEC ${s.num} | ${A.sceneHeading(s)} | ${A.fmtEighths(s.eighths)} pág | Personajes: ${s.characters.join(', ') || '—'}${(s.offCharacters || []).length ? ' | En off: ' + s.offCharacters.join(', ') : ''}\n${t}`;
   }
 
   function scriptForGlobal(p) {
@@ -101,7 +101,7 @@ Reglas:
 - "personajes": los principales y secundarios con peso dramático (no figuración), con los nombres EXACTOS del guion.
 - "actos" de cada personaje: plant = Acto I Planteamiento (incluye prólogo), des = Acto II Desarrollo, clim = Acto III-A Clímax, res = Acto III-B Resolución. "t": qué le ocurre (1-2 frases), "e": su emoción dominante (1-2 palabras), "v": estado emocional de -5 (hundimiento) a +5 (plenitud).
 - "giros": entre 5 y 14 puntos de giro y eventos clave en toda la película (detonante, primer punto de giro, punto medio, crisis, clímax, etc.).
-- Usa los números de secuencia tal como aparecen tras "ESC".
+- Usa los números de secuencia tal como aparecen tras "SEC".
 - En los textos puedes usar saltos de línea y viñetas con "- ".
 
 GUION (secuencias en orden):

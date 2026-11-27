@@ -2,7 +2,7 @@
    MAPA CONCEPTUAL DE TRAMAS (interactivo)
    Nodos: tramas (grandes, con su color) y personajes (tamaño = nº de secuencias).
    Enlaces: personaje–trama (en qué tramas aparece), trama–trama (personajes
-   compartidos) y, opcionalmente, personaje–personaje (escenas compartidas).
+   compartidos) y, opcionalmente, personaje–personaje (secuencias compartidas).
    Se pueden arrastrar los nodos, tocar uno para ver sus conexiones y su ficha,
    filtrar tramas, anotar las relaciones entre tramas y ampliar.
    ========================================================================== */
@@ -57,7 +57,7 @@
         if (!s.tramaId && hidden.size) return;
         const tr = p.tramas.find(t => t.id === s.tramaId);
         const id = 'g:' + s.id;
-        nodes.push({ id, kind: 'g', s, tr, label: (s.eventLabel || 'Esc. ' + s.num).toUpperCase(), r: 13, color: tr ? tr.color : '#ddd' });
+        nodes.push({ id, kind: 'g', s, tr, label: (s.eventLabel || 'Sec. ' + s.num).toUpperCase(), r: 13, color: tr ? tr.color : '#ddd' });
         if (tr) edges.push({ id: 'gt:' + s.id, kind: 'gt', a: id, b: 't:' + tr.id });
         s.characters.forEach(c => { if (charIds.has('c:' + c)) edges.push({ id: 'gc:' + s.id + '|' + c, kind: 'gc', a: id, b: 'c:' + c }); });
       });
@@ -298,8 +298,8 @@
           <rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" transform="rotate(45)" fill="${n.color}" stroke="${on ? '#222' : '#d62828'}" stroke-width="${on ? 4 : 2.5}"/>
           <text y="4" text-anchor="middle" font-size="12" fill="#d62828" pointer-events="none">★</text>
           <text y="${r + 18}" text-anchor="middle" font-size="10" font-weight="800" fill="#d62828" pointer-events="none">${esc(n.label.slice(0, 26))}</text>
-          <text y="${r + 30}" text-anchor="middle" font-size="9" fill="#666" pointer-events="none">esc. ${esc(n.s.num)}</text>
-          <title>Punto de giro · esc. ${esc(n.s.num)}: ${esc(n.label)}</title></g>`);
+          <text y="${r + 30}" text-anchor="middle" font-size="9" fill="#666" pointer-events="none">sec. ${esc(n.s.num)}</text>
+          <title>Punto de giro · sec. ${esc(n.s.num)}: ${esc(n.label)}</title></g>`);
       } else {
         o.push(`<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x} ${q.y})" opacity="${f}">
           <circle r="${n.r}" fill="#fff" stroke="${n.color}" stroke-width="${on ? 5 : 3.5}"/>
@@ -328,7 +328,7 @@
           ? `<button class="btn btn-small btn-primary" data-action="map-vis-all">Ver todas las tramas</button>`
           : `<button class="btn btn-small btn-primary" data-action="map-solo" data-id="${t.id}">Ver solo esta trama en el mapa</button>`}
           <span class="muted" style="font-size:11px">${isSolo(p, t.id) ? 'Se muestra solo esta trama.' : 'Ahora se resaltan sus conexiones sobre el mapa completo.'}</span></div>
-        ${sc.filter(s => s.keyEvent).length ? `<div class="field"><label>Puntos de giro</label><div>${sc.filter(s => s.keyEvent).map(s => `<button class="chip on map-go" data-action="map-sel" data-id="g:${s.id}" style="background:#fff;color:#d62828;border:1px solid #d62828">★ ${esc((s.eventLabel || 'Esc. ' + s.num).toUpperCase())} · ${esc(s.num)}</button>`).join(' ')}</div></div>` : ''}
+        ${sc.filter(s => s.keyEvent).length ? `<div class="field"><label>Puntos de giro</label><div>${sc.filter(s => s.keyEvent).map(s => `<button class="chip on map-go" data-action="map-sel" data-id="g:${s.id}" style="background:#fff;color:#d62828;border:1px solid #d62828">★ ${esc((s.eventLabel || 'Sec. ' + s.num).toUpperCase())} · ${esc(s.num)}</button>`).join(' ')}</div></div>` : ''}
         ${A.field('Descripción de la trama', A.area('t:' + t.id + ':desc', 'rows="3"'))}
         <div class="field"><label>Personajes</label><div>${cs.map(c => `<button class="chip on map-go" data-action="map-sel" data-id="c:${esc(c)}" style="background:${t.color};color:#222">${esc(c)}</button>`).join(' ') || '—'}</div></div>
         <div class="field"><label>Secuencias</label><div class="map-scenes">${sc.map(s => `<span title="${esc(s.summary)}">${esc(s.num)}</span>`).join('') || '—'}</div></div>
@@ -352,7 +352,7 @@
       const s = p.scenes.find(x => x.id === sel.slice(2)); if (!s) return '';
       const t = p.tramas.find(x => x.id === s.tramaId);
       return `<div class="map-panel" style="border-top:6px solid #d62828">
-        <h3 style="margin:0;color:#d62828">★ Punto de giro · esc. ${esc(s.num)}</h3>
+        <h3 style="margin:0;color:#d62828">★ Punto de giro · sec. ${esc(s.num)}</h3>
         <p class="muted" style="margin:4px 0 10px">${esc(s.intExt ? s.intExt + '. ' : '')}${esc(s.location)}${s.time ? ' — ' + esc(s.time) : ''} · intensidad ${esc(s.intensity)}</p>
         ${A.field('Etiqueta del punto de giro', A.inp('s:' + s.id + ':eventLabel'))}
         <div class="field"><label>Trama</label><div>${t ? `<button class="chip on map-go" data-action="map-sel" data-id="t:${t.id}" style="background:${t.color};color:#222">${esc(t.letter + ' · ' + t.name)}</button>` : '—'}</div></div>
@@ -394,7 +394,7 @@
       <div class="toolbar no-print">
         <label><input type="checkbox" data-action-change="map-opt" data-o="giros" ${showGiros ? 'checked' : ''}> Puntos de giro</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="chars" ${showChars ? 'checked' : ''}> Personajes</label>
-        <label><input type="checkbox" data-action-change="map-opt" data-o="co" ${showCo ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Relaciones entre personajes (escenas juntos)</label>
+        <label><input type="checkbox" data-action-change="map-opt" data-o="co" ${showCo ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Relaciones entre personajes (secuencias juntos)</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="all" ${allChars ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Todos los personajes</label>
         <span class="spacer"></span>
         <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="map-zoom" data-d="-1" ${zoom <= 0.6 ? 'disabled' : ''}>−</button><b>${Math.round(zoom * 100)}%</b><button class="btn btn-small" data-action="map-zoom" data-d="1" ${zoom >= 2.5 ? 'disabled' : ''}>+</button></span>

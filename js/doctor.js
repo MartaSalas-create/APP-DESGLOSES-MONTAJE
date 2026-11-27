@@ -24,7 +24,7 @@
     { n: 10, nombre: 'Clímax', acto: 3, ideal: 110, rango: '110', def: 'Confrontación final y cambio de valor absoluto.' },
     { n: 11, nombre: 'Resolución e imagen final', acto: 3, ideal: 120, rango: '120', def: 'Nuevo equilibrio.' }
   ];
-  const DOCTOR = `Eres un script doctor experto en los métodos de Linda Seger («Cómo convertir un buen guion en un guion excelente») y Robert McKee («El guion»): estructura en tres actos, catalizador, puntos de giro, subtrama B, punto medio, crisis, clímax y resolución, y el CAMBIO DE VALOR (+/−) de cada escena y de cada hito según McKee (cada hito debe girar la carga de valor del protagonista). Trabajas además con montadores, así que tus notas son concretas y útiles para estructurar en montaje. Escribe en español de España, conciso y centrado en la acción dramática.`;
+  const DOCTOR = `Eres un script doctor experto en los métodos de Linda Seger («Cómo convertir un buen guion en un guion excelente») y Robert McKee («El guion»): estructura en tres actos, catalizador, puntos de giro, subtrama B, punto medio, crisis, clímax y resolución, y el CAMBIO DE VALOR (+/−) de cada secuencia y de cada hito según McKee (cada hito debe girar la carga de valor del protagonista). Trabajas además con montadores, así que tus notas son concretas y útiles para estructurar en montaje. Escribe en español de España, conciso y centrado en la acción dramática. Di siempre «secuencia» (nunca «escena») y abrevia «sec.».`;
 
   let busy = false;
 
@@ -189,7 +189,7 @@ ${AI.script(p)}`;
         const bw = Math.max(lab.length * 6.6, 60) + 16;
         o.push(`<line x1="${x}" x2="${x}" y1="${y}" y2="${ly + (up ? 10 : -10)}" stroke="#2a4f8f" stroke-width="1" stroke-dasharray="2 2"/>`);
         o.push(`<rect x="${x - bw / 2}" y="${ly - 12}" width="${bw}" height="28" rx="6" fill="#fff" stroke="#2a4f8f"/>`);
-        o.push(`<text x="${x}" y="${ly}" text-anchor="middle" font-size="10" font-weight="800" fill="#2a4f8f">${h.n} · p.${Math.round(h.pg)}${h.esc ? ' · esc ' + esc(h.esc) : ''}</text>`);
+        o.push(`<text x="${x}" y="${ly}" text-anchor="middle" font-size="10" font-weight="800" fill="#2a4f8f">${h.n} · p.${Math.round(h.pg)}${h.esc ? ' · sec. ' + esc(h.esc) : ''}</text>`);
         o.push(`<text x="${x}" y="${ly + 12}" text-anchor="middle" font-size="10" fill="#222">${esc(lab)}</text>`);
         o.push(`<circle cx="${x}" cy="${y}" r="5" fill="#fff" stroke="#d62828" stroke-width="2.5"><title>${h.n}. ${esc(HITOS[h.n - 1].nombre)} · p.${h.pg} · carga ${h.v}</title></circle>`);
       });

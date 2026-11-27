@@ -169,7 +169,7 @@
       if (!s.keyEvent) return;
       const tr = helpers.tramaOf(s);
       const color = tr ? tr.color : '#bbb';
-      const label = (s.eventLabel || ('Esc. ' + s.num)).toUpperCase();
+      const label = (s.eventLabel || ('Sec. ' + s.num)).toUpperCase();
       const lines = wrap(label, 16).slice(0, 3);
       const bw = Math.max(...lines.map(l => l.length)) * 7.2 + 18;
       const bh = lines.length * 14 + 10;
@@ -188,7 +188,7 @@
     // Puntos editables
     pts.forEach(pt => {
       const tr = helpers.tramaOf(pt.s);
-      out.push(`<circle class="pt" data-id="${pt.s.id}" cx="${pt.x}" cy="${pt.y}" r="${pt.s.keyEvent ? 6 : 4}" fill="${tr ? tr.color : '#fff'}" stroke="#d62828" stroke-width="2"><title>Esc. ${esc(pt.s.num)} · ${esc(pt.s.location)} · intensidad ${pt.s.intensity}\n(arrastra arriba/abajo para corregir)</title></circle>`);
+      out.push(`<circle class="pt" data-id="${pt.s.id}" cx="${pt.x}" cy="${pt.y}" r="${pt.s.keyEvent ? 6 : 4}" fill="${tr ? tr.color : '#fff'}" stroke="#d62828" stroke-width="2"><title>Sec. ${esc(pt.s.num)} · ${esc(pt.s.location)} · intensidad ${pt.s.intensity}\n(arrastra arriba/abajo para corregir)</title></circle>`);
       if (zoomed && !pt.s.keyEvent) out.push(`<text x="${pt.x}" y="${pt.y - 9}" text-anchor="middle" font-size="9" font-weight="700" fill="#d62828" pointer-events="none">${pt.s.intensity}</text>`);
     });
 

@@ -119,7 +119,7 @@
           : '<p class="muted">Vista previa no disponible: descárgalo.</p>';
     A.showModal(`<div class="att-viewer">
       <h3 style="margin:0 0 4px">${icon(a.type)} ${esc(a.name)}</h3>
-      <p class="muted" style="margin:0 0 10px">Esc. ${esc(s.num)} · ${esc(s.location)} · ${fmtSize(a.size || 0)}</p>
+      <p class="muted" style="margin:0 0 10px">Sec. ${esc(s.num)} · ${esc(s.location)} · ${fmtSize(a.size || 0)}</p>
       <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px">
         <div class="field"><label>Tipo de documento</label><select class="cell-input" data-k="s:${s.id}:adjuntos.${i}.tipo">${TIPOS.map(t => `<option ${t === a.tipo ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         <div class="field"><label>Nota</label><input class="cell-input" data-k="s:${s.id}:adjuntos.${i}.nota" value="${esc(a.nota || '')}" placeholder="p. ej. tomas buenas 3 y 5"></div>

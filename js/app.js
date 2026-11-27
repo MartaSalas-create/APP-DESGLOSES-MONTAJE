@@ -882,7 +882,7 @@
         <div class="sch-mini"><h4>👥 Personajes principales</h4>${chars.length ? chars.map(c => { const t = tramaById(p, p.characters[c].tramaId); return `<div class="sch-bar"><span class="sch-bl"><b>${esc(c)}</b></span><i style="width:${st[c].count / maxC * 100}%;background:${t ? t.color : '#bbb'}"></i><b>${st[c].count}</b></div>`; }).join('') : '<p class="sch-empty">—</p>'}</div>
       </div>
       ${acts.length ? `<div class="sch-row sch-struct"><h4>🎬 Estructura</h4><div class="sch-acts">${acts.map((a, j) => { const x0 = pos(a.i), x1 = j + 1 < acts.length ? pos(acts[j + 1].i) : 100; return `<div style="left:${x0}%;width:${x1 - x0}%;background:${ACT_COL[j % ACT_COL.length]}"><span>${esc(a.name)}</span><small>${Math.round((x1 - x0) / 100 * dur)}′</small></div>`; }).join('')}</div>
-        <div class="sch-giros">${giros.map(s => `<div style="left:${pos(idx.get(s.id)) + (s.lengthPages || 0) / total * 50}%"><i></i><span>${esc((s.eventLabel || 'Giro').toUpperCase().slice(0, 22))}<br><small>esc. ${esc(s.num)}</small></span></div>`).join('')}</div></div>` : ''}
+        <div class="sch-giros">${giros.map(s => `<div style="left:${pos(idx.get(s.id)) + (s.lengthPages || 0) / total * 50}%"><i></i><span>${esc((s.eventLabel || 'Giro').toUpperCase().slice(0, 22))}<br><small>sec. ${esc(s.num)}</small></span></div>`).join('')}</div></div>` : ''}
       <div class="sch-block b1"><div class="sch-block-h">1ª LECTURA · Historia, género, tono y personajes</div><div class="sch-grid">
         ${card('📖', 'Historia', 'historia')}${card('🎭', 'Género y tono', 'generoTono')}${card('👤', 'Personajes', 'personajes')}</div></div>
       <div class="sch-block b2"><div class="sch-block-h">2ª LECTURA · Temas y mapa de personajes</div><div class="sch-grid">
@@ -1139,7 +1139,7 @@
             ${montajeView === 'montaje' ? `<button class="btn btn-small btn-ghost" data-action="move" data-id="${s.id}" data-d="-1" title="Subir">↑</button><button class="btn btn-small btn-ghost" data-action="move" data-id="${s.id}" data-d="1" title="Bajar">↓</button>` : ''}
             <button class="btn btn-small btn-ghost" data-action="toggle-removed" data-id="${s.id}" title="${removed ? 'Recuperar' : 'Quitar del montaje'}">${removed ? '↺' : '⊘'}</button>
           </div>
-          <div class="card-title"><span>ESC. ${esc(dnum(s))}</span><span>${esc(sceneHeading(s))}</span><span class="dur">${fmtEighths(s.eighths)} pág · ${fmtMin(s.lengthPages * mpp)}${removed ? '' : ' · TC ≈ ' + fmtMin(start)}</span></div>
+          <div class="card-title"><span>SEC. ${esc(dnum(s))}</span><span>${esc(sceneHeading(s))}</span><span class="dur">${fmtEighths(s.eighths)} pág · ${fmtMin(s.lengthPages * mpp)}${removed ? '' : ' · TC ≈ ' + fmtMin(start)}</span></div>
           <div class="row"><b><i>Personajes:</i></b><i>${esc(s.characters.filter(c => !(p.characters[c] || {}).hidden).join(', ') || '—')}</i></div>
           <div class="row"><b>Acción:</b><textarea class="edit" rows="1" data-k="s:${s.id}:summary" data-edited="summaryEdited">${esc(s.summary)}</textarea></div>
           <div class="row"><b>Conflicto / objetivo:</b><textarea class="edit" rows="1" data-k="s:${s.id}:conflict" placeholder="…">${esc(s.conflict)}</textarea></div>
@@ -1251,7 +1251,7 @@
         <tbody>${names.map(n => `<tr><td class="name">${esc(n)} <span class="muted">(${st[n].count})</span></td>${p.scenes.map(s => {
           if (!s.characters.includes(n)) return '<td></td>';
           const t = tramaOf(p, s);
-          return `<td class="on" style="background:${t ? t.color : '#777'}" title="Esc. ${esc(dnum(s))} · ${esc(s.location)}"></td>`;
+          return `<td class="on" style="background:${t ? t.color : '#777'}" title="Sec. ${esc(dnum(s))} · ${esc(s.location)}"></td>`;
         }).join('')}</tr>`).join('')}</tbody>
       </table></div>
       <div class="char-cards">${names.map(n => {
@@ -1288,7 +1288,7 @@
       <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
       <button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
       <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla, o «solo» para ver únicamente esa trama.</p>`;
-    const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Esc. ${esc(dnum(s))} · ${esc(s.location.slice(0, 40))}</option>`).join('');
+    const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Sec. ${esc(dnum(s))} · ${esc(s.location.slice(0, 40))}</option>`).join('');
     const acts = ACT_NAMES.map(name => p.acts.find(a => a.name === name) || { name, start: '' });
     return `<section class="panel">
       ${printHeader(p, 'Step line')}

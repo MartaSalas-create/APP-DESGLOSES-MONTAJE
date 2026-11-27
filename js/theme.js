@@ -21,6 +21,16 @@
   const cur = () => { try { return (JSON.parse(localStorage.getItem('desgloses-tema') || '""')) || 'actual'; } catch (e) { return 'actual'; } };
   let theme = cur();
 
+  function clipTitle(p, s) {
+    const t = p && p.tramas.find(x => x.id === s.tramaId);
+    return esc('Sec. ' + (A.dnum ? A.dnum(s) : s.num) + ' · ' + s.location + ' — ' + (t ? 'Trama ' + t.letter + ' · ' + t.name : 'Sin trama asignada'));
+  }
+  function tlLegend(p, scenes, cls) {
+    const used = new Set(scenes.map(s => s.tramaId || ''));
+    const items = (p.tramas || []).filter(t => used.has(t.id)).map(t => `<span><b style="background:${t.color}"></b>${esc(t.letter)} · ${esc(t.name)}</span>`);
+    if (used.has('') || [...used].some(id => id && !(p.tramas || []).some(t => t.id === id))) items.push('<span><b style="background:#9aa3ad"></b>Sin trama</span>');
+    return items.length ? `<div class="tl-legend ${cls}">${items.join('')}</div>` : '';
+  }
   function tramaColor(p, s) { const t = p && p.tramas.find(x => x.id === s.tramaId); return t ? t.color : '#9aa3ad'; }
 
   function deco() {
@@ -37,7 +47,7 @@
       const step = total > 60 ? 15 : total > 20 ? 5 : 1;
       const ticks = []; for (let m = 0; m <= total + 0.001; m += step) ticks.push(`<span style="left:${m / total * 100}%">${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}</span>`);
       const shot = scenes.filter(s => (s.estados || []).some(e => e !== 'eliminada' && e !== 'urgente')).reduce((a, s) => a + (s.lengthPages || 0) * mpp, 0);
-      box.innerHTML = `<div class="sala-tl"><div class="sala-ruler">${ticks.join('')}</div><div class="sala-clips">${scenes.map(s => `<i style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Sec. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>${shot ? `<span class="sala-ph" style="left:calc(22px + (100% - 44px) * ${Math.min(1, shot / total)})" title="Rodado: ${Math.round(shot)}′"></span>` : ''}</div>`;
+      box.innerHTML = `<div class="sala-tl"><div class="sala-ruler">${ticks.join('')}</div><div class="sala-clips">${scenes.map(s => `<i style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="${clipTitle(p, s)}"></i>`).join('')}</div>${tlLegend(p, scenes, 'tl-legend-sala')}${shot ? `<span class="sala-ph" style="left:calc(22px + (100% - 44px) * ${Math.min(1, shot / total)})" title="Rodado: ${Math.round(shot)}′"></span>` : ''}</div>`;
     } else if (theme === 'corte') {
       const s0 = scenes.find(s => s.summary) || scenes[0];
       const frames = scenes.slice(0, 40).map(s => `<span style="background:${tramaColor(p, s)}"></span>`).join('');
@@ -64,7 +74,8 @@
         <div class="corte-cut"><span>${esc((p.title || 'DESGLOSE DE MONTAJE').toUpperCase().slice(0, 34))}</span><small>✂ CORTE A:</small></div>
         <div class="corte-film mix-film"><div class="corte-perf">${perf}</div>
           <div class="mix-tl"><div class="mix-ruler">${ticks.join('')}</div>
-            <div class="mix-clips">${scenes.map(s => `<i data-scene="${s.id}" class="${s.id === (s0 && s0.id) ? 'cur' : ''}" style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="Sec. ${esc(s.num)} · ${esc(s.location)}"></i>`).join('')}</div>
+            <div class="mix-clips">${scenes.map(s => `<i data-scene="${s.id}" class="${s.id === (s0 && s0.id) ? 'cur' : ''}" style="flex:${Math.max(0.05, s.lengthPages || 0.1)};background:${tramaColor(p, s)}" title="${clipTitle(p, s)}"></i>`).join('')}</div>
+            ${tlLegend(p, scenes, 'tl-legend-mix')}
             ${shotMin ? `<span class="mix-ph" style="left:${Math.min(100, shotMin / total * 100)}%"><em>${shotN} rodadas · ${Math.round(shotMin)}′</em></span>` : ''}</div>
           <div class="corte-perf">${perf}</div></div></div><div class="corte-clap"></div>`;
     } else if (theme === 'moviola') {

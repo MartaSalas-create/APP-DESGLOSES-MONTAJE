@@ -44,7 +44,7 @@
     await Promise.all([loadScript('vendor/html2canvas.min.js'), loadScript('vendor/jspdf.umd.min.js')]);
     const { jsPDF } = window.jspdf;
     const src = document.getElementById('main');
-    let W = opts.portrait ? 900 : 1400;
+    let W = opts.portrait ? 760 : 1400;
     const box = document.createElement('div');
     box.className = 'pdf-root' + (opts.html ? ' pdf-schema' : '');
     box.style.cssText = `position:absolute;left:0;top:0;width:${W}px;background:#fff;z-index:-10;`;

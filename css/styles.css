@@ -741,3 +741,6 @@ body.tl-sticky .gv-scene { scroll-margin-top: 175px; }
 body.tl-sticky .gv-notes { top: 175px; }
 @media (max-width: 1100px) { body.tl-sticky #themeDeco { top: 0; } }
 .tl-cursor em { background: #111; padding: 0 4px; border-radius: 3px; text-shadow: none; z-index: 3; }
+.gv-rev { color: #2a6fb0; border-color: #2a6fb0; }
+.gv-imp-t td { vertical-align: middle; font-size: 12px; }
+.gv-imp-t select { font: inherit; font-size: 12px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; max-width: 290px; }

@@ -73,12 +73,13 @@
     const body = blocks(s.text).map(b => `<p class="gv-${b.k}">${marked(b.t, quotes, term)}</p>`).join('');
     return `<section class="gv-scene" id="gv-${s.id}">
       <div class="gv-page" style="${t ? `border-left-color:${t.color}` : ''}">
-        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${s.separata ? '<span class="gv-sep">SEPARATA</span>' : ''}${marked(cleanHead(s), [], term)}
+        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${s.separata ? '<span class="gv-sep">SEPARATA</span>' : ''}${s.rev && !s.separata ? `<span class="gv-sep gv-rev" title="Sustituida por la separata ${esc(s.rev.file || '')} (${esc(s.rev.at || '')})">REVISADA</span>` : ''}${marked(cleanHead(s), [], term)}
           <span class="gv-tools-s no-print">
             <button class="btn btn-small btn-ghost" data-action="gv-move" data-id="${s.id}" data-d="-1" title="Subir la secuencia">↑</button>
             <button class="btn btn-small btn-ghost" data-action="gv-move" data-id="${s.id}" data-d="1" title="Bajar la secuencia">↓</button>
             <button class="btn btn-small btn-ghost" data-action="gv-edit" data-id="${s.id}" title="Editar número, encabezado y texto">✎ Editar</button>
             <button class="btn btn-small btn-ghost" data-action="gv-sep" data-id="${s.id}" title="Añadir una separata (secuencia nueva) después de esta">＋ Separata</button>
+            <button class="btn btn-small btn-ghost" data-action="gv-sep-import" data-id="${s.id}" title="Importar una separata desde un archivo (PDF, Final Draft, Fountain, Word o texto) y colocarla a partir de aquí">⇪ Importar</button>
           </span></div>
         <div class="gv-tp"><span>Trama</span>${A.tramaPicker(s)}</div>
         ${editing.has(s.id) ? editForm(s) : `<div class="gv-text" data-id="${s.id}">${body || '<p class="gv-act muted">(Sin texto)</p>'}</div>`}
@@ -127,6 +128,7 @@
         <span class="spacer"></span>
         <span class="muted">${total} nota${total === 1 ? '' : 's'}${pend ? ` · <b>${pend}</b> sin pasar al desglose` : total ? ' · todas en el desglose' : ''}</span>
         ${pend ? `<button class="btn btn-small btn-primary" data-action="gv-send-all">→ Pasar todas al desglose</button>` : ''}
+        <button class="btn btn-small" data-action="gv-sep-import" title="Importar separata: secuencias nuevas o revisadas desde un archivo">⇪ Importar separata</button>
         <button class="btn btn-small" data-action="print">Descargar PDF</button>
       </div>
       ${term || onlyNotes ? `<p class="muted no-print">${list.length} de ${all.length} secuencias${term ? ` contienen «${esc(search.trim())}»` : ''}.</p>` : ''}
@@ -277,6 +279,88 @@
     R.scenes.splice(R.scenes.indexOf(s), 1); R.montajeOrder = (R.montajeOrder || []).filter(x => x !== id);
     (R.acts || []).forEach(a => { if (a.start === id) a.start = (R.scenes[0] || {}).id; });
     editing.delete(id); recomputePos(); A.save(); A.renderTab(); A.toast('Separata eliminada.');
+  };
+
+  /* ---------- importar separata desde archivo ---------- */
+  const fileIn = document.createElement('input');
+  fileIn.type = 'file'; fileIn.accept = '.pdf,.fdx,.fountain,.spmd,.txt,.docx'; fileIn.hidden = true; fileIn.id = 'gvSepFile';
+  document.body.appendChild(fileIn);
+  let sepAnchor = null, sepParsed = null;
+  const normNum = n => String(n || '').toUpperCase().replace(/\s+/g, '');
+  A.actions['gv-sep-import'] = el => { sepAnchor = el.dataset.id || null; fileIn.value = ''; fileIn.click(); };
+  fileIn.addEventListener('change', async () => {
+    const f = fileIn.files[0]; if (!f) return;
+    A.showModal(`<h3><span class="spinner"></span>Leyendo la separata…</h3><p>${esc(f.name)}</p>`);
+    try {
+      const r = await SP().parseFile(f);
+      if (!r.scenes || !r.scenes.length) throw new Error('No se ha encontrado ninguna secuencia (encabezados INT./EXT.).');
+      sepParsed = { file: f.name, scenes: r.scenes };
+      reviewModal();
+    } catch (e) {
+      A.showModal(`<h3>No se ha podido importar</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
+    }
+  });
+  function reviewModal() {
+    const view = A.P().scenes; const anchor = sepAnchor && view.find(x => x.id === sepAnchor);
+    const rows = sepParsed.scenes.map((ps, i) => {
+      const same = view.find(x => normNum(x.num) === normNum(ps.num));
+      const opts = (same ? [`<option value="replace:${same.id}" selected>Sustituir la sec. ${esc(A.dnum(same))}</option>`] : [])
+        .concat([`<option value="add" ${same ? '' : 'selected'}>Añadir como nueva${anchor ? ` tras la sec. ${esc(A.dnum(anchor))}` : ''}</option>`, '<option value="skip">No importar</option>']);
+      return `<tr><td class="num"><b>${esc(ps.num)}</b></td><td>${esc(cleanHead(ps))}<div class="muted" style="font-size:11px">${esc(String(ps.summary || '').slice(0, 90))}</div></td><td class="num">${ps.eighths || 1}/8</td><td><select class="gv-imp" data-i="${i}">${opts.join('')}</select></td></tr>`;
+    }).join('');
+    A.showModal(`<h3>Importar separata · ${esc(sepParsed.file)}</h3>
+      <p>${sepParsed.scenes.length} secuencia${sepParsed.scenes.length === 1 ? '' : 's'} en el archivo. Si el número coincide con una secuencia del guion, se propone <b>sustituirla</b>: cambian el encabezado, el texto, los octavos y los personajes, y se conservan tus notas, trama, estados y adjuntos. Las demás se añaden como <b>separatas</b> ${anchor ? `a partir de la sec. ${esc(A.dnum(anchor))}` : 'en su sitio según el número (12A detrás de la 12)'}.</p>
+      <div class="table-wrap" style="max-height:50vh;overflow:auto"><table class="gv-imp-t"><thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Oct.</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="gv-sep-apply">Importar</button></div>`);
+  }
+  // dónde va una secuencia nueva: tras el ancla (en orden) o tras la de su número base (12A → 12)
+  function placeAfter(num, lastAdded) {
+    const view = A.P().scenes;
+    if (sepAnchor) return lastAdded || sepAnchor;
+    const base = parseInt(String(num), 10);
+    if (!isNaN(base)) {
+      const cands = view.filter(x => parseInt(String(x.num), 10) === base && normNum(x.num) <= normNum(num));
+      if (cands.length) return cands[cands.length - 1].id;
+      const prev = view.filter(x => { const n = parseInt(String(x.num), 10); return !isNaN(n) && n < base; });
+      if (prev.length) return prev.reduce((a, b) => (parseInt(b.num, 10) >= parseInt(a.num, 10) ? b : a)).id;
+    }
+    return view.length ? view[view.length - 1].id : null;
+  }
+  A.actions['gv-sep-apply'] = () => {
+    if (!sepParsed) return;
+    const R = A.RP(); const today = new Date().toISOString().slice(0, 10);
+    const choice = Array.from(document.querySelectorAll('select.gv-imp')).map(sel => sel.value);
+    let added = 0, replaced = 0, lastAdded = null;
+    sepParsed.scenes.forEach((ps, i) => {
+      const c = choice[i] || 'skip';
+      if (c === 'skip') return;
+      if (c.startsWith('replace:')) {
+        const s = R.scenes.find(x => x.id === c.slice(8)); if (!s) return;
+        Object.assign(s, { heading: ps.heading, intExt: ps.intExt, location: ps.location, time: ps.time, text: ps.text || '', characters: ps.characters.slice(), offCharacters: (ps.offCharacters || []).slice(), eighths: ps.eighths || s.eighths, lengthPages: ps.lengthPages || s.lengthPages });
+        if (!s.summaryEdited) s.summary = ps.summary || '';
+        Object.keys(ps.needs || {}).forEach(k => { if (ps.needs[k]) s.needs[k] = true; });
+        s.rev = { file: sepParsed.file, at: today };
+        replaced++;
+        return;
+      }
+      const afterId = placeAfter(ps.num, lastAdded); const prev = R.scenes.find(x => x.id === afterId);
+      const ns = {
+        id: 's' + A.uid(), num: A.P().scenes.some(x => normNum(x.num) === normNum(ps.num)) ? nextSepNum(ps.num) : (ps.num || nextSepNum(prev ? prev.num : '1')),
+        intExt: ps.intExt, location: ps.location, time: ps.time, heading: ps.heading, page: prev ? prev.page : 1, pos: 0,
+        lengthPages: ps.lengthPages || 0.125, eighths: ps.eighths || 1, characters: ps.characters.slice(), offCharacters: (ps.offCharacters || []).slice(),
+        summary: ps.summary || '', summaryEdited: false, conflict: '', tramaId: prev ? prev.tramaId || '' : '', intensity: prev && prev.intensity != null ? prev.intensity : 5,
+        keyEvent: false, eventLabel: '', needs: Object.assign({ sobrante: false }, ps.needs), notes: {}, text: ps.text || '', separata: true, rev: { file: sepParsed.file, at: today }
+      };
+      if (prev && prev.ep != null) ns.ep = prev.ep;
+      const at = prev ? R.scenes.indexOf(prev) + 1 : R.scenes.length;
+      R.scenes.splice(at, 0, ns);
+      const mo = R.montajeOrder || (R.montajeOrder = []); const k = prev ? mo.indexOf(prev.id) : -1; mo.splice(k >= 0 ? k + 1 : mo.length, 0, ns.id);
+      lastAdded = ns.id; added++;
+    });
+    recomputePos(); A.ensureCharacters(R); A.hideModal(); A.save(); A.renderTab();
+    A.toast(`Separata importada: ${added} nueva${added === 1 ? '' : 's'}, ${replaced} sustituida${replaced === 1 ? '' : 's'}.`);
+    const first = lastAdded && document.getElementById('gv-' + lastAdded); if (first) first.scrollIntoView({ block: 'center' });
+    sepParsed = null;
   };
 
   window.GuionView = { tab, blocks };

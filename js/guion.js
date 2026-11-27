@@ -283,23 +283,80 @@
 
   /* ---------- importar separata desde archivo ---------- */
   const fileIn = document.createElement('input');
-  fileIn.type = 'file'; fileIn.accept = '.pdf,.fdx,.fountain,.spmd,.txt,.docx'; fileIn.hidden = true; fileIn.id = 'gvSepFile';
+  fileIn.type = 'file'; fileIn.accept = '.pdf,.fdx,.fountain,.spmd,.txt,.docx,image/*,.heic,.heif'; fileIn.multiple = true; fileIn.hidden = true; fileIn.id = 'gvSepFile';
   document.body.appendChild(fileIn);
   let sepAnchor = null, sepParsed = null;
   const normNum = n => String(n || '').toUpperCase().replace(/\s+/g, '');
   A.actions['gv-sep-import'] = el => { sepAnchor = el.dataset.id || null; fileIn.value = ''; fileIn.click(); };
+  const isImg = f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|heic|heif|tiff?|bmp)$/i.test(f.name);
+  const prog = (t, sub) => A.showModal(`<h3><span class="spinner"></span>${esc(t)}</h3><p id="gvSepProg">${esc(sub || '')}</p>`);
   fileIn.addEventListener('change', async () => {
-    const f = fileIn.files[0]; if (!f) return;
-    A.showModal(`<h3><span class="spinner"></span>Leyendo la separata…</h3><p>${esc(f.name)}</p>`);
+    const files = Array.from(fileIn.files || []); if (!files.length) return;
+    const name = files.length > 1 ? `${files.length} archivos` : files[0].name;
+    prog('Leyendo la separata…', name);
     try {
-      const r = await SP().parseFile(f);
-      if (!r.scenes || !r.scenes.length) throw new Error('No se ha encontrado ninguna secuencia (encabezados INT./EXT.).');
-      sepParsed = { file: f.name, scenes: r.scenes };
+      let scenes = [];
+      const imgs = files.filter(isImg), docs = files.filter(f => !isImg(f));
+      for (const f of docs) {
+        let r = null, err = null;
+        try { r = await SP().parseFile(f); } catch (e) { err = e; }
+        if (r && r.scenes && r.scenes.length) scenes = scenes.concat(r.scenes);
+        else if (/\.pdf$/i.test(f.name)) { prog('Es un PDF escaneado: leyendo las páginas…', f.name); scenes = scenes.concat(await ocrScenes(await pdfPages(f), f.name)); } // sin texto: se lee como imagen
+        else if (err) throw err;
+      }
+      if (imgs.length) scenes = scenes.concat(await ocrScenes(imgs, name));
+      if (!scenes.length) throw new Error('No se ha encontrado ninguna secuencia (encabezados INT./EXT.).');
+      sepParsed = { file: name, scenes };
       reviewModal();
     } catch (e) {
       A.showModal(`<h3>No se ha podido importar</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
     }
   });
+  /* Imágenes y PDF escaneados: Claude lee las páginas y las transcribe en formato guion */
+  const OCR_PROMPT = `Eres el ayudante de una montadora de cine. Te paso fotos o escaneos de páginas de un guion (una separata). Transcribe TODO el texto de las páginas, en el orden en que aparecen, en texto plano y con este formato exacto, sin comentarios ni Markdown:
+- Cada encabezado de secuencia en su propia línea, con su número delante tal como aparece (p. ej. «12A. INT. COCINA - NOCHE»). Si el número aparece en el margen, ponlo delante.
+- Una línea en blanco entre bloques.
+- El nombre del personaje que habla en MAYÚSCULAS en su propia línea (con (OFF), (V.O.) o (CONT'D) si los lleva) y, debajo, su diálogo con 4 espacios al principio de cada línea. Las acotaciones entre paréntesis en su propia línea, también con 4 espacios.
+- Las transiciones (CORTE A:, FUNDIDO A NEGRO…) en su propia línea.
+- No transcribas números de página, cabeceras ni pies de página, marcas de revisión (asteriscos) ni el texto «CONTINÚA» / «(MORE)».
+- Respeta la ortografía del original. Si una palabra no se lee, escribe [ilegible].`;
+  async function shrink(blob) {
+    try {
+      const bmp = await createImageBitmap(blob);
+      const k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      return await new Promise(res => c.toBlob(b => res(b || blob), 'image/jpeg', 0.88));
+    } catch (e) { return blob; } // formato que el navegador no puede redibujar: se envía tal cual
+  }
+  async function pdfPages(file) {
+    const lib = window.pdfjsLib; if (!lib) throw new Error('No se ha podido cargar el lector de PDF.');
+    const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; const out = [];
+    for (let i = 1; i <= Math.min(pdf.numPages, 40); i++) {
+      const pg = await pdf.getPage(i); const vp = pg.getViewport({ scale: 2 });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      out.push(await new Promise(res => c.toBlob(res, 'image/jpeg', 0.88)));
+    }
+    return out;
+  }
+  async function ocrScenes(blobs, name) {
+    const sample = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('sample') : null;
+    if (!sample) throw new Error('Leer imágenes necesita la versión de la app en claude.ai (usa Claude para leer el texto).');
+    const lim = sample.limits ? await sample.limits() : { images: true };
+    if (!lim || !lim.images) throw new Error('En esta vista no se pueden enviar imágenes a Claude.');
+    const per = Math.max(1, Math.min(5, Number(lim.maxImages) || 5));
+    let text = '';
+    for (let i = 0; i < blobs.length; i += per) {
+      const part = blobs.slice(i, i + per);
+      const el = document.getElementById('gvSepProg'); if (el) el.textContent = `Leyendo ${blobs.length > 1 ? `páginas ${i + 1}–${i + part.length} de ${blobs.length}` : 'la imagen'} con Claude…`;
+      const r = await sample(OCR_PROMPT, { images: await Promise.all(part.map(shrink)), modelTier: 'complex', cache: false });
+      text += '\n\n' + String((r && r.text) || '').replace(/^```[a-z]*\n?|```$/gm, '');
+    }
+    const r = await SP().parseFile(new File([text.trim()], (name || 'separata').replace(/\.[^.]+$/, '') + '.txt', { type: 'text/plain' }));
+    return r.scenes || [];
+  }
+
   function reviewModal() {
     const view = A.P().scenes; const anchor = sepAnchor && view.find(x => x.id === sepAnchor);
     const rows = sepParsed.scenes.map((ps, i) => {
@@ -309,7 +366,7 @@
       return `<tr><td class="num"><b>${esc(ps.num)}</b></td><td>${esc(cleanHead(ps))}<div class="muted" style="font-size:11px">${esc(String(ps.summary || '').slice(0, 90))}</div></td><td class="num">${ps.eighths || 1}/8</td><td><select class="gv-imp" data-i="${i}">${opts.join('')}</select></td></tr>`;
     }).join('');
     A.showModal(`<h3>Importar separata · ${esc(sepParsed.file)}</h3>
-      <p>${sepParsed.scenes.length} secuencia${sepParsed.scenes.length === 1 ? '' : 's'} en el archivo. Si el número coincide con una secuencia del guion, se propone <b>sustituirla</b>: cambian el encabezado, el texto, los octavos y los personajes, y se conservan tus notas, trama, estados y adjuntos. Las demás se añaden como <b>separatas</b> ${anchor ? `a partir de la sec. ${esc(A.dnum(anchor))}` : 'en su sitio según el número (12A detrás de la 12)'}.</p>
+      <p>${sepParsed.scenes.length} secuencia${sepParsed.scenes.length === 1 ? '' : 's'} encontrada${sepParsed.scenes.length === 1 ? '' : 's'}. Si venía de una foto o un escaneo, revisa el texto después con <b>✎ Editar</b>. Si el número coincide con una secuencia del guion, se propone <b>sustituirla</b>: cambian el encabezado, el texto, los octavos y los personajes, y se conservan tus notas, trama, estados y adjuntos. Las demás se añaden como <b>separatas</b> ${anchor ? `a partir de la sec. ${esc(A.dnum(anchor))}` : 'en su sitio según el número (12A detrás de la 12)'}.</p>
       <div class="table-wrap" style="max-height:50vh;overflow:auto"><table class="gv-imp-t"><thead><tr><th class="num">Nº</th><th>Secuencia</th><th class="num">Oct.</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="actions"><button class="btn" data-action="close-modal">Cancelar</button><button class="btn btn-primary" data-action="gv-sep-apply">Importar</button></div>`);
   }

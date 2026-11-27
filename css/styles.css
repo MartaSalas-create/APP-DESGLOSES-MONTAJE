@@ -726,3 +726,18 @@ mark.gv-hit { background: #ffcf9e; border-radius: 2px; }
 .gv-e-text { font-family: 'Courier Prime', 'Courier New', monospace; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; width: 100%; color: #1d1d1d; font-weight: 400; }
 .gv-edit-f { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .gv-danger { color: #b23a2e; }
+/* Cabezal de la secuencia actual en la línea de tiempo (estilos 1 y 5) */
+.mix-clips, .sala-clips { cursor: pointer; touch-action: none; }
+.sala-tl { position: relative; }
+.sala-clips i.cur { box-shadow: inset 0 0 0 2px #fff; opacity: 1; }
+.tl-cursor { position: absolute; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); pointer-events: none; z-index: 2; transition: left .15s ease-out; }
+.tl-cursor-mix { top: 10px; height: 30px; }
+.tl-cursor-sala { top: 18px; height: 26px; }
+.tl-cursor:before { content: ''; position: absolute; top: -6px; left: -5px; border: 6px solid transparent; border-top-color: #fff; }
+.tl-cursor em { position: absolute; top: -17px; left: 6px; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: #fff; white-space: nowrap; text-shadow: 0 0 3px #000; }
+body.tl-sticky #themeDeco { position: sticky; top: 58px; z-index: 16; }
+body.tl-sticky .tabs { position: static; }
+body.tl-sticky .gv-scene { scroll-margin-top: 175px; }
+body.tl-sticky .gv-notes { top: 175px; }
+@media (max-width: 1100px) { body.tl-sticky #themeDeco { top: 0; } }
+.tl-cursor em { background: #111; padding: 0 4px; border-radius: 3px; text-shadow: none; z-index: 3; }

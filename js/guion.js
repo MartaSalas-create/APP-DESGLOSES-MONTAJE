@@ -8,6 +8,7 @@
   const A = window.DesgloseApp;
   const { esc } = A;
   let search = '', onlyNotes = false;
+  const editing = new Set();
 
   const notesOf = s => (s.gnotes = s.gnotes || []);
   const RE_CUE = /^[A-ZÁÉÍÓÚÑÜ0-9][A-ZÁÉÍÓÚÑÜ0-9 .,'’\-]{0,38}(\s*\([^)]*\))?$/;
@@ -72,15 +73,39 @@
     const body = blocks(s.text).map(b => `<p class="gv-${b.k}">${marked(b.t, quotes, term)}</p>`).join('');
     return `<section class="gv-scene" id="gv-${s.id}">
       <div class="gv-page" style="${t ? `border-left-color:${t.color}` : ''}">
-        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${marked(cleanHead(s), [], term)}</div>
+        <div class="gv-head"><span class="gv-num">${esc(A.dnum(s))}</span>${s.separata ? '<span class="gv-sep">SEPARATA</span>' : ''}${marked(cleanHead(s), [], term)}
+          <span class="gv-tools-s no-print">
+            <button class="btn btn-small btn-ghost" data-action="gv-move" data-id="${s.id}" data-d="-1" title="Subir la secuencia">↑</button>
+            <button class="btn btn-small btn-ghost" data-action="gv-move" data-id="${s.id}" data-d="1" title="Bajar la secuencia">↓</button>
+            <button class="btn btn-small btn-ghost" data-action="gv-edit" data-id="${s.id}" title="Editar número, encabezado y texto">✎ Editar</button>
+            <button class="btn btn-small btn-ghost" data-action="gv-sep" data-id="${s.id}" title="Añadir una separata (secuencia nueva) después de esta">＋ Separata</button>
+          </span></div>
         <div class="gv-tp"><span>Trama</span>${A.tramaPicker(s)}</div>
-        <div class="gv-text" data-id="${s.id}">${body || '<p class="gv-act muted">(Sin texto)</p>'}</div>
+        ${editing.has(s.id) ? editForm(s) : `<div class="gv-text" data-id="${s.id}">${body || '<p class="gv-act muted">(Sin texto)</p>'}</div>`}
       </div>
       <aside class="gv-notes">
         ${ns.map((n, i) => noteHTML(s, n, i)).join('')}
         <button class="btn btn-small no-print gv-add" data-action="gv-add" data-id="${s.id}">＋ Nota en la sec. ${esc(A.dnum(s))}</button>
       </aside>
     </section>`;
+  }
+
+  function editForm(s) {
+    return `<div class="gv-edit" data-id="${s.id}">
+      <div class="gv-edit-row">
+        <label>Nº<input class="gv-e-num" value="${esc(s.num)}" maxlength="10"></label>
+        <label class="grow">Encabezado<input class="gv-e-head" value="${esc(cleanHead(s))}" placeholder="INT. LOCALIZACIÓN - DÍA"></label>
+        <label>Octavos<input class="gv-e-oct" type="number" min="1" step="1" value="${s.eighths || 1}"></label>
+      </div>
+      <label>Texto de la secuencia <small>(acción; el personaje en MAYÚSCULAS en su línea y debajo el diálogo; deja una línea en blanco entre bloques)</small>
+        <textarea class="gv-e-text" rows="${Math.min(30, Math.max(8, String(s.text || '').split('\n').length + 2))}">${esc(s.text || '')}</textarea></label>
+      <div class="gv-edit-f">
+        <button class="btn btn-small btn-primary" data-action="gv-save" data-id="${s.id}">Guardar</button>
+        <button class="btn btn-small" data-action="gv-cancel" data-id="${s.id}">Cancelar</button>
+        ${s.separata ? `<span class="spacer"></span><button class="btn btn-small btn-ghost gv-danger" data-action="gv-delsep" data-id="${s.id}">Eliminar esta separata</button>` : ''}
+        <small class="muted">Al guardar se actualizan INT/EXT, localización, momento del día y personajes.</small>
+      </div>
+    </div>`;
   }
 
   function tab(p) {
@@ -178,6 +203,81 @@
   // pointerdown + preventDefault: la selección no se pierde al tocar el botón (también en iPad)
   btn.addEventListener('pointerdown', e => { e.preventDefault(); });
   btn.addEventListener('click', () => { if (!pending) return; const { id, q } = pending; btn.hidden = true; pending = null; window.getSelection().removeAllRanges(); addNote(id, q); });
+
+  /* ---------- edición del guion: número, encabezado, texto, orden y separatas ---------- */
+  const SP = () => window.ScriptParser;
+  // posición en páginas (para las líneas de tiempo): acumulada en el orden del guion, por episodio
+  function recomputePos() {
+    const R = A.RP(); const acc = {};
+    R.scenes.forEach(s => { const k = s.ep || ''; if (acc[k] == null) acc[k] = Math.min(...R.scenes.filter(x => (x.ep || '') === k).map(x => Number(x.pos) || 0)); s.pos = acc[k]; acc[k] += s.lengthPages || 0.125; });
+  }
+  function move(id, d) {
+    const view = A.P().scenes; const i = view.findIndex(s => s.id === id); const nb = view[i + d];
+    if (i < 0 || !nb) return;
+    const R = A.RP().scenes; const s = R.splice(R.findIndex(x => x.id === id), 1)[0];
+    const j = R.findIndex(x => x.id === nb.id);
+    R.splice(d < 0 ? j : j + 1, 0, s);
+    recomputePos(); A.save(); A.renderTab();
+    const el = document.getElementById('gv-' + id); if (el) el.scrollIntoView({ block: 'center' });
+  }
+  function nextSepNum(base) {
+    const nums = new Set(A.P().scenes.map(s => String(s.num).toUpperCase()));
+    const b = String(base).replace(/[A-Z]+$/i, '');
+    for (let c = 65; c < 91; c++) { const n = b + String.fromCharCode(c); if (!nums.has(n)) return n; }
+    return b + '-' + A.uid().slice(0, 3);
+  }
+  function addSeparata(afterId) {
+    const R = A.RP(); const prev = R.scenes.find(s => s.id === afterId); if (!prev) return;
+    const s = {
+      id: 's' + A.uid(), num: nextSepNum(prev.num), intExt: '', location: 'NUEVA SECUENCIA', time: '', heading: '',
+      page: prev.page, pos: (prev.pos || 0) + (prev.lengthPages || 0), lengthPages: 0.125, eighths: 1,
+      characters: [], offCharacters: [], summary: '', summaryEdited: false, conflict: '', tramaId: prev.tramaId || '',
+      intensity: prev.intensity != null ? prev.intensity : 5, keyEvent: false, eventLabel: '', needs: { sobrante: false }, notes: {}, text: '', separata: true
+    };
+    if (prev.ep != null) s.ep = prev.ep;
+    R.scenes.splice(R.scenes.indexOf(prev) + 1, 0, s);
+    const mo = R.montajeOrder || (R.montajeOrder = []); const k = mo.indexOf(prev.id); mo.splice(k >= 0 ? k + 1 : mo.length, 0, s.id);
+    recomputePos(); editing.add(s.id); A.save(); A.renderTab();
+    const el = document.querySelector(`.gv-edit[data-id="${s.id}"] .gv-e-head`); if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); }
+  }
+  function saveEdit(id) {
+    const box = document.querySelector(`.gv-edit[data-id="${id}"]`); const s = A.sceneById(A.P(), id); if (!box || !s) return;
+    const num = box.querySelector('.gv-e-num').value.trim(), head = box.querySelector('.gv-e-head').value.trim();
+    const text = box.querySelector('.gv-e-text').value.replace(/\r/g, '').replace(/\s+$/, '');
+    const oct = Math.max(1, Math.round(Number(box.querySelector('.gv-e-oct').value) || s.eighths || 1));
+    if (num && A.P().scenes.some(x => x.id !== id && String(x.num).toUpperCase() === num.toUpperCase())) { A.toast(`Ya hay una sec. ${num}. Elige otro número.`); return; }
+    if (num) s.num = num;
+    if (head) {
+      s.heading = head;
+      const h = SP() && SP().parseHeading(head);
+      if (h) { s.intExt = h.intExt || ''; s.location = h.location || head.toUpperCase(); s.time = h.time || ''; } else { s.intExt = ''; s.location = head.toUpperCase(); s.time = ''; }
+    }
+    s.text = text;
+    if (oct !== s.eighths) { s.eighths = oct; s.lengthPages = oct / 8; recomputePos(); }
+    // personajes y resumen a partir del texto nuevo
+    try {
+      const tl = SP().textToLines((head || s.heading || 'INT. X - DÍA') + '\n\n' + text);
+      const sc = SP().buildScenes(SP().classifyLines(tl.lines, false), tl.pages).scenes[0];
+      if (sc) {
+        s.characters = sc.characters.slice(); s.offCharacters = (sc.offCharacters || []).slice();
+        if (!s.summaryEdited) s.summary = sc.summary || '';
+        Object.keys(sc.needs || {}).forEach(k => { if (sc.needs[k]) s.needs[k] = true; });
+        A.ensureCharacters(A.RP());
+      }
+    } catch (e) { console.warn(e); }
+    editing.delete(id); A.save(); A.renderTab(); A.toast(`Sec. ${A.dnum(s)} guardada.`);
+  }
+  A.actions['gv-move'] = el => move(el.dataset.id, +el.dataset.d);
+  A.actions['gv-edit'] = el => { editing.add(el.dataset.id); A.renderTab(); const t = document.querySelector(`.gv-edit[data-id="${el.dataset.id}"] .gv-e-text`); if (t) t.focus(); };
+  A.actions['gv-cancel'] = el => { editing.delete(el.dataset.id); A.renderTab(); };
+  A.actions['gv-save'] = el => saveEdit(el.dataset.id);
+  A.actions['gv-sep'] = el => addSeparata(el.dataset.id);
+  A.actions['gv-delsep'] = el => {
+    const R = A.RP(); const id = el.dataset.id; const s = R.scenes.find(x => x.id === id); if (!s || !s.separata) return;
+    R.scenes.splice(R.scenes.indexOf(s), 1); R.montajeOrder = (R.montajeOrder || []).filter(x => x !== id);
+    (R.acts || []).forEach(a => { if (a.start === id) a.start = (R.scenes[0] || {}).id; });
+    editing.delete(id); recomputePos(); A.save(); A.renderTab(); A.toast('Separata eliminada.');
+  };
 
   window.GuionView = { tab, blocks };
 })();

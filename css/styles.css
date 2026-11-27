@@ -711,3 +711,18 @@ mark.gv-hit { background: #ffcf9e; border-radius: 2px; }
 .gv-tp > span { font-weight: 700; color: #777; text-transform: uppercase; font-size: 10px; letter-spacing: .06em; }
 .pdf-root .tp-chip { padding-right: 7px; }
 .escaleta tr.has-t2 > td:first-child { border-left: 9px solid var(--t2); }
+/* Guion: edición, orden y separatas */
+.gv-tools-s { margin-left: auto; display: inline-flex; gap: 2px; font-family: Inter, system-ui, sans-serif; text-transform: none; font-weight: 400; }
+.gv-tools-s .btn { padding: 2px 7px; font-size: 12px; }
+.gv-sep { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 800; color: #b23a2e; border: 1.5px solid #b23a2e; border-radius: 4px; padding: 1px 5px; letter-spacing: .05em; }
+.gv-edit { font-family: Inter, system-ui, sans-serif; font-size: 12px; display: flex; flex-direction: column; gap: 8px; background: #faf8f3; border: 1px dashed #cfc8b8; border-radius: 6px; padding: 10px; }
+.gv-edit label { display: flex; flex-direction: column; gap: 3px; font-weight: 700; color: #555; }
+.gv-edit label small { font-weight: 400; color: #888; }
+.gv-edit-row { display: flex; gap: 8px; }
+.gv-edit-row .grow { flex: 1; }
+.gv-edit input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px; font-weight: 400; color: #222; }
+.gv-e-num { width: 70px; } .gv-e-oct { width: 70px; }
+.gv-e-head { font-family: 'Courier Prime', 'Courier New', monospace !important; text-transform: uppercase; }
+.gv-e-text { font-family: 'Courier Prime', 'Courier New', monospace; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; width: 100%; color: #1d1d1d; font-weight: 400; }
+.gv-edit-f { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gv-danger { color: #b23a2e; }

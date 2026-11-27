@@ -661,3 +661,42 @@ tfoot.dur-foot .dur-tot-label { font-weight: 700; letter-spacing: .08em; }
 .pdf-root table.cols-table { width: 100%; }
 .pdf-root .pdf-swatch { display: inline-block; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.25); }
 .pdf-root .card .row:has(> .pdf-text:empty) { display: none; }
+
+/* ---------- Pestaña Guion (lectura con notas) ---------- */
+.gv-tools input[type=search] { min-width: 220px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px; }
+.gv-tools select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px; max-width: 240px; }
+.gv-only { font-size: 13px; display: inline-flex; gap: 5px; align-items: center; }
+.gv-list { display: flex; flex-direction: column; gap: 14px; }
+.gv-scene { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; scroll-margin-top: 120px; }
+.gv-page { background: #fff; border: 1px solid #e3dfd7; border-left: 6px solid #cfcac0; border-radius: 6px; padding: 16px 26px 18px; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 14px; line-height: 1.45; color: #1d1d1d; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.gv-head { font-weight: 700; text-transform: uppercase; margin-bottom: 10px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.gv-num { font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 800; background: #1f2430; color: #fff; border-radius: 4px; padding: 2px 7px; letter-spacing: .04em; }
+.gv-num::before { content: 'SEC. '; }
+.gv-trama { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 800; border-radius: 4px; padding: 1px 6px; color: #1d2026; margin-left: auto; }
+.gv-text p { margin: 0 0 10px; }
+.gv-text .gv-cue { margin: 12px 0 0 34%; font-weight: 700; }
+.gv-text .gv-par { margin: 0 0 0 27%; font-style: italic; color: #555; }
+.gv-text .gv-dlg { margin: 0 18% 10px 18%; }
+.gv-text .gv-trans { text-align: right; font-weight: 700; }
+.gv-text ::selection { background: #ffd54a; }
+mark.gv-q { background: #fff1a8; box-shadow: 0 2px 0 #e0b400; padding: 0 1px; border-radius: 2px; }
+mark.gv-q sup { font-family: Inter, system-ui, sans-serif; font-size: 9px; font-weight: 800; color: #9a6b00; margin-left: 1px; }
+mark.gv-hit { background: #ffcf9e; border-radius: 2px; }
+.gv-notes { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 120px; }
+.gv-note { background: #fffbea; border: 1px solid #ecdca0; border-radius: 8px; padding: 8px 10px; }
+.gv-note.sent { background: #f1f8ee; border-color: #bcd9b0; }
+.gv-note-h { display: flex; gap: 6px; align-items: center; }
+.gv-n { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 50%; background: #e0b400; color: #fff; font-size: 11px; font-weight: 800; }
+.gv-note.sent .gv-n { background: #5a9a45; }
+.gv-dept { flex: 1; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 12px; background: #fff; }
+.gv-quote { font-family: 'Courier Prime', 'Courier New', monospace; font-size: 12px; color: #6b5a12; margin: 6px 0 4px; border-left: 3px solid #e0b400; padding-left: 7px; }
+.gv-note textarea { width: 100%; margin-top: 6px; min-height: 48px; min-width: 0; font-size: 13px; }
+.gv-note-f { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
+.gv-ok { color: #3c7a2b; font-weight: 700; }
+.gv-add { align-self: flex-start; }
+.gv-selbtn { position: fixed; z-index: 60; background: #1f2430; color: #fff; border: 0; border-radius: 18px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer; }
+.gv-selbtn[hidden] { display: none; }
+@media (max-width: 980px) { .gv-scene { grid-template-columns: 1fr; } .gv-notes { position: static; } .gv-page { padding: 14px 16px; } .gv-text .gv-cue { margin-left: 26%; } .gv-text .gv-dlg { margin: 0 6% 10px 12%; } }
+/* PDF: notas debajo de cada secuencia, sin pegajosos */
+.pdf-root .gv-notes { position: static; }
+.pdf-root .gv-scene { grid-template-columns: minmax(0, 1fr) 360px; }

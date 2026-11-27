@@ -70,6 +70,7 @@
     { group: 'Preparación' },
     { id: 'proyecto', label: 'Proyecto' },
     { id: 'ia', label: '✦ Desglose automático' },
+    { id: 'guion', label: 'Guion' },
     { id: 'analisis', label: 'Lectura de guion' },
     { id: 'tramas', label: 'Tramas y personajes' },
     { group: 'Documentos' },
@@ -91,7 +92,7 @@
   const PHASES = [
     { name: 'Preproducción', groups: [
       ['Proyecto', ['proyecto', 'ia']],
-      ['Guion', ['analisis', 'tramas', 'arcos', 'mapa', 'stepline', 'doctor']],
+      ['Guion', ['guion', 'analisis', 'tramas', 'arcos', 'mapa', 'stepline', 'doctor']],
       ['Montaje', ['desglose', 'escaleta']],
       ['Workflow', ['workflow', 'departamentos']]
     ] },
@@ -112,7 +113,12 @@
   // organización por fases: la personalizada (si existe) o la propuesta original
   function getPhases() {
     const u = state.ui && state.ui.phases;
-    if (Array.isArray(u) && u.length) return u;
+    if (Array.isArray(u) && u.length) {
+      // pestañas nuevas que no estaban en una organización personalizada: se añaden junto a su vecina
+      const has = id => u.some(f => (f.groups || []).some(g => (g[1] || []).includes(id)));
+      if (!has('guion')) { for (const f of u) for (const g of (f.groups || [])) { const i = (g[1] || []).indexOf('analisis'); if (i >= 0 && !has('guion')) g[1].splice(i, 0, 'guion'); } }
+      return u;
+    }
     return JSON.parse(JSON.stringify(PHASES));
   }
   function setPhases(ph) { state.ui = state.ui || {}; state.ui.phases = ph; save(); if (typeof Cloud !== 'undefined') Cloud.queueSettings && Cloud.queueSettings(); }
@@ -755,7 +761,7 @@
   function renderTab() {
     const p = P();
     const fn = {
-      proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
+      proyecto: tabProyecto, ia: p => window.AIEditor.tab(p), guion: p => window.GuionView.tab(p), analisis: tabAnalisis, tramas: tabTramas, desglose: tabDesglose, escaleta: tabEscaleta,
       montaje: tabMontaje, arcos: tabArcos, stepline: tabStepline, steplinem: tabStepline, rodaje: tabRodaje, mapa: p => window.MapaTramas.tab(p), doctor: p => window.ScriptDoctor.tab(p), departamentos: tabDepartamentos, necesidad: tabNecesidad, sonido: p => window.SoundList.tab(p), workflow: tabWorkflow
     }[tab] || tabProyecto;
     const y = window.scrollY;
@@ -2313,7 +2319,7 @@
   window.DesgloseApp = {
     P, save, render, renderTab, toast, showModal, hideModal, esc, uid, field, area, inp,
     NEEDS, DEPTS, ACT_NAMES, DEFAULT_TRAMAS, EXTRA_COLORS, sceneHeading, fmtEighths, ensureCharacters,
-    applyPortada, RP, dnum, isSerie, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, getTab: () => tab, setTab: t => { tab = t; render(); }
+    applyPortada, RP, dnum, isSerie, tramaOf: (p, s) => tramaOf(p, s), ACTS: () => ACT_NAMES, minutesPerPage, fmtMin, download, fileBase, printHeader, estadoSelect, sceneById, area, actions, changeActions, getTab: () => tab, setTab: t => { tab = t; render(); }
   };
   render();
   Cloud.init();

@@ -74,7 +74,7 @@
       // posibles cortes: final de filas, fichas, bloques…
       const top0 = box.getBoundingClientRect().top;
       // (nunca justo después de un título, de la cabecera de una tabla o de una fila de apartado: se cortan antes)
-      const cuts = Array.from(box.querySelectorAll('tbody tr, .card, .char-card, .dept, .emo-card, .panel, .field, .merge-item, .note, .legend, .stepline-wrap, .emo-big, .sch-card, .sch-row'))
+      const cuts = Array.from(box.querySelectorAll('tbody tr, .gv-scene, .gv-note, .card, .char-card, .dept, .emo-card, .panel, .field, .merge-item, .note, .legend, .stepline-wrap, .emo-big, .sch-card, .sch-row'))
         .filter(el => !(el.tagName === 'TR' && el.children.length === 1 && el.nextElementSibling))
         .map(el => Math.round(el.getBoundingClientRect().bottom - top0))
         .concat(Array.from(box.querySelectorAll('.sch-block, .sch-row, .sch-struct, h2, h3, table')).map(el => Math.round(el.getBoundingClientRect().top - top0) - 4))

@@ -287,6 +287,8 @@
   document.body.appendChild(fileIn);
   let sepAnchor = null, sepParsed = null;
   const normNum = n => String(n || '').toUpperCase().replace(/\s+/g, '');
+  // «24.25» (capítulo.secuencia) equivale a la sec. 25
+  const numTail = n => normNum(n).split(/[.\-]/).pop();
   A.actions['gv-sep-import'] = el => { sepAnchor = el.dataset.id || null; fileIn.value = ''; fileIn.click(); };
   const isImg = f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|heic|heif|tiff?|bmp)$/i.test(f.name);
   const prog = (t, sub) => A.showModal(`<h3><span class="spinner"></span>${esc(t)}</h3><p id="gvSepProg">${esc(sub || '')}</p>`);
@@ -309,7 +311,7 @@
       sepParsed = { file: name, scenes };
       reviewModal();
     } catch (e) {
-      A.showModal(`<h3>No se ha podido importar</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
+      A.showModal(`<h3>No se ha podido importar</h3><p style="white-space:pre-wrap">${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
     }
   });
   /* Imágenes y PDF escaneados: Claude lee las páginas y las transcribe en formato guion */
@@ -319,6 +321,7 @@
 - El nombre del personaje que habla en MAYÚSCULAS en su propia línea (con (OFF), (V.O.) o (CONT'D) si los lleva) y, debajo, su diálogo con 4 espacios al principio de cada línea. Las acotaciones entre paréntesis en su propia línea, también con 4 espacios.
 - Las transiciones (CORTE A:, FUNDIDO A NEGRO…) en su propia línea.
 - No transcribas números de página, cabeceras ni pies de página, marcas de revisión (asteriscos) ni el texto «CONTINÚA» / «(MORE)».
+- Si la página está rayada o anotada a mano (líneas verticales de cobertura, círculos, números de plano o de toma, fechas, tachones, firmas), IGNORA todo lo manuscrito: transcribe solo el texto mecanografiado del guion.
 - Respeta la ortografía del original. Si una palabra no se lee, escribe [ilegible].`;
   async function shrink(blob) {
     try {
@@ -354,15 +357,18 @@
       const r = await sample(OCR_PROMPT, { images: await Promise.all(part.map(shrink)), modelTier: 'complex', cache: false });
       text += '\n\n' + String((r && r.text) || '').replace(/^```[a-z]*\n?|```$/gm, '');
     }
-    const r = await SP().parseFile(new File([text.trim()], (name || 'separata').replace(/\.[^.]+$/, '') + '.txt', { type: 'text/plain' }));
-    r.format = 'leído de imagen con Claude'; r.filename = name; r.ocr = true;
+    if (!text.trim()) throw new Error('Claude no ha devuelto texto de las imágenes. Prueba con una foto más nítida.');
+    let r;
+    try { r = await SP().parseFile(new File([text.trim()], (name || 'separata').replace(/\.[^.]+$/, '') + '.txt', { type: 'text/plain' })); }
+    catch (e) { throw new Error('Se ha leído el texto de la imagen, pero no se ha encontrado ningún encabezado de secuencia (INT./EXT., INTERIOR/EXTERIOR). Esto es lo que se ha leído:\n\n' + text.trim().slice(0, 600)); }
+    r.format = 'leído de imagen con Claude'; r.filename = name; r.ocr = true; r.ocrText = text.trim();
     return r;
   }
 
   function reviewModal() {
     const view = A.P().scenes; const anchor = sepAnchor && view.find(x => x.id === sepAnchor);
     const rows = sepParsed.scenes.map((ps, i) => {
-      const same = view.find(x => normNum(x.num) === normNum(ps.num));
+      const same = view.find(x => normNum(x.num) === normNum(ps.num)) || view.find(x => numTail(x.num) && numTail(x.num) === numTail(ps.num));
       const opts = (same ? [`<option value="replace:${same.id}" selected>Sustituir la sec. ${esc(A.dnum(same))}</option>`] : [])
         .concat([`<option value="add" ${same ? '' : 'selected'}>Añadir como nueva${anchor ? ` tras la sec. ${esc(A.dnum(anchor))}` : ''}</option>`, '<option value="skip">No importar</option>']);
       return `<tr><td class="num"><b>${esc(ps.num)}</b></td><td>${esc(cleanHead(ps))}<div class="muted" style="font-size:11px">${esc(String(ps.summary || '').slice(0, 90))}</div></td><td class="num">${ps.eighths || 1}/8</td><td><select class="gv-imp" data-i="${i}">${opts.join('')}</select></td></tr>`;

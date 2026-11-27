@@ -9,7 +9,7 @@
   const LINES_PER_PAGE = 54;
 
   // Encabezado de secuencia: "12 INT. CASA - DÍA 12", "ESC. 62 INT. PISO — NOCHE", "INT/EXT. COCHE"
-  const HEADING_RE = /^(?:(?:ESC(?:ENA)?|SEC(?:UENCIA)?|SC|SCENE)\.?\s*)?(\d{1,4}[A-Z]{0,2})?\s*[.\-–—:)]?\s*(INT\.?\s*\/\s*EXT\.?|EXT\.?\s*\/\s*INT\.?|INT\.?\s*[-–]\s*EXT\.?|I\s*\/\s*E\.?|INT\.|EXT\.|INT\b|EXT\b|INTERIOR\b|EXTERIOR\b)\s*[.\-–—:]?\s*(.*)$/i;
+  const HEADING_RE = /^(?:\d{1,4}[A-Z]{0,2}\s+(?=\d))?(?:(?:ESC(?:ENA)?|SEC(?:UENCIA)?|SC|SCENE)\.?\s*)?(\d{1,4}(?:[.\-]\d{1,4})?[A-Z]{0,2})?\s*[.\-–—:)]?\s*(INT\.?\s*\/\s*EXT\.?|EXT\.?\s*\/\s*INT\.?|INT\.?\s*[-–]\s*EXT\.?|I\s*\/\s*E\.?|INT\.|EXT\.|INT\b|EXT\b|INTERIOR\b|EXTERIOR\b)\s*[.\-–—:]?\s*(.*)$/i;
 
   const TIME_WORDS = [
     'DÍA', 'DIA', 'NOCHE', 'AMANECER', 'ATARDECER', 'ANOCHECER', 'TARDE', 'MAÑANA', 'MEDIODÍA', 'MEDIODIA',

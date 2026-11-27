@@ -1761,7 +1761,7 @@
     const imgs = files.filter(isImg); files = files.filter(f => !isImg(f));
     if (imgs.length && !files.length) {
       try { return handleFile(null, await readImages(imgs)); }
-      catch (e) { showModal(`<h3>No se ha podido leer el guion</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`); return; }
+      catch (e) { showModal(`<h3>No se ha podido leer el guion</h3><p style="white-space:pre-wrap">${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`); return; }
     }
     if (files.length === 1 && !imgs.length) return handleFile(files[0]);
     const parsedList = [];
@@ -1793,11 +1793,11 @@
       }
     } catch (e) {
       console.error(e);
-      showModal(`<h3>No se ha podido leer el guion</h3><p>${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
+      showModal(`<h3>No se ha podido leer el guion</h3><p style="white-space:pre-wrap">${esc(e.message || e)}</p><div class="actions"><button class="btn btn-primary" data-action="close-modal">Cerrar</button></div>`);
       return;
     }
     const cur = RP();
-    const summary = `<p><b>${parsed.scenes.length}</b> secuencias · <b>${parsed.pages}</b> página${parsed.pages == 1 ? '' : 's'} · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
+    const summary = `<p><b>${parsed.scenes.length}</b> secuencia${parsed.scenes.length == 1 ? '' : 's'} · <b>${parsed.pages}</b> página${parsed.pages == 1 ? '' : 's'} · <b>${new Set(parsed.scenes.flatMap(s => s.characters)).size}</b> personajes detectados (${esc(parsed.format)}).</p>`;
     if (!cur || !cur.scenes.length) {
       if (cur && !cur.scenes.length) applyParsed(cur, parsed);
       else createFromParsed(parsed);

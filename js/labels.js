@@ -83,17 +83,36 @@
       const f = Math.min(fs, room / widest);
       if (f >= (n === 1 ? Math.max(minFs, 10) : Math.max(minFs, 9))) return { lines, fs: Math.floor(f * 2) / 2, cut: false };
     }
-    // último intento antes de recortar: una palabra por línea con la letra mínima
-    if (words.length > 1 && words.length <= 4) {
-      const f = Math.min(fs, room / Math.max(...words.map(w => textW(w, 1, bold))));
-      if (f >= minFs) return { lines: words, fs: Math.floor(f * 2) / 2, cut: false };
-    }
-    const one = fit(str, room, fs, minFs, bold);
-    return { lines: [one.text], fs: one.fs, cut: one.cut };
+    // no cabe en su sitio: se devuelve completo (en 1-2 líneas a letra legible) y marcado como «fuera»,
+    // para que quien lo dibuje lo coloque en un hueco libre con una línea guía. Nunca se recorta.
+    const lines = words.length > 2 ? split(2) : [str];
+    return { lines, fs: Math.max(minFs, 9), cut: false, outside: true };
+  }
+
+  /**
+   * Reparte rótulos en una fila (p. ej. nombres de actos) sin que se pisen: cada uno lo más cerca de su
+   * centro; si no hay sitio, en una fila superior. items: [{ mid, w }]. Devuelve [{ cx, row }].
+   */
+  function layoutRow(items, x0, x1, opt) {
+    opt = opt || {}; const gap = opt.gap || 6, rows = opt.rows || 3, maxShift = opt.maxShift || 300;
+    const placed = (opt.blocked || []).slice();
+    return items.map(b => {
+      let best = null;
+      for (let row = 0; row < rows && !best; row++) {
+        let cx = Math.max(x0 + b.w / 2, Math.min(x1 - b.w / 2, b.mid));
+        const clash = c => placed.filter(p => p.row === row && Math.abs(p.cx - c) < (p.w + b.w) / 2 + gap);
+        let tries = 0;
+        while (clash(cx).length && tries++ < 40) { const p = clash(cx)[0]; cx = cx >= p.cx ? p.cx + (p.w + b.w) / 2 + gap : p.cx - (p.w + b.w) / 2 - gap; }
+        if (!clash(cx).length && Math.abs(cx - b.mid) <= maxShift && cx - b.w / 2 >= x0 - 1 && cx + b.w / 2 <= x1 + 1) best = { cx, row };
+      }
+      best = best || { cx: b.mid, row: rows - 1 };
+      placed.push({ cx: best.cx, row: best.row, w: b.w });
+      return best;
+    });
   }
 
   // Halo blanco para que el texto se lea sobre líneas y colores
   const HALO = 'paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round"';
 
-  window.LabelPlacer = { place, alongPath, fit, fitLines, textW, HALO };
+  window.LabelPlacer = { place, alongPath, fit, fitLines, layoutRow, textW, HALO };
 })();

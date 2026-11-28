@@ -184,7 +184,7 @@ ${AI.script(p)}`;
       // etiquetas: cada una en el hueco libre más cercano a su hito (sin pisarse ni tapar los escalones)
       const LP = window.LabelPlacer;
       const info = hs.map(h => {
-        const lab = (h.etiqueta || HITOS[h.n - 1].nombre).toUpperCase().slice(0, 30);
+        const lab = (h.etiqueta || HITOS[h.n - 1].nombre).toUpperCase();
         const head = `${h.n} · p.${Math.round(h.pg)}${h.esc ? ' · sec. ' + h.esc : ''}`;
         return { h, x: X(h.pg), y: Y(h.v), lab, head, bw: Math.max(LP.textW(lab, 10), LP.textW(head, 10, true), 50) + 16 };
       });

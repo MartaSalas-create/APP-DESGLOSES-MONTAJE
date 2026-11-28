@@ -126,7 +126,10 @@
         const maxChars = Math.floor(avail / 6.2);
         const txt = `${s.intExt ? s.intExt + '. ' : ''}${s.location}${s.time ? ' · ' + s.time : ''}`;
         if (maxChars >= 6) {
-          const shown = txt.length > maxChars ? txt.slice(0, maxChars - 1) + '…' : txt;
+          // sin «…»: si no cabe entero se prueba sin el momento del día y luego solo la localización
+          const opts = [txt, `${s.intExt ? s.intExt + '. ' : ''}${s.location}`, s.location];
+          const shown = opts.find(o => o.length <= maxChars);
+          if (!shown) return;
           locBoxes.push({ x: cx - 6, y: plotBottom - 6 - shown.length * 6.2, w: 12, h: shown.length * 6.2 });
           out.push(`<text transform="translate(${cx + 3.5} ${plotBottom - 6}) rotate(-90)" font-size="10" fill="#8a94a6">${esc(shown)}</text>`);
         }
@@ -160,7 +163,7 @@
       const name = a.name.toUpperCase();
       const big = span > 260 ? 20 : span > 160 ? 15 : 12;
       let nm = LP.fitLines(name, Math.max(24, span), big, 10, true, 2);
-      const inside = !nm.cut && nm.fs >= 10;
+      const inside = !nm.outside && nm.fs >= 10;
       if (!inside) nm = LP.fitLines(name, 120, 11, 9, true, 2);          // fuera de su tramo: a letra legible
       const full = `${fm(endMin - startMin)}'  ·  ${fm(startMin)}'–${fm(endMin)}'`;
       const durTxt = inside && LP.textW(full, 12) <= span ? full : `${fm(endMin - startMin)}'`;
@@ -195,7 +198,7 @@
     // Globos: puntos de giro / eventos clave (color de la trama)
     const gl = pts.filter(pt => pt.s.keyEvent).map(pt => {
       const label = (pt.s.eventLabel || ('Sec. ' + pt.s.num)).toUpperCase();
-      const lines = wrap(label, 16).slice(0, 3);
+      const lines = wrap(label, 16);
       return { pt, lines, bw: Math.max(...lines.map(l => l.length)) * 7.2 + 18, bh: lines.length * 14 + 10 };
     });
     const curveObst = LP.alongPath(pts, 8, 4).concat(pts.map(pt => ({ x: pt.x - 7, y: pt.y - 7, w: 14, h: 14 })), locBoxes);

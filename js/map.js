@@ -203,6 +203,24 @@
     p.scenes.forEach((s, i) => { let k = 0; acts.forEach((a, j) => { if (i >= a.i) k = j; }); of.set(s.id, k); });
     return { acts, of };
   }
+  // nombres de los actos sobre el mapa: completos; si el tramo es estrecho, al lado con línea guía
+  function actHeaders(list, top, bg) {
+    const LP = window.LabelPlacer, HALO = 'paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round"';
+    const items = list.map(a => {
+      const span = a.x1 - a.x0 - 6;
+      let nm = LP.fitLines(a.name.toUpperCase(), Math.max(20, span), 11, 9, true, 2);
+      if (nm.outside) nm = LP.fitLines(a.name.toUpperCase(), 130, 10, 9, true, 2);
+      const w = Math.max(...nm.lines.map(l => LP.textW(l, nm.fs, true))) + 8;
+      return { a, nm, w, mid: (a.x0 + a.x1) / 2 };
+    });
+    // la fila superior no invade el título del mapa
+    const pos = LP.layoutRow(items, 8, VW - 8, { rows: 2, blocked: [{ cx: 190, row: 1, w: 380 }] });
+    items.forEach((it, i) => {
+      const { cx, row } = pos[i]; const base = top - 18 - row * 24; const lh = it.nm.fs * 1.08;
+      it.nm.lines.forEach((ln, li) => bg.push(`<text x="${cx}" y="${base - (it.nm.lines.length - 1 - li) * lh}" text-anchor="middle" font-size="${it.nm.fs}" font-weight="800" fill="#2a4f8f" ${HALO}>${esc(ln)}</text>`));
+      if (row || Math.abs(cx - it.mid) > 4) bg.push(`<path d="M${cx} ${base + 3} L${it.mid} ${top - 6}" stroke="#2a4f8f" stroke-width="1" fill="none" stroke-dasharray="2 2"/><circle cx="${it.mid}" cy="${top - 6}" r="2.5" fill="#2a4f8f"/>`);
+    });
+  }
   function layoutGrid(p, g, mode) {
     const m = st(p); const P0 = store(m);
     const T = g.nodes.filter(n => n.kind === 't');
@@ -229,13 +247,12 @@
       const step = total > 150 ? 20 : total > 60 ? 10 : total > 20 ? 5 : 1;
       for (let pg = 0; pg <= total; pg += step) bg.push(`<line x1="${X(pg)}" x2="${X(pg)}" y1="${top}" y2="${bottom}" stroke="#000" stroke-opacity="0.06"/><text x="${X(pg)}" y="${bottom + 13}" text-anchor="middle" font-size="10" fill="#2a4f8f">${Math.round(pg)}</text>`);
       bg.push(`<text x="${R0}" y="${bottom + 25}" text-anchor="end" font-size="10" fill="#999">páginas del guion →</text>`);
-      acts.forEach((a, j) => {
+      actHeaders(acts.map((a, j) => {
         const s0 = p.scenes[a.i]; const x = X(s0 ? s0.pos || 0 : 0);
         if (j) bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="3"/>`);
         const next = acts[j + 1] ? p.scenes[acts[j + 1].i] : null; const x2 = next ? X(next.pos || 0) : R0;
-        const nm = window.LabelPlacer.fitLines(a.name.toUpperCase(), Math.max(20, x2 - x - 6), 11, 7, true, 3);
-        nm.lines.forEach((ln, li) => bg.push(`<text x="${(x + x2) / 2}" y="${top - 18 - (nm.lines.length - 1 - li) * nm.fs * 1.08}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(ln)}</text>`));
-      });
+        return { name: a.name, x0: x, x1: x2 };
+      }), top, bg);
       g.nodes.forEach(n => {
         if (n.kind === 'g') target[n.id] = { x: X(mid(n.s)), y: homeY(n) - laneH * 0.2, lockX: true };
         if (n.kind === 'c') {
@@ -249,12 +266,11 @@
       // peso de cada trama en cada acto (nº de secuencias)
       const cnt = {}; p.scenes.forEach(s => { new Set([s.tramaId].concat(s.tramas2 || [])).forEach(id => { if (!id) return; const k = 't:' + id; cnt[k] = cnt[k] || acts.map(() => 0); cnt[k][of.get(s.id)]++; }); });
       const max = Math.max(1, ...Object.values(cnt).flat());
-      acts.forEach((a, j) => {
+      actHeaders(acts.map((a, j) => {
         const x = L0 + colW * j;
         bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="${j ? 3 : 1}" stroke-opacity="${j ? 1 : 0.3}"/>`);
-        const nm = window.LabelPlacer.fitLines(a.name.toUpperCase(), colW - 8, 11, 7, true, 3);
-        nm.lines.forEach((ln, li) => bg.push(`<text x="${x + colW / 2}" y="${top - 18 - (nm.lines.length - 1 - li) * nm.fs * 1.08}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${esc(ln)}</text>`));
-      });
+        return { name: a.name, x0: x, x1: x + colW };
+      }), top, bg);
       T.forEach(n => {
         const c = cnt[n.id] || acts.map(() => 0); const best = c.indexOf(Math.max(...c));
         c.forEach((v, j) => {
@@ -351,9 +367,9 @@
     const rank = { t: 0, g: 1, c: 2 };
     const want = g.nodes.filter(n => pos[n.id]).sort((a, b) => rank[a.kind] - rank[b.kind]).map(n => {
       const q = pos[n.id];
-      if (n.kind === 't') { const t = n.label.toUpperCase().slice(0, 32); return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 13, true) + 4, h: 15, gap: n.r + 3, prefer: 'down' }; }
-      if (n.kind === 'g') { const t = n.label.slice(0, 30); return { n, t, ax: q.x, ay: q.y, w: Math.max(LP.textW(t, 10, true), 40) + 4, h: 24, gap: rad(n) + 3, prefer: 'down' }; }
-      const t = n.label.slice(0, 22); return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 11, true) + 4, h: 13, gap: n.r + 3, prefer: 'down' };
+      if (n.kind === 't') { const t = n.label.toUpperCase(); return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 13, true) + 4, h: 15, gap: n.r + 3, prefer: 'down' }; }
+      if (n.kind === 'g') { const t = n.label; return { n, t, ax: q.x, ay: q.y, w: Math.max(LP.textW(t, 10, true), 40) + 4, h: 24, gap: rad(n) + 3, prefer: 'down' }; }
+      const t = n.label; return { n, t, ax: q.x, ay: q.y, w: LP.textW(t, 11, true) + 4, h: 13, gap: n.r + 3, prefer: 'down' };
     });
     const boxes = LP.place(want, { bounds: { x0: 4, y0: mode === 'libre' ? 34 : 50, x1: VW - 4, y1: VH - 30 }, obstacles: obst, step: 5, pad: 2 });
     want.forEach((w, i) => { const q = pos[w.n.id], b = boxes[i]; lab[w.n.id] = { t: w.t, x: b.x + b.w / 2 - q.x, y: b.y - q.y }; });

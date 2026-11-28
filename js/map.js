@@ -17,6 +17,21 @@
   // vista (zoom y encuadre): centro del encuadre en coordenadas del mapa
   const view = { cx: 600, cy: 380 };
   const ZMIN = 0.6, ZMAX = 6;
+  let full = false;
+  // pantalla completa: capa fija sobre toda la ventana (funciona también dentro de claude.ai y en el iPad)
+  function setFull(on) {
+    full = on;
+    const w = document.getElementById('mapWrap'); if (w) w.classList.toggle('map-full', on);
+    document.body.classList.toggle('map-full-on', on);
+    let bar = document.getElementById('mapFullBar');
+    if (on && !bar) {
+      bar = document.createElement('div'); bar.id = 'mapFullBar'; bar.className = 'map-full-bar no-print';
+      bar.innerHTML = '<button class="btn btn-small" data-action="map-zoom" data-d="-1">−</button><b id="mapZoomPctFull"></b><button class="btn btn-small" data-action="map-zoom" data-d="1">+</button><button class="btn btn-small" data-action="map-zoom-fit">Ver entero</button><button class="btn btn-small btn-primary" data-action="map-full-off">✕ Salir</button>';
+      document.body.appendChild(bar);
+    }
+    if (!on && bar) bar.remove();
+    applyView();
+  }
   function vbox() {
     const w = VW / zoom, h = VH / zoom;
     // el encuadre no se escapa del mapa (con un pequeño margen)
@@ -28,6 +43,7 @@
   function applyView() {
     const svgEl = document.getElementById('mapSvg'); if (svgEl) svgEl.setAttribute('viewBox', vbox());
     const pct = document.getElementById('mapZoomPct'); if (pct) pct.textContent = Math.round(zoom * 100) + '%';
+    const pf = document.getElementById('mapZoomPctFull'); if (pf) pf.textContent = Math.round(zoom * 100) + '%';
     document.querySelectorAll('[data-action="map-zoom"]').forEach(b => { const d = +b.dataset.d; b.disabled = d < 0 ? zoom <= ZMIN + 1e-6 : zoom >= ZMAX - 1e-6; });
   }
   // zoom alrededor de un punto de la pantalla (el que está bajo el dedo o el ratón)
@@ -458,12 +474,12 @@
         <label><input type="checkbox" data-action-change="map-opt" data-o="co" ${showCo ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Relaciones entre personajes (secuencias juntos)</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="all" ${allChars ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Todos los personajes</label>
         <span class="spacer"></span>
-        <span class="zoom-ctl" title="También: pellizca con dos dedos, rueda del ratón o gesto de pinza en el trackpad. Arrastra el fondo para moverte."><span class="muted">Zoom</span><button class="btn btn-small" data-action="map-zoom" data-d="-1" ${zoom <= ZMIN ? 'disabled' : ''}>−</button><b id="mapZoomPct">${Math.round(zoom * 100)}%</b><button class="btn btn-small" data-action="map-zoom" data-d="1" ${zoom >= ZMAX ? 'disabled' : ''}>+</button><button class="btn btn-small" data-action="map-zoom-fit" title="Ver el mapa entero">Ajustar</button></span>
+        <span class="zoom-ctl" title="También: pellizca con dos dedos, rueda del ratón o gesto de pinza en el trackpad. Arrastra el fondo para moverte."><span class="muted">Zoom</span><button class="btn btn-small" data-action="map-zoom" data-d="-1" ${zoom <= ZMIN ? 'disabled' : ''}>−</button><b id="mapZoomPct">${Math.round(zoom * 100)}%</b><button class="btn btn-small" data-action="map-zoom" data-d="1" ${zoom >= ZMAX ? 'disabled' : ''}>+</button><button class="btn btn-small" data-action="map-zoom-fit" title="Ver el mapa entero">Ajustar</button><button class="btn btn-small" data-action="map-full" title="Ver el mapa a pantalla completa">⛶ Pantalla completa</button></span>
         <button class="btn btn-small" data-action="map-relayout">Reorganizar</button>
         <button class="btn btn-small" data-action="map-svg">Descargar SVG</button>
       </div>
       <div class="map-layout">
-        <div class="map-wrap" id="mapWrap">${svg(p)}</div>
+        <div class="map-wrap ${full ? 'map-full' : ''}" id="mapWrap">${svg(p)}</div>
         <div id="mapPanel">${panel(p)}</div>
       </div>
     </section>`;
@@ -560,6 +576,9 @@
   A.actions['map-vis-all'] = () => setHidden(A.P(), []);
   A.actions['map-sel'] = el => { sel = el.dataset.id; redraw(); };
   A.actions['map-zoom'] = el => { const svgEl = document.getElementById('mapSvg'); if (!svgEl) return; const r = svgEl.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, Number(el.dataset.d) > 0 ? 1.25 : 0.8); };
+  A.actions['map-full'] = () => setFull(true);
+  A.actions['map-full-off'] = () => setFull(false);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && full) setFull(false); });
   A.actions['map-zoom-fit'] = () => { zoom = 1; view.cx = VW / 2; view.cy = VH / 2; applyView(); };
   A.actions['map-relayout'] = () => { const p = A.P(); const m = st(p); if (m.mode === 'tiempo') m.posT = {}; else if (m.mode === 'actos') m.posA = {}; else m.pos = {}; A.save(); A.renderTab(); };
   A.actions['map-mode'] = el => { const p = A.P(); st(p).mode = el.dataset.v; A.save(); A.renderTab(); };

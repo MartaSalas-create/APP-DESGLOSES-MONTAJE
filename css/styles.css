@@ -333,7 +333,7 @@ input.mono { font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
 
 /* Mapa de tramas */
 .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; align-items: start; }
-.map-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: auto; background: #fff; max-height: 80vh; }
+.map-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; max-height: 80vh; touch-action: none; cursor: grab; }
 .map-wrap svg { display: block; touch-action: none; }
 .map-wrap .node { cursor: grab; }
 .map-wrap .node:active { cursor: grabbing; }

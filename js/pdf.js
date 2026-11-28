@@ -20,6 +20,8 @@
 
   // Convierte los campos de formulario de la copia en texto plano
   function flatten(root) {
+    // gráficas con zoom: en el PDF se ven enteras
+    root.querySelectorAll('svg[data-fullvb]').forEach(s => s.setAttribute('viewBox', s.dataset.fullvb));
     root.querySelectorAll('.no-print, .toolbar, .card-tools, .handle, button.btn, .est-caret, .est-menu, script').forEach(el => el.remove());
     root.querySelectorAll('details').forEach(d => { d.removeAttribute('open'); });
     root.querySelectorAll('textarea').forEach(t => {

@@ -14,6 +14,42 @@
   const VW = 1200, VH = 760, CX = VW / 2, CY = VH / 2;
   let sel = null;            // nodo o enlace seleccionado: 't:<id>', 'c:<nombre>', 'e:<a>|<b>'
   let showChars = true, showCo = false, allChars = false, showGiros = true, zoom = 1;
+  // vista (zoom y encuadre): centro del encuadre en coordenadas del mapa
+  const view = { cx: 600, cy: 380 };
+  const ZMIN = 0.6, ZMAX = 6;
+  function vbox() {
+    const w = VW / zoom, h = VH / zoom;
+    // el encuadre no se escapa del mapa (con un pequeño margen)
+    const mx = Math.max(0, (w - VW) / 2) + VW * 0.05, my = Math.max(0, (h - VH) / 2) + VH * 0.05;
+    view.cx = Math.max(w / 2 - mx, Math.min(VW - w / 2 + mx, view.cx));
+    view.cy = Math.max(h / 2 - my, Math.min(VH - h / 2 + my, view.cy));
+    return [view.cx - w / 2, view.cy - h / 2, w, h].map(v => Math.round(v * 10) / 10).join(' ');
+  }
+  function applyView() {
+    const svgEl = document.getElementById('mapSvg'); if (svgEl) svgEl.setAttribute('viewBox', vbox());
+    const pct = document.getElementById('mapZoomPct'); if (pct) pct.textContent = Math.round(zoom * 100) + '%';
+    document.querySelectorAll('[data-action="map-zoom"]').forEach(b => { const d = +b.dataset.d; b.disabled = d < 0 ? zoom <= ZMIN + 1e-6 : zoom >= ZMAX - 1e-6; });
+  }
+  // zoom alrededor de un punto de la pantalla (el que está bajo el dedo o el ratón)
+  function zoomAt(clientX, clientY, factor) {
+    const svgEl = document.getElementById('mapSvg'); if (!svgEl) return;
+    const nz = Math.max(ZMIN, Math.min(ZMAX, zoom * factor)); if (Math.abs(nz - zoom) < 1e-4) return;
+    const r = svgEl.getBoundingClientRect();
+    const [x, y, w, h] = vbox().split(' ').map(Number);
+    // con preserveAspectRatio por defecto, la escala es la menor de las dos
+    const sc = Math.min(r.width / w, r.height / h), offX = (r.width - w * sc) / 2, offY = (r.height - h * sc) / 2;
+    const px = x + (clientX - r.left - offX) / sc, py = y + (clientY - r.top - offY) / sc;
+    const nw = VW / nz, nh = VH / nz;
+    const rx = (px - x) / w, ry = (py - y) / h;
+    zoom = nz; view.cx = px - rx * nw + nw / 2; view.cy = py - ry * nh + nh / 2;
+    applyView();
+  }
+  function panBy(dxClient, dyClient) {
+    const svgEl = document.getElementById('mapSvg'); if (!svgEl) return;
+    const r = svgEl.getBoundingClientRect(); const [, , w, h] = vbox().split(' ').map(Number);
+    const sc = Math.min(r.width / w, r.height / h);
+    view.cx -= dxClient / sc; view.cy -= dyClient / sc; applyView();
+  }
 
   const st = p => { p.mapa = p.mapa || { pos: {}, notes: {}, hidden: [] }; p.mapa.mode = p.mapa.mode || 'libre'; p.mapa.pos = p.mapa.pos || {}; p.mapa.notes = p.mapa.notes || {}; p.mapa.hidden = p.mapa.hidden || []; return p.mapa; };
   const textColor = hex => { // tono oscuro de la trama para textos
@@ -335,7 +371,7 @@
     if (LY.fg) o.push(LY.fg);
     o.push(`<text x="16" y="${VH - 17}" font-size="10" fill="#888">● trama (tamaño = nº de secuencias) · ○ personaje (número = secuencias) · ◆★ punto de giro</text>`);
     o.push(`<text x="16" y="${VH - 5}" font-size="10" fill="#888">━ trama principal del personaje · ┄ aparece también en esa trama · ▬ tramas unidas por personajes compartidos (cifra = cuántos)</text>`);
-    return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="0 0 ${VW} ${VH}" ${zoom === 1 ? `width="100%" style="max-width:${VW}px"` : `width="${Math.round(VW * zoom)}" height="${Math.round(VH * zoom)}"`} font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" id="mapSvg" viewBox="${vbox()}" data-fullvb="0 0 ${VW} ${VH}" width="100%" style="aspect-ratio:${VW}/${VH}" font-family="Helvetica, Arial, sans-serif">${o.join('')}</svg>`;
   }
 
   /* ---------------- Ficha del elemento seleccionado ---------------- */
@@ -422,7 +458,7 @@
         <label><input type="checkbox" data-action-change="map-opt" data-o="co" ${showCo ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Relaciones entre personajes (secuencias juntos)</label>
         <label><input type="checkbox" data-action-change="map-opt" data-o="all" ${allChars ? 'checked' : ''} ${showChars ? '' : 'disabled'}> Todos los personajes</label>
         <span class="spacer"></span>
-        <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="map-zoom" data-d="-1" ${zoom <= 0.6 ? 'disabled' : ''}>−</button><b>${Math.round(zoom * 100)}%</b><button class="btn btn-small" data-action="map-zoom" data-d="1" ${zoom >= 2.5 ? 'disabled' : ''}>+</button></span>
+        <span class="zoom-ctl" title="También: pellizca con dos dedos, rueda del ratón o gesto de pinza en el trackpad. Arrastra el fondo para moverte."><span class="muted">Zoom</span><button class="btn btn-small" data-action="map-zoom" data-d="-1" ${zoom <= ZMIN ? 'disabled' : ''}>−</button><b id="mapZoomPct">${Math.round(zoom * 100)}%</b><button class="btn btn-small" data-action="map-zoom" data-d="1" ${zoom >= ZMAX ? 'disabled' : ''}>+</button><button class="btn btn-small" data-action="map-zoom-fit" title="Ver el mapa entero">Ajustar</button></span>
         <button class="btn btn-small" data-action="map-relayout">Reorganizar</button>
         <button class="btn btn-small" data-action="map-svg">Descargar SVG</button>
       </div>
@@ -442,20 +478,34 @@
   document.addEventListener('pointerdown', e => {
     const svgEl = e.target.closest && e.target.closest('#mapSvg'); if (!svgEl) return;
     const node = e.target.closest('.node'); const edge = e.target.closest('.edge-hit');
+    if (pinch.ids.size > 1) return;
     if (!node) {
-      if (edge) { sel = edge.dataset.id; redraw(); }
-      else if (sel) { sel = null; redraw(); }
+      if (edge) { sel = edge.dataset.id; redraw(); return; }
+      e.preventDefault();
+      let lx = e.clientX, ly = e.clientY, moved = false; const sx = lx, sy = ly;
+      const mv = ev => {
+        if (pinch.ids.size > 1) return;
+        if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+        moved = true; panBy(ev.clientX - lx, ev.clientY - ly); lx = ev.clientX; ly = ev.clientY;
+      };
+      const upb = () => {
+        document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', upb); document.removeEventListener('pointercancel', upb);
+        if (!moved && sel && pinch.ids.size === 0) { sel = null; redraw(); }
+      };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', upb); document.addEventListener('pointercancel', upb);
       return;
     }
     e.preventDefault();
     const p = A.P(); const m = st(p);
-    const toSvg = ev => { const pt = svgEl.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svgEl.getScreenCTM().inverse()); };
+    // el mapa se redibuja al arrastrar: se usa siempre la imagen actual (con su zoom)
+    const toSvg = ev => { const el = document.getElementById('mapSvg') || svgEl; const pt = el.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(el.getScreenCTM().inverse()); };
     const id = node.dataset.id; const start = toSvg(e);
     const tr = node.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/);
     const x0 = +tr[1], y0 = +tr[2]; let moved = false;
     // fija la posición de todos los nodos en su sitio actual para que no salten
     svgEl.querySelectorAll('.node').forEach(n => { const t = n.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/); const P0 = store(m); if (t && !P0[n.dataset.id]) P0[n.dataset.id] = { x: +t[1], y: +t[2] }; });
     const move = ev => {
+      if (pinch.ids.size > 1) return;
       const q = toSvg(ev); const dx = q.x - start.x, dy = q.y - start.y;
       if (!moved && Math.hypot(dx, dy) < 4) return;
       moved = true;
@@ -470,16 +520,50 @@
     document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   });
 
+  /* ---------------- Zoom con dedos, ratón y trackpad ---------------- */
+  const pinch = { ids: new Map(), d0: 0, z0: 1, mid: null };
+  const two = () => { const [a, b] = Array.from(pinch.ids.values()); return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || !(e.target.closest && e.target.closest('#mapSvg'))) return;
+    pinch.ids.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.ids.size === 2) { const t = two(); pinch.d0 = t.d || 1; pinch.mid = t; }
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (!pinch.ids.has(e.pointerId)) return;
+    pinch.ids.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.ids.size !== 2) return;
+    const t = two();
+    zoomAt(t.x, t.y, t.d / (pinch.d0 || t.d));
+    panBy(t.x - pinch.mid.x, t.y - pinch.mid.y);
+    pinch.d0 = t.d; pinch.mid = t;
+  }, true);
+  const endTouch = e => { if (pinch.ids.delete(e.pointerId) && pinch.ids.size < 2) pinch.mid = null; };
+  document.addEventListener('pointerup', endTouch, true);
+  document.addEventListener('pointercancel', endTouch, true);
+  // rueda del ratón = zoom; pinza del trackpad (llega como ctrl + rueda) = zoom; dos dedos en el trackpad = mover
+  document.addEventListener('wheel', e => {
+    const wrap = e.target.closest && e.target.closest('#mapWrap'); if (!wrap) return;
+    e.preventDefault();
+    const mouseWheel = e.deltaMode === 1 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY));
+    if (e.ctrlKey || mouseWheel) zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+    else panBy(-e.deltaX, -e.deltaY);
+  }, { passive: false });
+  // Safari (iPad/Mac): gesto de pinza
+  let g0 = 1;
+  document.addEventListener('gesturestart', e => { if (e.target.closest && e.target.closest('#mapWrap')) { e.preventDefault(); g0 = 1; } });
+  document.addEventListener('gesturechange', e => { if (e.target.closest && e.target.closest('#mapWrap') && pinch.ids.size < 2) { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.scale / g0); g0 = e.scale; } });
+
   /* ---------------- Acciones ---------------- */
   const setHidden = (p, arr) => { st(p).hidden = arr; A.save(); A.renderTab(); };
   A.actions['map-vis'] = el => { const p = A.P(); const h = new Set(st(p).hidden); const id = el.dataset.id; if (h.has(id)) h.delete(id); else h.add(id); setHidden(p, Array.from(h)); };
   A.actions['map-solo'] = el => { const p = A.P(); sel = 't:' + el.dataset.id; setHidden(p, p.tramas.map(t => t.id).filter(id => id !== el.dataset.id)); };
   A.actions['map-vis-all'] = () => setHidden(A.P(), []);
   A.actions['map-sel'] = el => { sel = el.dataset.id; redraw(); };
-  A.actions['map-zoom'] = el => { const d = Number(el.dataset.d); zoom = Math.max(0.6, Math.min(2.5, Math.round((zoom + d * 0.25) * 100) / 100)); A.renderTab(); };
+  A.actions['map-zoom'] = el => { const svgEl = document.getElementById('mapSvg'); if (!svgEl) return; const r = svgEl.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, Number(el.dataset.d) > 0 ? 1.25 : 0.8); };
+  A.actions['map-zoom-fit'] = () => { zoom = 1; view.cx = VW / 2; view.cy = VH / 2; applyView(); };
   A.actions['map-relayout'] = () => { const p = A.P(); const m = st(p); if (m.mode === 'tiempo') m.posT = {}; else if (m.mode === 'actos') m.posA = {}; else m.pos = {}; A.save(); A.renderTab(); };
   A.actions['map-mode'] = el => { const p = A.P(); st(p).mode = el.dataset.v; A.save(); A.renderTab(); };
-  A.actions['map-svg'] = () => { const p = A.P(); A.download(A.fileBase(p) + '_mapa_tramas.svg', svg(p).replace(/ width="[^"]+"( height="\d+")?( style="[^"]*")?/, ` width="${VW}" height="${VH}"`), 'image/svg+xml'); };
+  A.actions['map-svg'] = () => { const p = A.P(); A.download(A.fileBase(p) + '_mapa_tramas.svg', svg(p).replace(/ viewBox="[^"]+"/, ` viewBox="0 0 ${VW} ${VH}"`).replace(/ width="[^"]+"( height="\d+")?( style="[^"]*")?/, ` width="${VW}" height="${VH}"`), 'image/svg+xml'); };
   A.changeActions = A.changeActions || {};
   window.MapaTramas = { tab, setOpt: (o, v) => { if (o === 'chars') showChars = v; if (o === 'co') showCo = v; if (o === 'all') allChars = v; if (o === 'giros') showGiros = v; A.renderTab(); } };
 })();

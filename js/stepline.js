@@ -148,19 +148,44 @@
       const idx = scenes.findIndex(s => s.id === a.start);
       return idx >= 0 ? { name: a.name, idx } : null;
     }).filter(Boolean).sort((a, b) => a.idx - b.idx);
-    acts.forEach((a, i) => {
+    // Rótulos de los actos: dentro de su tramo si caben; si el acto es muy estrecho, en el hueco libre
+    // de al lado (con línea guía) o en una fila superior. Nunca recortados.
+    const LP = window.LabelPlacer;
+    const fm = v => v < 10 && Math.round(v) !== Math.round(v * 10) / 10 ? (Math.round(v * 10) / 10).toString().replace('.', ',') : String(Math.round(v));
+    const actBoxes = acts.map((a, i) => {
       const startMin = timeline[a.idx].start;
       const endMin = i + 1 < acts.length ? timeline[acts[i + 1].idx].start : totalMin;
-      const x0 = X(startMin), x1 = X(endMin);
+      const x0 = X(startMin), x1 = X(endMin), span = x1 - x0 - 8;
       if (a.idx > 0) out.push(`<line x1="${x0}" x2="${x0}" y1="${actLabelY - 30}" y2="${plotBottom + 28}" stroke="#d62828" stroke-width="5"/>`);
-      const fm = v => v < 10 && Math.round(v) !== Math.round(v * 10) / 10 ? (Math.round(v * 10) / 10).toString().replace('.', ',') : String(Math.round(v));
-      const room = Math.max(24, x1 - x0 - 8);
-      const LP = window.LabelPlacer;
-      const nm = LP.fit(a.name.toUpperCase(), room, room > 260 ? 20 : room > 160 ? 15 : 12, 7, true);
+      const name = a.name.toUpperCase();
+      const big = span > 260 ? 20 : span > 160 ? 15 : 12;
+      let nm = LP.fitLines(name, Math.max(24, span), big, 10, true, 2);
+      const inside = !nm.cut && nm.fs >= 10;
+      if (!inside) nm = LP.fitLines(name, 120, 11, 9, true, 2);          // fuera de su tramo: a letra legible
       const full = `${fm(endMin - startMin)}'  ·  ${fm(startMin)}'–${fm(endMin)}'`;
-      const du = LP.textW(full, 12) <= room ? { text: full, fs: 12 } : LP.fit(`${fm(endMin - startMin)}'`, room, 11, 7);
-      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY}" text-anchor="middle" font-size="${nm.fs}" fill="#2a4f8f" font-weight="600">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
-      out.push(`<text x="${(x0 + x1) / 2}" y="${actLabelY + 18}" text-anchor="middle" font-size="${du.fs}" fill="#2a4f8f">${esc(du.text)}</text>`);
+      const durTxt = inside && LP.textW(full, 12) <= span ? full : `${fm(endMin - startMin)}'`;
+      const duFs = inside && durTxt === full ? 12 : 10.5;
+      const w = Math.max(...nm.lines.map(l => LP.textW(l, nm.fs, true)), LP.textW(durTxt, duFs)) + 8;
+      return { x0, x1, mid: (x0 + x1) / 2, nm, durTxt, duFs, w, inside, row: 0, cx: (x0 + x1) / 2 };
+    });
+    // reparto horizontal: los rótulos no se pisan entre sí
+    const placed = [];
+    actBoxes.forEach(b => {
+      for (let row = 0; row < 3; row++) {
+        let cx = Math.max(plotLeft + b.w / 2 - 40, Math.min(plotRight + 40 - b.w / 2, b.mid));
+        const clash = c => placed.filter(p => p.row === row && Math.abs(p.cx - c) < (p.w + b.w) / 2 + 6);
+        let tries = 0;
+        while (clash(cx).length && tries++ < 40) { const p = clash(cx)[0]; cx = cx >= p.cx ? p.cx + (p.w + b.w) / 2 + 6 : p.cx - (p.w + b.w) / 2 - 6; }
+        if (!clash(cx).length && Math.abs(cx - b.mid) < 260) { b.cx = cx; b.row = row; break; }
+      }
+      placed.push(b);
+    });
+    actBoxes.forEach(b => {
+      const yName = actLabelY - b.row * 34, lh = b.nm.fs * 1.08;
+      b.nm.lines.forEach((ln, li) => out.push(`<text x="${b.cx}" y="${yName - (b.nm.lines.length - 1 - li) * lh}" text-anchor="middle" font-size="${b.nm.fs}" fill="#2a4f8f" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">${esc(ln)}</text>`));
+      out.push(`<text x="${b.cx}" y="${yName + (b.duFs > 11 ? 18 : 15)}" text-anchor="middle" font-size="${b.duFs}" fill="#2a4f8f" paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round">${esc(b.durTxt)}</text>`);
+      // línea guía cuando el rótulo no está sobre su tramo
+      if (!b.inside || Math.abs(b.cx - b.mid) > 4 || b.row) out.push(`<path d="M${b.cx} ${yName + 20} L${b.mid} ${actLabelY + 26}" stroke="#2a4f8f" stroke-width="1" fill="none" stroke-dasharray="2 2"/><circle cx="${b.mid}" cy="${actLabelY + 26}" r="2.5" fill="#2a4f8f"/>`);
     });
 
     // Curva
@@ -168,7 +193,6 @@
     out.push(`<path d="${smoothPath(pts)}" fill="none" stroke="#d62828" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`);
 
     // Globos: puntos de giro / eventos clave (color de la trama)
-    const LP = window.LabelPlacer;
     const gl = pts.filter(pt => pt.s.keyEvent).map(pt => {
       const label = (pt.s.eventLabel || ('Sec. ' + pt.s.num)).toUpperCase();
       const lines = wrap(label, 16).slice(0, 3);

@@ -233,8 +233,8 @@
         const s0 = p.scenes[a.i]; const x = X(s0 ? s0.pos || 0 : 0);
         if (j) bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="3"/>`);
         const next = acts[j + 1] ? p.scenes[acts[j + 1].i] : null; const x2 = next ? X(next.pos || 0) : R0;
-        const nm = window.LabelPlacer.fit(a.name.toUpperCase(), Math.max(20, x2 - x - 6), 11, 7, true);
-        bg.push(`<text x="${(x + x2) / 2}" y="${top - 18}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
+        const nm = window.LabelPlacer.fitLines(a.name.toUpperCase(), Math.max(20, x2 - x - 6), 11, 7, true, 3);
+        nm.lines.forEach((ln, li) => bg.push(`<text x="${(x + x2) / 2}" y="${top - 18 - (nm.lines.length - 1 - li) * nm.fs * 1.08}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(ln)}</text>`));
       });
       g.nodes.forEach(n => {
         if (n.kind === 'g') target[n.id] = { x: X(mid(n.s)), y: homeY(n) - laneH * 0.2, lockX: true };
@@ -252,8 +252,8 @@
       acts.forEach((a, j) => {
         const x = L0 + colW * j;
         bg.push(`<line x1="${x}" x2="${x}" y1="${top - 14}" y2="${bottom}" stroke="#d62828" stroke-width="${j ? 3 : 1}" stroke-opacity="${j ? 1 : 0.3}"/>`);
-        const nm = window.LabelPlacer.fit(a.name.toUpperCase(), colW - 8, 11, 7, true);
-        bg.push(`<text x="${x + colW / 2}" y="${top - 18}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${nm.cut ? `<title>${esc(a.name)}</title>` : ''}${esc(nm.text)}</text>`);
+        const nm = window.LabelPlacer.fitLines(a.name.toUpperCase(), colW - 8, 11, 7, true, 3);
+        nm.lines.forEach((ln, li) => bg.push(`<text x="${x + colW / 2}" y="${top - 18 - (nm.lines.length - 1 - li) * nm.fs * 1.08}" text-anchor="middle" font-size="${nm.fs}" font-weight="800" fill="#2a4f8f">${esc(ln)}</text>`));
       });
       T.forEach(n => {
         const c = cnt[n.id] || acts.map(() => 0); const best = c.indexOf(Math.max(...c));

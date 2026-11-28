@@ -67,8 +67,33 @@
     return { text: s, fs: f, cut: s !== str };
   }
 
+  // Ajusta un rótulo partiéndolo en varias líneas (antes que recortarlo)
+  function fitLines(str, room, fs, minFs, bold, maxLines) {
+    str = String(str || '').trim(); maxLines = maxLines || 3;
+    const words = str.split(/\s+/);
+    const split = n => {                       // reparto equilibrado en n líneas
+      const target = textW(str, 1, bold) / n; const out = []; let cur = '';
+      words.forEach(w => { const t = cur ? cur + ' ' + w : w; if (cur && textW(t, 1, bold) > target * 1.15 && out.length < n - 1) { out.push(cur); cur = w; } else cur = t; });
+      if (cur) out.push(cur);
+      return out;
+    };
+    for (let n = 1; n <= Math.min(maxLines, words.length); n++) {
+      const lines = n === 1 ? [str] : split(n);
+      const widest = Math.max(...lines.map(l => textW(l, 1, bold)));
+      const f = Math.min(fs, room / widest);
+      if (f >= (n === 1 ? Math.max(minFs, 10) : Math.max(minFs, 9))) return { lines, fs: Math.floor(f * 2) / 2, cut: false };
+    }
+    // último intento antes de recortar: una palabra por línea con la letra mínima
+    if (words.length > 1 && words.length <= 4) {
+      const f = Math.min(fs, room / Math.max(...words.map(w => textW(w, 1, bold))));
+      if (f >= minFs) return { lines: words, fs: Math.floor(f * 2) / 2, cut: false };
+    }
+    const one = fit(str, room, fs, minFs, bold);
+    return { lines: [one.text], fs: one.fs, cut: one.cut };
+  }
+
   // Halo blanco para que el texto se lea sobre líneas y colores
   const HALO = 'paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round"';
 
-  window.LabelPlacer = { place, alongPath, fit, textW, HALO };
+  window.LabelPlacer = { place, alongPath, fit, fitLines, textW, HALO };
 })();

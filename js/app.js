@@ -1398,7 +1398,8 @@
     const filterBar = `<div class="toolbar no-print stepline-filter"><span class="muted">Tramas:</span>${p.tramas.map(t => visChip(t.id, t.letter + ' · ' + t.name, t.color)).join('')}${visChip('__none', 'Sin trama', '#fff')}
       <button class="btn btn-small btn-ghost" data-action="trama-vis-all">Mostrar todas</button>
       <span class="spacer"></span>
-      <span class="zoom-ctl"><span class="muted">Zoom</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
+      <span class="zoom-ctl" title="Estira la gráfica en horizontal y muestra el nombre de cada secuencia"><span class="muted">Ampliar</span><button class="btn btn-small" data-action="sl-zoom" data-d="-1" ${slZoom <= 1 ? 'disabled' : ''}>−</button><b>${Math.round(slZoom * 100)}%</b><button class="btn btn-small" data-action="sl-zoom" data-d="1" ${slZoom >= 8 ? 'disabled' : ''}>+</button>${slZoom > 1 ? '<button class="btn btn-small btn-ghost" data-action="sl-zoom" data-d="0">Ajustar</button>' : ''}</span>
+      ${window.ZoomView ? ZoomView.controls(tab === 'steplinem' ? 'steplinem' : 'stepline') : ''}
       <button class="btn btn-small" data-action="reset-globes">Recolocar etiquetas</button></div>
       <p class="muted no-print" style="font-size:12px;margin:-6px 0 10px">Arrastra los <b>puntos</b> arriba/abajo para cambiar la intensidad y los <b>globos</b> para moverlos donde se lean mejor. Toca una trama para ocultarla o mostrarla, o «solo» para ver únicamente esa trama.</p>`;
     const opt = (cur) => `<option value="">— (sin este acto)</option>` + scenes.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>Sec. ${esc(dnum(s))} · ${esc(s.location.slice(0, 40))}</option>`).join('');
@@ -1452,6 +1453,8 @@
     const top = +svg.dataset.plotTop, h = +svg.dataset.plotH;
     let drag = null;
     const toSvg = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+    // zoom dentro de la gráfica y pantalla completa (los puntos y globos se siguen arrastrando)
+    if (window.ZoomView) ZoomView.attach(tab === 'steplinem' ? 'steplinem' : 'stepline', wrap, svg, { skip: '.pt, .globe' });
     svg.addEventListener('pointerdown', e => {
       const g = e.target.closest('.globe');
       if (g) {

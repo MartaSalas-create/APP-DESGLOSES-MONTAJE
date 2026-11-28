@@ -753,3 +753,10 @@ body.tl-sticky .gv-notes { top: 175px; }
 body.map-full-on { overflow: hidden; }
 .map-full-bar { position: fixed; z-index: 71; top: 12px; right: 12px; display: flex; gap: 6px; align-items: center; background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; box-shadow: 0 4px 16px rgba(0,0,0,.15); font-size: 13px; }
 .map-full-bar b { min-width: 46px; text-align: center; }
+/* Zoom dentro de gráficas (step line) y pantalla completa */
+.stepline-wrap svg { touch-action: pan-y; }
+.zv-zoomed svg, .zv-full svg { touch-action: none !important; }
+.zv-zoomed { cursor: grab; }
+.stepline-wrap.zv-full { position: fixed; inset: 0; z-index: 70; border: 0; border-radius: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; }
+.stepline-wrap.zv-full svg { width: 100% !important; height: 100% !important; min-width: 0 !important; max-width: none; }
+body.zv-full-on { overflow: hidden; }
